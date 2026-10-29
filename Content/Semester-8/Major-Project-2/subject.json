@@ -1,0 +1,11 @@
+{
+ "title": "Major Project 2",
+ "semester": 8,
+ "credits": 8,
+ "icon": "flag",
+ "color": "#3DDC97",
+ "tagline": "Build, test, document and defend your final-year project.",
+ "channels": [
+  "freeCodeCamp.org"
+ ]
+}

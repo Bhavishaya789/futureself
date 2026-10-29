@@ -1,0 +1,13 @@
+{
+ "title": "Prompt Engineering",
+ "semester": 4,
+ "credits": 3,
+ "icon": "brain",
+ "color": "#FFC857",
+ "tagline": "Write prompts and systems that get reliable LLM output.",
+ "channels": [
+  "DeepLearning.AI",
+  "freeCodeCamp.org",
+  "Anthropic"
+ ]
+}

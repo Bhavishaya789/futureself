@@ -1,0 +1,11 @@
+{
+ "title": "Minor Project 2",
+ "semester": 6,
+ "credits": 3,
+ "icon": "flag",
+ "color": "#3DDC97",
+ "tagline": "Extend your minor project with testing and documentation.",
+ "channels": [
+  "freeCodeCamp.org"
+ ]
+}

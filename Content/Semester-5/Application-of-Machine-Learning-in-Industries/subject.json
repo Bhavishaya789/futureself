@@ -1,0 +1,13 @@
+{
+ "title": "Application of Machine Learning in Industries",
+ "semester": 5,
+ "credits": 3,
+ "icon": "brain",
+ "color": "#2DE2E6",
+ "tagline": "How ML is used in health, finance, retail and manufacturing.",
+ "channels": [
+  "Krish Naik",
+  "Andrew Ng",
+  "StatQuest with Josh Starmer"
+ ]
+}

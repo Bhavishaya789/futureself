@@ -1,0 +1,13 @@
+{
+ "title": "Computer Graphics",
+ "semester": 5,
+ "credits": 4,
+ "icon": "cube",
+ "color": "#3DDC97",
+ "tagline": "Rasterisation, transformations, clipping, shading.",
+ "channels": [
+  "Neso Academy",
+  "Gate Smashers",
+  "NPTEL"
+ ]
+}

@@ -1,0 +1,14 @@
+{
+ "title": "Machine Learning and Deep Learning",
+ "semester": 4,
+ "credits": 3,
+ "icon": "brain",
+ "color": "#3DDC97",
+ "tagline": "Supervised learning, neural networks, CNNs and RNNs.",
+ "channels": [
+  "StatQuest with Josh Starmer",
+  "Andrew Ng",
+  "3Blue1Brown",
+  "Krish Naik"
+ ]
+}

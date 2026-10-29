@@ -1,0 +1,14 @@
+{
+ "title": "Database Management System",
+ "semester": 3,
+ "credits": 4,
+ "icon": "database",
+ "color": "#7C5CFF",
+ "tagline": "Relational model, SQL, normalisation, transactions.",
+ "channels": [
+  "Gate Smashers",
+  "Jenny's Lectures CS IT",
+  "Neso Academy",
+  "freeCodeCamp.org"
+ ]
+}

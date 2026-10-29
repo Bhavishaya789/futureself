@@ -1,0 +1,14 @@
+{
+ "title": "Applied Engineering Physics",
+ "semester": 1,
+ "credits": 5,
+ "icon": "atom",
+ "color": "#FFC857",
+ "tagline": "Waves, optics, quantum physics, lasers and materials.",
+ "channels": [
+  "Physics Wallah",
+  "Khan Academy",
+  "NPTEL",
+  "MIT OpenCourseWare"
+ ]
+}

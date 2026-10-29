@@ -1,0 +1,9 @@
+{
+  "name": "futureself",
+  "productName": "FutureSelf",
+  "version": "1.1.0",
+  "description": "Study goals, timetable, reminders and a focus lock for Windows",
+  "main": "main.js",
+  "author": "SpinDigital",
+  "license": "UNLICENSED"
+}

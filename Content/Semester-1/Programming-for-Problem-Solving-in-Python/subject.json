@@ -1,0 +1,14 @@
+{
+ "title": "Programming for Problem Solving in Python",
+ "semester": 1,
+ "credits": 3,
+ "icon": "code",
+ "color": "#3DDC97",
+ "tagline": "Python from variables to files and modules.",
+ "channels": [
+  "CodeWithHarry",
+  "freeCodeCamp.org",
+  "Programming with Mosh",
+  "Apna College"
+ ]
+}

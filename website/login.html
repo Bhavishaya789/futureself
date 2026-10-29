@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in to FutureSelf</title>
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#060812;color:#eef0ff;font-family:'DM Sans',system-ui,sans-serif;padding:20px}
+.box{width:100%;max-width:400px;background:rgba(14,18,44,.8);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:28px;text-align:center}
+h1{font-family:'Sora',sans-serif;font-size:24px;margin:0 0 6px}
+p{color:#aab0d6;margin:0 0 18px}
+#g{display:flex;justify-content:center;min-height:44px}
+#msg{margin-top:16px;min-height:22px;font-size:15px}
+.err{color:#ff8aa0}.ok{color:#6ee7a8}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>FutureSelf</h1>
+  <p id="lead">Continue with Google to sign in.</p>
+  <div id="g"></div>
+  <div id="msg" role="status"></div>
+</div>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search),cb=q.get('cb')||'',ch=q.get('ch')||'';
+  /* the app can only be called back on this computer (127.0.0.1) or through its own futureself:// link */
+  var okCb=/^http:\/\/127\.0\.0\.1:\d{2,5}\/cb$/.test(cb)||cb==='futureself://auth';
+  if(cb&&(!okCb||!/^[a-f0-9]{64}$/.test(ch))){document.getElementById('msg').className='err';document.getElementById('msg').textContent='This sign-in link is not valid.';document.getElementById('g').remove();return}
+  var msg=function(t,c){var m=document.getElementById('msg');m.textContent=t;m.className=c||''};
+  function post(a,body,tok){return fetch('/api/auth',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{Authorization:'Bearer '+tok}:{}),body:JSON.stringify(Object.assign({a:a},body))}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||'Failed');return j})})}
+  function onCred(resp){
+    msg('Signing you in...');
+    post('google',{credential:resp.credential}).then(function(s){
+      if(!cb){msg('Signed in as '+s.user.email+'. You can return to the app.','ok');return}
+      return post('ticket',{ch:ch},s.token).then(function(t){
+        msg('Done. Going back to FutureSelf...','ok');
+        location.href=cb+'?ticket='+encodeURIComponent(t.ticket);
+        setTimeout(function(){msg('Signed in. You can close this tab and return to FutureSelf.','ok')},1500);
+      });
+    }).catch(function(e){msg(e.message,'err')});
+  }
+  fetch('/api/config').then(function(r){return r.json()}).then(function(c){
+    if(!c.googleClientId){msg('Google sign-in is not set up on the server yet.','err');return}
+    var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;
+    s.onload=function(){google.accounts.id.initialize({client_id:c.googleClientId,callback:onCred,ux_mode:'popup'});google.accounts.id.renderButton(document.getElementById('g'),{theme:'filled_black',size:'large',text:'continue_with',shape:'pill'})};
+    s.onerror=function(){msg('Could not load Google. Check your internet.','err')};
+    document.head.appendChild(s);
+  }).catch(function(){msg('Could not reach the server.','err')});
+})();
+</script>
+</body>
+</html>

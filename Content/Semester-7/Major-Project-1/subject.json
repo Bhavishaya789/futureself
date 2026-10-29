@@ -1,0 +1,11 @@
+{
+ "title": "Major Project 1",
+ "semester": 7,
+ "credits": 4,
+ "icon": "flag",
+ "color": "#2DE2E6",
+ "tagline": "Scope, design and begin your final-year project.",
+ "channels": [
+  "freeCodeCamp.org"
+ ]
+}

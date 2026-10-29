@@ -1,0 +1,14 @@
+{
+ "title": "Introduction to Artificial Intelligence and Machine Learning",
+ "semester": 3,
+ "credits": 3,
+ "icon": "brain",
+ "color": "#7C5CFF",
+ "tagline": "Search, knowledge, learning and neural-network basics.",
+ "channels": [
+  "StatQuest with Josh Starmer",
+  "Andrew Ng",
+  "Krish Naik",
+  "3Blue1Brown"
+ ]
+}

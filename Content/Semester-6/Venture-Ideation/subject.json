@@ -1,0 +1,13 @@
+{
+ "title": "Venture Ideation",
+ "semester": 6,
+ "credits": 3,
+ "icon": "bulb",
+ "color": "#FF5C7A",
+ "tagline": "Find problems, validate ideas and pitch a venture.",
+ "channels": [
+  "Y Combinator",
+  "Stanford eCorner",
+  "NPTEL"
+ ]
+}

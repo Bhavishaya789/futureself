@@ -1,0 +1,14 @@
+{
+ "title": "Theory of Computation",
+ "semester": 3,
+ "credits": 3,
+ "icon": "gear",
+ "color": "#2DE2E6",
+ "tagline": "Automata, grammars, Turing machines, decidability.",
+ "channels": [
+  "Neso Academy",
+  "Gate Smashers",
+  "Jenny's Lectures CS IT",
+  "NPTEL"
+ ]
+}

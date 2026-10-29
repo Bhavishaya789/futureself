@@ -1,0 +1,13 @@
+{
+ "title": "Big Data Engineering",
+ "semester": 5,
+ "credits": 4,
+ "icon": "database",
+ "color": "#7C5CFF",
+ "tagline": "Hadoop, MapReduce, Spark, Kafka and data pipelines.",
+ "channels": [
+  "Edureka",
+  "Simplilearn",
+  "freeCodeCamp.org"
+ ]
+}

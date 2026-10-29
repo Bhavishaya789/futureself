@@ -1,0 +1,13 @@
+{
+ "title": "English Language",
+ "semester": 1,
+ "credits": 3,
+ "icon": "book",
+ "color": "#7C5CFF",
+ "tagline": "Grammar, writing and speaking for the workplace.",
+ "channels": [
+  "English with Lucy",
+  "BBC Learning English",
+  "Learn English with Let's Talk"
+ ]
+}

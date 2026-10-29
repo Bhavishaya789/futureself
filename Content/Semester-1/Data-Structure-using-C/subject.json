@@ -1,0 +1,14 @@
+{
+ "title": "Data Structure using C",
+ "semester": 1,
+ "credits": 4,
+ "icon": "code",
+ "color": "#7C5CFF",
+ "tagline": "Arrays, lists, stacks, queues, trees and graphs in C.",
+ "channels": [
+  "Neso Academy",
+  "Jenny's Lectures CS IT",
+  "Gate Smashers",
+  "Apna College"
+ ]
+}

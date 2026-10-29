@@ -1,0 +1,12 @@
+{
+ "title": "Environmental Studies",
+ "semester": 2,
+ "credits": 0,
+ "icon": "globe",
+ "color": "#3DDC97",
+ "tagline": "Ecosystems, resources, pollution and sustainability (SDG goal project).",
+ "channels": [
+  "NPTEL",
+  "Khan Academy"
+ ]
+}

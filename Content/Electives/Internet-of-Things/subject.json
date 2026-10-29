@@ -1,0 +1,14 @@
+{
+ "title": "Internet of Things",
+ "semester": 0,
+ "credits": 3,
+ "icon": "chip",
+ "color": "#2DE2E6",
+ "tagline": "Sensors, ESP32, MQTT, cloud, edge and IoT security.",
+ "channels": [
+  "NPTEL",
+  "Ben Eater",
+  "Andreas Spiess",
+  "freeCodeCamp.org"
+ ]
+}

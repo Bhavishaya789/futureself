@@ -1,0 +1,14 @@
+{
+ "title": "Discrete Mathematics",
+ "semester": 3,
+ "credits": 4,
+ "icon": "math",
+ "color": "#3DDC97",
+ "tagline": "Logic, sets, relations, graphs and combinatorics.",
+ "channels": [
+  "Neso Academy",
+  "Gate Smashers",
+  "Dr. Trefor Bazett",
+  "Jenny's Lectures CS IT"
+ ]
+}

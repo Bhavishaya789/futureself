@@ -1,0 +1,13 @@
+{
+ "title": "Compiler Design",
+ "semester": 5,
+ "credits": 4,
+ "icon": "gear",
+ "color": "#FF5C7A",
+ "tagline": "Lexing, parsing, semantic analysis and code generation.",
+ "channels": [
+  "Neso Academy",
+  "Gate Smashers",
+  "Jenny's Lectures CS IT"
+ ]
+}

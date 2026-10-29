@@ -1,0 +1,14 @@
+{
+ "title": "Operating Systems",
+ "semester": 3,
+ "credits": 4,
+ "icon": "chip",
+ "color": "#FFC857",
+ "tagline": "Processes, scheduling, memory, files and deadlocks.",
+ "channels": [
+  "Gate Smashers",
+  "Neso Academy",
+  "Jenny's Lectures CS IT",
+  "Abdul Bari"
+ ]
+}

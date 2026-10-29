@@ -1,0 +1,14 @@
+{
+ "title": "Engineering Mathematics 1",
+ "semester": 1,
+ "credits": 4,
+ "icon": "math",
+ "color": "#2DE2E6",
+ "tagline": "Calculus, matrices and series for engineers.",
+ "channels": [
+  "Dr. Gajendra Purohit",
+  "Khan Academy",
+  "3Blue1Brown",
+  "Neso Academy"
+ ]
+}

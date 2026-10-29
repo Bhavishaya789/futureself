@@ -1,0 +1,13 @@
+{
+ "title": "Embedded System",
+ "semester": 4,
+ "credits": 4,
+ "icon": "chip",
+ "color": "#2DE2E6",
+ "tagline": "Microcontrollers, interfacing, RTOS and protocols.",
+ "channels": [
+  "Ben Eater",
+  "NPTEL",
+  "Embedded Systems Academy"
+ ]
+}

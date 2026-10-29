@@ -1,0 +1,17 @@
+/* Phone-only styling on top of the shared app.css */
+html.android,body.android{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body.android .winonly,body.android [data-act=vpop],body.android .sidesearch{display:none!important}
+body.android input,body.android select,body.android textarea{font-size:16px}
+body.android .main{padding-top:max(14px,env(safe-area-inset-top));padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+body.android .side{height:calc(66px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom)}
+body.android .nav a{padding:6px 4px;font-size:10px;min-width:0}
+body.android .nav a svg{width:21px;height:21px}
+body.android .btn{min-height:44px}
+body.android .btn.sm{min-height:38px}
+body.android .chip{min-height:38px}
+body.android #bellwrap{top:calc(10px + env(safe-area-inset-top))!important;right:12px!important}
+.phadd{display:grid;gap:10px;margin-top:14px}
+.perm{align-items:center;gap:12px}.perm small{line-height:1.4;display:inline-block;margin-top:2px}
+.kv .row{gap:8px}
+.lessonov,.drawer{padding-top:max(20px,env(safe-area-inset-top))}
+@media (max-width:520px){.top h1{font-size:28px}.stack .card{padding:16px}.big3{font-size:30px}}

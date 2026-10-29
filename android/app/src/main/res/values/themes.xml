@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FutureSelf" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/fs_bg</item>
+        <item name="android:statusBarColor">@color/fs_bg</item>
+        <item name="android:navigationBarColor">@color/fs_bg</item>
+        <item name="colorPrimary">@color/fs_accent</item>
+        <item name="colorPrimaryDark">@color/fs_bg</item>
+        <item name="colorAccent">@color/fs_accent</item>
+    </style>
+</resources>

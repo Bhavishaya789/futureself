@@ -1,0 +1,11 @@
+{
+ "title": "Minor Project 1",
+ "semester": 5,
+ "credits": 3,
+ "icon": "flag",
+ "color": "#FFC857",
+ "tagline": "Pick, plan, build and present your first minor project.",
+ "channels": [
+  "freeCodeCamp.org"
+ ]
+}

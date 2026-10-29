@@ -1,0 +1,12 @@
+{
+ "title": "Professional Ethics",
+ "semester": 6,
+ "credits": 4,
+ "icon": "shield",
+ "color": "#7C5CFF",
+ "tagline": "Ethics, IP, privacy and responsibility in engineering.",
+ "channels": [
+  "NPTEL",
+  "Khan Academy"
+ ]
+}

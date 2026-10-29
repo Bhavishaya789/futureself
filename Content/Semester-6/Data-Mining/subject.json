@@ -1,0 +1,13 @@
+{
+ "title": "Data Mining",
+ "semester": 6,
+ "credits": 4,
+ "icon": "chart",
+ "color": "#2DE2E6",
+ "tagline": "Preprocessing, association rules, classification, clustering.",
+ "channels": [
+  "Gate Smashers",
+  "Jenny's Lectures CS IT",
+  "NPTEL"
+ ]
+}

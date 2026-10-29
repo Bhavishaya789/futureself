@@ -1,0 +1,13 @@
+{
+ "title": "Emerging Trends in Computer Science",
+ "semester": 1,
+ "credits": 2,
+ "icon": "chip",
+ "color": "#FF5C7A",
+ "tagline": "AI, cloud, IoT, blockchain, quantum and more.",
+ "channels": [
+  "Simplilearn",
+  "Edureka",
+  "freeCodeCamp.org"
+ ]
+}

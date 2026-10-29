@@ -1,0 +1,14 @@
+{
+ "title": "Object Oriented Programming",
+ "semester": 2,
+ "credits": 5,
+ "icon": "code",
+ "color": "#7C5CFF",
+ "tagline": "Classes, objects, inheritance and polymorphism.",
+ "channels": [
+  "Apna College",
+  "Telusko",
+  "Neso Academy",
+  "Bro Code"
+ ]
+}

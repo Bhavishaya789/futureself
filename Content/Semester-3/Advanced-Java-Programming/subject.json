@@ -1,0 +1,14 @@
+{
+ "title": "Advanced Java Programming",
+ "semester": 3,
+ "credits": 4,
+ "icon": "code",
+ "color": "#FF5C7A",
+ "tagline": "JDBC, servlets, JSP, networking and Java web basics.",
+ "channels": [
+  "Telusko",
+  "Durga Software",
+  "Kunal Kushwaha",
+  "Bro Code"
+ ]
+}

@@ -1,0 +1,14 @@
+{
+ "title": "Design and Analysis of Algorithm",
+ "semester": 4,
+ "credits": 3,
+ "icon": "code",
+ "color": "#FF5C7A",
+ "tagline": "Complexity, divide and conquer, greedy, DP, NP.",
+ "channels": [
+  "Abdul Bari",
+  "Gate Smashers",
+  "Jenny's Lectures CS IT",
+  "take U forward"
+ ]
+}

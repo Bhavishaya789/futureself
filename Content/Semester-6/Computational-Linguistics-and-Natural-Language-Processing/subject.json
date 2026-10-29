@@ -1,0 +1,13 @@
+{
+ "title": "Computational Linguistics and Natural Language Processing",
+ "semester": 6,
+ "credits": 3,
+ "icon": "brain",
+ "color": "#7C5CFF",
+ "tagline": "Text processing, parsing, embeddings and transformers.",
+ "channels": [
+  "Stanford Online",
+  "Krish Naik",
+  "StatQuest with Josh Starmer"
+ ]
+}

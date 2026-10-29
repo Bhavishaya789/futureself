@@ -1,0 +1,11 @@
+{
+ "title": "Summer Internship",
+ "semester": 7,
+ "credits": 4,
+ "icon": "people",
+ "color": "#FFC857",
+ "tagline": "Prepare for, complete and report an internship.",
+ "channels": [
+  "NPTEL"
+ ]
+}

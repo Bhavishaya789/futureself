@@ -1,0 +1,13 @@
+{
+ "title": "Design Thinking",
+ "semester": 2,
+ "credits": 3,
+ "icon": "bulb",
+ "color": "#FF5C7A",
+ "tagline": "Empathise, define, ideate, prototype and test.",
+ "channels": [
+  "IDEO U",
+  "Stanford d.school",
+  "NPTEL"
+ ]
+}

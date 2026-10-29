@@ -1,0 +1,11 @@
+{
+ "title": "Social Internship 1",
+ "semester": 3,
+ "credits": 4,
+ "icon": "people",
+ "color": "#FFC857",
+ "tagline": "Plan, run and report a community internship.",
+ "channels": [
+  "NPTEL"
+ ]
+}

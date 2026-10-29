@@ -1,0 +1,14 @@
+{
+ "title": "Advance Data Structures",
+ "semester": 2,
+ "credits": 4,
+ "icon": "code",
+ "color": "#FFC857",
+ "tagline": "Balanced trees, heaps, hashing and advanced graphs.",
+ "channels": [
+  "Abdul Bari",
+  "take U forward",
+  "Jenny's Lectures CS IT",
+  "Neso Academy"
+ ]
+}

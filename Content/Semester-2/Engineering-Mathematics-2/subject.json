@@ -1,0 +1,14 @@
+{
+ "title": "Engineering Mathematics 2",
+ "semester": 2,
+ "credits": 4,
+ "icon": "math",
+ "color": "#2DE2E6",
+ "tagline": "Differential equations, vector calculus and transforms.",
+ "channels": [
+  "Dr. Gajendra Purohit",
+  "Khan Academy",
+  "3Blue1Brown",
+  "NPTEL"
+ ]
+}

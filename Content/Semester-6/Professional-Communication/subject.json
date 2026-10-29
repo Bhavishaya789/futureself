@@ -1,0 +1,13 @@
+{
+ "title": "Professional Communication",
+ "semester": 6,
+ "credits": 4,
+ "icon": "book",
+ "color": "#FF5C7A",
+ "tagline": "Emails, reports, presentations and interviews.",
+ "channels": [
+  "English with Lucy",
+  "TED",
+  "Toastmasters"
+ ]
+}

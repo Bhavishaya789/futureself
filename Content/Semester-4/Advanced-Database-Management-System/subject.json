@@ -1,0 +1,13 @@
+{
+ "title": "Advanced Database Management System",
+ "semester": 4,
+ "credits": 3,
+ "icon": "database",
+ "color": "#7C5CFF",
+ "tagline": "Query processing, concurrency, distributed and NoSQL.",
+ "channels": [
+  "Gate Smashers",
+  "Jenny's Lectures CS IT",
+  "NPTEL"
+ ]
+}

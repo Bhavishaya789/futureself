@@ -1,0 +1,13 @@
+{
+ "title": "Software Engineering and Project Management",
+ "semester": 4,
+ "credits": 4,
+ "icon": "gear",
+ "color": "#2DE2E6",
+ "tagline": "SDLC, requirements, design, testing, project management.",
+ "channels": [
+  "Gate Smashers",
+  "Neso Academy",
+  "Jenny's Lectures CS IT"
+ ]
+}

@@ -1,0 +1,14 @@
+{
+ "title": "Cryptography and Network Security",
+ "semester": 5,
+ "credits": 4,
+ "icon": "shield",
+ "color": "#3DDC97",
+ "tagline": "Ciphers, hashing, public key, TLS and attacks.",
+ "channels": [
+  "Neso Academy",
+  "Gate Smashers",
+  "Computerphile",
+  "Jenny's Lectures CS IT"
+ ]
+}

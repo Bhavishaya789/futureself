@@ -1,0 +1,14 @@
+{
+ "title": "Computer System Architecture",
+ "semester": 2,
+ "credits": 4,
+ "icon": "chip",
+ "color": "#3DDC97",
+ "tagline": "Number systems, logic, CPU, memory and I/O.",
+ "channels": [
+  "Neso Academy",
+  "Ben Eater",
+  "Gate Smashers",
+  "NPTEL"
+ ]
+}

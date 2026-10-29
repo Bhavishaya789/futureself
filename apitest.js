@@ -1,0 +1,33 @@
+const os=require('os'),path=require('path'),fs=require('fs');
+const {FileStore}=require('/home/claude/fsw/app/core/storage');
+const {createApi,loadTopics,zoned}=require('/home/claude/fsw/app/core/api');
+const bl=require('/home/claude/fsw/app/core/blocker');
+(async()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'fsapi-'));
+  const store=new FileStore(path.join(dir,'d.json'));
+  const events=[];
+  const api=createApi({store,topics:loadTopics('/home/claude/fsw/Content'),emit:(t,p)=>events.push([t,p.title||'']),log:()=>{}});
+  const H=(m,u,b)=>api.handle(m,u,b);
+  console.log('me',(await H('GET','/me')).data.name);
+  const tz=(await H('GET','/me')).data.settings.timezone; const z=zoned(new Date(),tz); console.log('tz',tz,z);
+  const b={subject:'IoT',kind:'once',date:z.date,start:('0'+Math.floor(z.min/60)).slice(-2)+':'+('0'+(z.min%60)).slice(-2),minutes:25,remind_before:0,lock_mode:'focus',topic_id:'iot'};
+  let r=await H('POST','/blocks',b); console.log('add',r.status,r.data._id.length);
+  console.log('bad time',(await H('POST','/blocks',{...b,start:'25:00'})).data);
+  console.log('bad days',(await H('POST','/blocks',{...b,kind:'repeat',days:[]})).data);
+  r=await H('POST','/blocks',{...b,kind:'repeat',days:[0,2,4],subject:'DBMS',topic_id:'dbms',remind_before:10}); console.log('repeat',r.status);
+  const id=r.data._id; console.log('edit',(await H('PUT','/blocks/'+id,{...b,kind:'repeat',days:[1],minutes:40})).data.minutes);
+  await api.tick(); await api.tick(); console.log('events after 2 ticks (expect 1 start):',events.filter(e=>e[0]==='notify').length, events[0]);
+  console.log('session',(await H('POST','/sessions',{topic_id:'internet-of-things',lesson_id:'application-protocols-mqtt-http-coap',subject:'IoT',planned_min:25,actual_sec:1500,completed:true,distractions:1,blocked:2,started_at:new Date().toISOString()})).status);
+  console.log('progress',(await H('POST','/progress',{topic_id:'internet-of-things',lesson_id:'application-protocols-mqtt-http-coap',done:true,quiz:{score:3,total:4}})).data, (await H('POST','/progress',{topic_id:'internet-of-things',lesson_id:'application-protocols-mqtt-http-coap',quiz:{score:1,total:4}})).data);
+  const st=(await H('GET','/stats')).data; console.log('stats',{t:st.today_minutes,streak:st.streak,best:st.best_streak,total:st.total_minutes,les:st.lessons_done,avg:st.avg_distractions,last7:st.last7.map(x=>x.minutes).join(',')});
+  console.log('topics',(await H('GET','/topics')).data.map(t=>t.id+':'+t.done+'/'+t.lessons));
+  console.log('patch',(await H('PATCH','/me',{name:'Bhavishya Kumar',settings:{daily_goal:90,timezone:'Asia/Kolkata',autostart:true}})).data.settings.daily_goal, (await H('PATCH','/me',{settings:{timezone:'Nope/Zone'}})).data);
+  console.log('test notify',(await H('POST','/notify/test')).data);
+  console.log('notifs',(await H('GET','/notifications')).data.length,'del',(await H('DELETE','/blocks/'+id)).data,'blocks',(await H('GET','/blocks')).data.length);
+  console.log('404',(await H('GET','/nope')).status);
+  // blocker parsing
+  const sample='"chrome.exe","1234","Console","1","200,000 K","Running","PC\\\\user","0:10:00","Instagram - Google Chrome"\r\n"Discord.exe","555","Console","1","100 K","Running","PC\\\\user","0:00:01","N/A"\r\n"explorer.exe","9","Console","1","1 K","Running","PC\\\\user","0:00:01","Program Manager"\r\n"notepad.exe","77","Console","1","1 K","Running","PC\\\\user","0:00:01","a, b - Notepad"';
+  const rows=bl.parseTasklist(sample); console.log('rows',rows.length,rows[0]);
+  console.log('victims',JSON.stringify(bl.pickVictims(rows,bl.normApps('discord, chrome.exe, explorer.exe'),bl.siteKeys('instagram.com, x.com, www.youtube.com'))));
+  console.log('keys',bl.siteKeys('instagram.com, x.com, www.youtube.com, netflix'),'apps',bl.normApps('discord, Explorer.exe , steam'));
+})().catch(e=>{console.error('FAIL',e);process.exit(1)});

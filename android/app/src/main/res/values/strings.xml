@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FutureSelf</string>
+    <string name="accessibility_desc">FutureSelf uses this only to notice which app is open during your study time, so it can cover distracting apps with the study lock screen. It does not read what is on the screen, and nothing leaves your phone.</string>
+</resources>

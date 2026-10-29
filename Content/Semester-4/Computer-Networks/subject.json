@@ -1,0 +1,14 @@
+{
+ "title": "Computer Networks",
+ "semester": 4,
+ "credits": 4,
+ "icon": "net",
+ "color": "#7C5CFF",
+ "tagline": "OSI and TCP/IP, routing, transport, application layer.",
+ "channels": [
+  "Neso Academy",
+  "Gate Smashers",
+  "Jenny's Lectures CS IT",
+  "Practical Networking"
+ ]
+}

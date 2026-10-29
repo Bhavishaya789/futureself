@@ -1,0 +1,14 @@
+{
+ "title": "Web Technologies",
+ "semester": 6,
+ "credits": 4,
+ "icon": "globe",
+ "color": "#FFC857",
+ "tagline": "HTML, CSS, JavaScript, backend basics and deployment.",
+ "channels": [
+  "CodeWithHarry",
+  "freeCodeCamp.org",
+  "Traversy Media",
+  "Apna College"
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "title": "Indian Knowledge System",
+ "semester": 3,
+ "credits": 0,
+ "icon": "book",
+ "color": "#2DE2E6",
+ "tagline": "India's heritage in science, maths, medicine and arts.",
+ "channels": [
+  "NPTEL",
+  "Ministry of Education"
+ ]
+}

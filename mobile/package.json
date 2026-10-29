@@ -1,0 +1,1 @@
+{ "name": "futureself-mobile", "version": "1.0.0", "private": true, "description": "Builds the web layer that the FutureSelf Android app shows", "scripts": { "build": "node build.js" }, "devDependencies": { "esbuild": "0.24.2" } }
