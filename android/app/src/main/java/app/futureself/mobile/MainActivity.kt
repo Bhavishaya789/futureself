@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         current = WeakReference(this)
         web.onResume()
-        if (Link.paired(this) && Store.getBool(this, "restrictOnPc", true)) Poller.begin(this)
+        if ((Link.paired(this) || Account.signedIn(this)) && Store.getBool(this, "restrictOnPc", true)) Poller.begin(this)
         if (Lock.isActive(this)) Poller.ensure(this)
         web.evaluateJavascript("window.__fsEvent&&window.__fsEvent('{\"type\":\"refresh\"}')", null)
     }

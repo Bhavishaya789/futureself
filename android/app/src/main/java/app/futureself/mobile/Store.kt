@@ -31,7 +31,8 @@ data class LockState(
     val topicId: String,
     val endsAt: Long,
     val startedAt: Long,
-    val source: String // "phone" or "pc"
+    val source: String, // "phone" or "pc"
+    val mode: String = "focus" // "focus" or "strict"
 )
 
 /** The lock itself. It is saved to disk, so it survives the app being closed or the phone restarting. */
@@ -46,7 +47,8 @@ object Lock {
             p.getString("lock_topic", "") ?: "",
             p.getLong("lock_ends", 0L),
             p.getLong("lock_started", 0L),
-            p.getString("lock_source", "phone") ?: "phone"
+            p.getString("lock_source", "phone") ?: "phone",
+            if (p.getString("lock_mode", "focus") == "strict") "strict" else "focus"
         )
     }
 
@@ -59,7 +61,7 @@ object Lock {
         return true
     }
 
-    fun start(c: Context, subject: String, topicId: String, endsAt: Long, source: String) {
+    fun start(c: Context, subject: String, topicId: String, endsAt: Long, source: String, mode: String = "focus") {
         val old = get(c)
         val keepStart = if (old.active && old.source == source) old.startedAt else System.currentTimeMillis()
         Store.prefs(c).edit()
@@ -69,6 +71,7 @@ object Lock {
             .putLong("lock_ends", endsAt)
             .putLong("lock_started", keepStart)
             .putString("lock_source", source)
+            .putString("lock_mode", if (mode == "strict") "strict" else "focus")
             .apply()
     }
 

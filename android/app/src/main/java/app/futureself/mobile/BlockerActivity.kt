@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 /** The 3D lock screen shown over every other app during a study lock. Shows the timer and the emergency call buttons. */
 class BlockerActivity : AppCompatActivity() {
+    companion object { @Volatile var visible = false }
     private var web: WebView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,10 +40,17 @@ class BlockerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        visible = true
         if (!Lock.isActive(this)) finish()
     }
 
+    override fun onPause() {
+        visible = false
+        super.onPause()
+    }
+
     override fun onDestroy() {
+        visible = false
         web?.destroy()
         web = null
         super.onDestroy()

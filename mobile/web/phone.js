@@ -28,7 +28,7 @@
         var on = !!s[p[0]];
         return '<div class="kv perm"><span><b>' + p[1] + '</b>' + (p[4] ? ' <small class="muted">(needed)</small>' : '') + '<br><small class="muted">' + p[2] + '</small></span>' +
           (on ? '<span class="badge">On</span>' : '<button class="btn sm pri" data-act="phperm" data-id="' + p[0] + '">' + p[3] + '</button>') + '</div>';
-      }).join('') + '</div>';
+      }).join('') + '<div class="row wrap" style="margin-top:12px"><button class="btn" data-act="wzopen">Open the setup guide</button></div></div>';
   }
 
   function contactsCard(list) {
@@ -75,7 +75,7 @@
   function viewPhone(v) {
     var s = FSPhone.status(), list = FSPhone.contacts(), li = FSPhone.linkInfo();
     v.innerHTML = '<div class="view narrow" style="animation:none"><div class="top"><div><div class="eyebrow">Phone</div><h1>Lock your phone while you study</h1><p class="muted">Set up once. Then study sessions, on this phone or your PC, keep you off other apps.</p></div></div>' +
-      '<div class="stack"><div id="phperm">' + permCard(s) + '</div><div id="phcon">' + contactsCard(list) + '</div><div id="phlink">' + linkCard(li) + '</div>' + optionsCard() + '</div></div>';
+      '<div class="stack"><div id="phperm">' + permCard(s) + '</div><div id="phcon">' + contactsCard(list) + '</div>' + (li.paired || window.__lan ? '<div id="phlink">' + linkCard(li) + '</div>' : '') + optionsCard() + '</div></div>';
     return Promise.resolve();
   }
   function rerender(id, html) { var e = $(id); if (e) e.innerHTML = html; }
@@ -89,7 +89,89 @@
 
   function validNumber(n) { var d = String(n).replace(/[^0-9]/g, ''); return /^\+?[0-9 ()\-]{3,20}$/.test(n) && d.length >= 3 && d.length <= 15; }
 
+
+  /* ---------- first-run setup guide: asks for every permission one by one, checks each one, moves on by itself ---------- */
+  var WZ = { open: false, dismissed: false, tries: {}, sig: '' };
+  var OEM = /xiaomi|redmi|poco|oppo|realme|oneplus|vivo|iqoo|huawei|honor|infinix|tecno|itel/;
+  function wzSteps(s) {
+    var mf = String(s.manufacturer || '').toLowerCase(); s.manufacturer = mf;
+    var list = [
+      { id: 'notifications', req: false, title: 'Allow notifications', why: 'Shows the "phone locked" notice and your study reminders.', btn: 'Allow notifications', done: !!s.notifications },
+      { id: 'call', req: false, title: 'Allow emergency calls', why: 'Lets the call buttons on the lock screen dial your emergency contacts in one tap.', btn: 'Allow calls', done: !!s.call },
+      { id: 'overlay', req: true, title: 'Show over other apps', why: 'Lets the study screen appear on top of the app you try to open. Without it the lock cannot cover other apps.', btn: 'Open the setting', done: !!s.overlay, help: 'Find <b>FutureSelf</b>, switch <b>Allow display over other apps</b> on, then press Back.' },
+      { id: 'accessibility', req: true, title: 'Turn on the app lock', why: 'This is the part that notices when you open another app during a study session and brings you back. Strict mode needs it too.', btn: 'Open the setting', done: !!s.accessibility,
+        help: 'Open <b>Installed apps</b> (or <b>Downloaded apps</b>), tap <b>FutureSelf</b> and switch it <b>On</b>. FutureSelf only checks which app is open. It does not read what is on the screen.',
+        help2: (s.sdk >= 33 ? 'Switch greyed out or "Restricted setting"? Tap <b>Open app info</b>, press the <b>&#8942;</b> menu (top right), choose <b>Allow restricted settings</b>, then try again. Android does this for apps installed from a file.' : '') },
+      { id: 'battery', req: false, title: 'Keep FutureSelf awake', why: 'Stops the phone from putting FutureSelf to sleep, so the lock keeps working with the screen off.', btn: 'Allow', done: !!s.battery }
+    ];
+    if (OEM.test(s.manufacturer || '')) {
+      list.push({ id: 'autostart', req: false, manual: true, title: 'Allow auto-start', why: 'Your phone brand can close FutureSelf in the background. Switch FutureSelf <b>on</b> in the Auto-start list.', btn: 'Open Auto-start', done: FSPhone.getSetting('oem_autostart') === 'true' });
+      if (/xiaomi|redmi|poco/.test(s.manufacturer || '')) list.push({ id: 'popup', req: false, manual: true, title: 'Allow pop-ups while in the background', why: 'On Xiaomi / Redmi phones the study screen cannot open over another app unless you allow <b>Display pop-up windows while running in the background</b> and <b>Show on Lock screen</b>.', btn: 'Open app permissions', done: FSPhone.getSetting('oem_popup') === 'true' });
+    }
+    return list;
+  }
+  function wzNeeded(s) { return !s.accessibility || !s.overlay; }
+  function wzCurrent(list) { for (var i = 0; i < list.length; i++) if (!list[i].done && !list[i].skipped) return i; return -1; }
+  function wzRender() {
+    var s = FSPhone.status(), list = wzSteps(s); WZ.list = list;
+    list.forEach(function (x) { if (WZ.skip && WZ.skip[x.id]) x.skipped = true; });
+    var i = wzCurrent(list), n = list.length, doneCount = list.filter(function (x) { return x.done; }).length;
+    var el = $('.fswiz'); if (!el) { el = document.createElement('div'); el.className = 'fswiz'; document.body.appendChild(el); }
+    var sig = i + '|' + list.map(function (x) { return (x.done ? 1 : 0) + (x.skipped ? 's' : ''); }).join('') + '|' + (WZ.tries.accessibility || 0);
+    if (sig === WZ.sig && el.firstChild) return; WZ.sig = sig;
+    var bar = '<div class="wzbar"><i style="width:' + Math.round(100 * doneCount / n) + '%"></i></div>';
+    if (i < 0) {
+      var ready = s.accessibility && s.overlay;
+      el.innerHTML = '<div class="fswiz-in">' + bar + '<div class="eyebrow">' + (ready ? 'All set' : 'Almost') + '</div><h1>' + (ready ? 'FutureSelf is ready' : 'The lock is not ready yet') + '</h1><p class="muted">' +
+        (ready ? 'Focus and Strict study sessions will now cover every other app. Phone calls stay available.' : 'Two permissions are still off, so study sessions will not lock this phone. You can finish them any time in the Phone tab.') + '</p>' +
+        '<div class="stack"><button class="btn pri" data-act="wztest">Test the lock for 1 minute</button><button class="btn" data-act="wzcontacts">Add emergency numbers</button><button class="btn ghost" data-act="wzclose">' + (ready ? 'Done' : 'Close') + '</button></div></div>';
+      return;
+    }
+    var st = list[i];
+    var tries = WZ.tries[st.id] || 0;
+    el.innerHTML = '<div class="fswiz-in">' + bar + '<div class="eyebrow">Step ' + (i + 1) + ' of ' + n + (st.req ? ' &middot; needed' : ' &middot; recommended') + '</div><h1>' + st.title + '</h1><p class="muted">' + st.why + '</p>' +
+      (st.help && (tries || st.req) ? '<div class="tipbox" style="margin:14px 0">' + st.help + '</div>' : '') +
+      (st.help2 && (tries || st.req) ? '<div class="tipbox" style="margin:0 0 14px">' + st.help2 + '</div>' : '') +
+      '<div class="stack"><button class="btn pri big" data-act="wzgo" data-id="' + st.id + '">' + st.btn + '</button>' +
+      (st.manual && tries ? '<button class="btn" data-act="wzdid" data-id="' + st.id + '">I did it</button>' : '') +
+      (st.id === 'accessibility' && s.sdk >= 33 ? '<button class="btn" data-act="wzappinfo">Open app info</button>' : '') +
+      (!st.req ? '<button class="btn ghost" data-act="wzskip" data-id="' + st.id + '">Skip this step</button>' : '') +
+      '<button class="btn ghost" data-act="wzlater">Set up later</button></div></div>';
+  }
+  function wzOpen() { WZ.open = true; WZ.sig = ''; WZ.skip = WZ.skip || {}; wzRender(); }
+  function wzClose() { WZ.open = false; WZ.dismissed = true; var el = $('.fswiz'); if (el) el.remove(); }
+  function wzTick() {
+    if (!FSPhone || !window.AndroidBridge) return;
+    if (WZ.open) { wzRender(); return; }
+    if (window.__nowizard || WZ.dismissed || !$('.side') || $('#acbox')) return;        // wait for the app (and sign-in) to be on screen
+    if (wzNeeded(FSPhone.status())) wzOpen();
+  }
+  setInterval(wzTick, 1000);
+  window.addEventListener('focus', function () { setTimeout(wzTick, 300); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(wzTick, 300); });
+  /* the session start screen asks before it begins: no lock without the permissions */
+  FSX.canStart = function (lock) {
+    if (lock === 'gentle') return true;
+    var s = FSPhone.status(); if (s.accessibility && s.overlay) return true;
+    WZ.dismissed = false; wzOpen(); toast('Finish the setup first', 'Allow the two permissions so the lock can work.', true); return false;
+  };
+
   FSX.actions = {
+    wzgo: function (el) {
+      var k = el.dataset.id, n = WZ.tries[k] = (WZ.tries[k] || 0) + 1, r;
+      if (k === 'notifications' || k === 'call') r = n > 1 ? FSPhone.openSettings(k === 'call' ? 'app' : 'notifications') : FSPhone.requestPermission(k);
+      else r = FSPhone.openSettings(k);
+      if (r && r.ok === false) toast('Could not open', r.error, true);
+      WZ.sig = ''; setTimeout(wzRender, 300);
+    },
+    wzdid: function (el) { FSPhone.setting('oem_' + el.dataset.id, 'true'); WZ.sig = ''; wzRender(); },
+    wzskip: function (el) { WZ.skip = WZ.skip || {}; WZ.skip[el.dataset.id] = true; WZ.sig = ''; wzRender(); },
+    wzappinfo: function () { FSPhone.openSettings('app'); },
+    wzlater: function () { wzClose(); },
+    wzclose: function () { wzClose(); },
+    wztest: function () { wzClose(); var r = FSPhone.testLock(1); if (r && r.ok === false) toast('Could not start the test', r.error, true); else toast('Lock test started', 'Try opening another app. It ends in 1 minute.'); },
+    wzcontacts: function () { wzClose(); location.hash = '#/phone'; },
+    wzopen: function () { WZ.dismissed = false; WZ.skip = {}; wzOpen(); },
     phperm: function (el) {
       var k = el.dataset.id, r = (k === 'call' || k === 'notifications') ? FSPhone.requestPermission(k) : FSPhone.openSettings(k);
       if (r && r.ok === false) toast('Could not open', r.error, true);

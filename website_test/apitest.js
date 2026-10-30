@@ -8,6 +8,7 @@ function col() {
     rows,
     async findOne(f) { return rows.find((r) => match(r, f)) || null; },
     async insertOne(d) { rows.push({ ...d }); },
+    async findOneAndUpdate(f, u, o) { await this.updateOne(f, u, o); return rows.find((x) => match(x, f)) || null; },
     async findOneAndDelete(f) { const i = rows.findIndex((r) => match(r, f)); return i < 0 ? null : rows.splice(i, 1)[0]; },
     async updateOne(f, u, o) {
       let r = rows.find((x) => match(x, f));
@@ -17,11 +18,11 @@ function col() {
     }
   };
 }
-global.__FS_FAKE_DB = { users: col(), sessions: col(), tickets: col() };
+global.__FS_FAKE_DB = { users: col(), sessions: col(), tickets: col(), vcache: col(), rl: col() };
 const mails = []; global.__FS_MAIL = async (m) => { mails.push(m); };
 let google = { aud: 'cid123', iss: 'https://accounts.google.com', email_verified: 'true', exp: String(Math.floor(Date.now() / 1000) + 600), email: 'G@Example.com', sub: 'gsub1', name: 'Gee' };
 global.__FS_FETCH = async () => ({ ok: true, json: async () => google });
-const auth = require('../website/api/auth.js'), sess = require('../website/api/session.js'), cfg = require('../website/api/config.js');
+const auth = require('../website/api/auth.js'), sess = require('../website/api/session.js'), cfg = require('../website/api/config.js'), vid = require('../website/api/videos.js');
 function call(h, method, body, token) {
   return new Promise((res) => {
     const headers = {}; const r = { method, body, headers: token ? { authorization: 'Bearer ' + token } : {} };
@@ -84,5 +85,59 @@ let bad = 0; const T = (n, ok, x) => { console.log((ok ? 'PASS ' : 'FAIL ') + n 
   await call(sess, 'POST', { active: true, subject: 'DBMS', lock: 'focus', endsAt: ends, paused: true }, tok); r = await call(sess, 'GET', {}, tok); T('paused does not restrict', !r.j.restrict, r);
   await call(sess, 'POST', { active: true, subject: 'DBMS', lock: 'focus', endsAt: Date.now() - 200000 }, tok); r = await call(sess, 'GET', {}, tok); T('long-past session expires', !r.j.active, r);
   await call(sess, 'POST', { active: false }, tok); r = await call(sess, 'GET', {}, tok); T('pc ends session', !r.j.active, r);
+  await call(sess, 'POST', { active: true, src: 'phone', subject: 'Maths', lock: 'strict', endsAt: Date.now() + 600000, startedAt: Date.now() }, tok); r = await call(sess, 'GET', {}, tok); T('phone session is marked src=phone and restricts', r.j.active && r.j.restrict && r.j.src === 'phone', r);
+  await call(sess, 'POST', { active: true, src: 'evil', subject: 'X', lock: 'focus', endsAt: Date.now() + 600000 }, tok); r = await call(sess, 'GET', {}, tok); T('unknown src falls back to pc', r.j.src === 'pc', r);
+  await call(sess, 'POST', { active: false }, tok); r = await call(sess, 'GET', {}, tok); T('phone ends session', !r.j.active, r);
+
+  /* ---- video search: the SERVER searches YouTube; only a cleaned study list comes back ---- */
+  const vr = (id, title, ch, len, extra) => ({ videoRenderer: Object.assign({ videoId: id, title: { runs: [{ text: title }] }, ownerText: { runs: [{ text: ch }] }, lengthText: len ? { simpleText: len } : undefined }, extra || {}) });
+  const page = (list) => '<html><script>var ytInitialData = ' + JSON.stringify({ contents: list }) + ';</script></html>';
+  let ytCalls = 0, lastUrl = '';
+  const goodPage = page([
+    vr('aaaaaaaaaaa', 'Deadlock in Operating System with examples', 'Gate Smashers', '14:05'),
+    vr('bbbbbbbbbbb', 'Deadlock explained in 60 seconds #shorts', 'Gate Smashers', '0:58'),
+    vr('ccccccccccc', 'Deadlock funny reaction video', 'Random Guy', '10:00'),
+    vr('ddddddddddd', 'Deadlock Handling Techniques', 'Neso Academy', '22:10'),
+    vr('eeeeeeeeeee', 'Deadlock live class', 'Gate Smashers', null),
+    vr('fffffffffff', 'Cooking pasta at home', 'Chef X', '12:00'),
+    vr('aaaaaaaaaaa', 'Deadlock in Operating System with examples', 'Gate Smashers', '14:05')]);
+  global.__FS_FETCH = async (u) => { ytCalls++; lastUrl = String(u); return { ok: true, text: async () => goodPage }; };
+  r = await call(vid, 'POST', { q: 'deadlock' }); T('video search needs sign in', r.s === 401, r);
+  r = await call(vid, 'POST', { q: 'x' }, tok); T('too short search refused', r.s === 400, r);
+  r = await call(vid, 'POST', { q: 'a'.repeat(200) }, tok); T('too long search refused', r.s === 400, r);
+  r = await call(vid, 'GET', {}, tok); T('GET refused', r.s === 405, r);
+  r = await call(vid, 'POST', { q: 'deadlock' }, tok);
+  T('search returns study videos only', r.s === 200 && r.j.items.map((x) => x.id).join() === 'aaaaaaaaaaa,ddddddddddd', r);
+  T('server searched YouTube once', ytCalls === 1 && /search_query=deadlock/.test(lastUrl), lastUrl);
+  T('result carries only id, title, channel, length', Object.keys(r.j.items[0]).sort().join() === 'channel,id,sec,title', r.j.items[0]);
+  r = await call(vid, 'POST', { q: 'Deadlock' }, tok); T('same search is served from cache (no second YouTube call)', r.j.cached === true && ytCalls === 1, r);
+  r = await call(vid, 'POST', { q: 'deadlock', channel: 'gate smashers' }, tok);
+  T('channel filter keeps only that channel', r.s === 200 && r.j.items.length === 1 && r.j.items[0].channel === 'Gate Smashers', r);
+  T('channel is added to the YouTube query', /gate%20smashers/i.test(lastUrl), lastUrl);
+  r = await call(vid, 'POST', { q: 'deadlock', channel: 'Nobody Channel' }, tok); T('unknown channel gives an empty list with a note', r.s === 200 && r.j.items.length === 0 && /Nobody Channel/.test(r.j.note), r);
+  // official API path
+  process.env.YOUTUBE_API_KEY = 'k123'; const urls = [];
+  global.__FS_FETCH = async (u) => { urls.push(String(u)); if (/\/search\?/.test(u)) return { ok: true, json: async () => ({ items: [{ id: { videoId: 'ggggggggggg' } }, { id: { videoId: 'hhhhhhhhhhh' } }] }) };
+    return { ok: true, json: async () => ({ items: [{ id: 'ggggggggggg', snippet: { title: 'Paging in OS &amp; memory', channelTitle: 'Neso Academy', liveBroadcastContent: 'none' }, contentDetails: { duration: 'PT12M30S' } }, { id: 'hhhhhhhhhhh', snippet: { title: 'Paging live', channelTitle: 'Neso Academy', liveBroadcastContent: 'live' }, contentDetails: { duration: 'PT1H' } }] }) }; };
+  r = await call(vid, 'POST', { q: 'paging memory' }, tok);
+  T('API key path: embeddable search + details, live removed, title decoded', r.s === 200 && r.j.items.length === 1 && r.j.items[0].title === 'Paging in OS & memory' && r.j.items[0].sec === 750 && /videoEmbeddable=true/.test(urls[0]) && /safeSearch=strict/.test(urls[0]) && /key=k123/.test(urls[0]), { r, urls });
+  delete process.env.YOUTUBE_API_KEY;
+  global.__FS_FETCH = async () => ({ ok: false, status: 429, text: async () => '' });
+  r = await call(vid, 'POST', { q: 'something new here' }, tok); T('YouTube failing gives a friendly 502', r.s === 502 && /not available/.test(r.j.error), r);
+  global.__FS_FETCH = async () => ({ ok: true, text: async () => goodPage });
+  let limited = null;
+  for (let i = 0; i < 40 && !limited; i++) { const x = await call(vid, 'POST', { q: 'deadlock topic ' + i }, tok); if (x.s === 429) limited = x; }
+  T('rate limit stops endless searching (429)', !!limited && /limit/.test(limited.j.error), limited);
+  global.__FS_FETCH = async () => ({ ok: true, json: async () => google });
+  /* ---- security hardening ---- */
+  r = await call(sess, 'POST', { active: true, subject: 'x', lock: 'strict', endsAt: Date.now() + 99 * 3600e3, src: 'pc' }, tok);
+  r = await call(sess, 'GET', null, tok); T('a session cannot lock the other device for more than 12 hours', r.j.endsAt <= Date.now() + 12 * 3600e3 + 1000, r.j);
+  await call(sess, 'POST', { active: false }, tok);
+  const hdr = {}; await new Promise((res) => cfg({ method: 'GET', headers: {} }, { setHeader(k, v) { hdr[k] = v; }, end: res })); T('no open CORS header', !('Access-Control-Allow-Origin' in hdr), hdr);
+  r = await call(auth, 'POST', { a: 'constructor' }, null); T('prototype names are not actions', r.s === 400, r);
+  r = await call(auth, 'POST', { a: 'signoutall' }, tok); T('sign out everywhere works', r.s === 200, r);
+  r = await call(sess, 'GET', null, tok); T('old token is dead after sign-out-everywhere', r.s === 401, r);
+  let hit = null; for (let i = 0; i < 60 && !hit; i++) { const x = await call(auth, 'POST', { a: 'login', email: 'nobody' + i + '@x.com', password: 'wrongwrong' }, null); if (x.s === 429) hit = x; }
+  T('too many logins from one network are stopped', !!hit, hit);
   console.log(bad ? 'FAIL ' + bad : 'ALL PASS');
 })();

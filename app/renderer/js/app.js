@@ -358,7 +358,9 @@
   }
   function videoPane(inSess) {
     return (inSess ? '' : '<div class="card vsess"><div class="row spread wrap"><div><h2 style="margin:0">Video lesson</h2><p class="muted" style="margin-top:6px">We picked the video for this topic, so you can stay on it. It plays right here. A video session adds a timer and questions to answer while you watch, and the time counts as study time.</p></div><button class="btn pri" data-act="vsstart">' + ic('play') + ' Start video session</button></div><div id="vsbox"></div></div>') +
-      '<div class="card" style="margin-top:18px"><div id="vhost" class="vhost"></div></div>';
+      '<div class="card" style="margin-top:18px"><div id="vhost" class="vhost"></div></div>' +
+      '<div class="card vsearch" style="margin-top:18px"><h3 style="margin:0 0 4px">Want a different video?</h3><p class="muted" style="margin:0 0 12px">Tell us what you need and, if you like, which channel. FutureSelf finds it for you. You cannot browse YouTube from here, only the videos we return.</p>' +
+      '<div class="row wrap" style="gap:10px"><input class="in" id="vq" maxlength="120" autocomplete="off" placeholder="What do you want to watch? e.g. deadlock examples" style="flex:2;min-width:200px"><input class="in" id="vch" maxlength="60" autocomplete="off" placeholder="Channel (optional)" style="flex:1;min-width:140px"><button class="btn pri" data-act="vsearch">Search</button></div><div id="vres" style="margin-top:14px"></div></div>';
   }
   function mountVideo(host, t, l, lang) {
     if (!host) return;
@@ -403,6 +405,29 @@
     }
   });
   actions.vreplay = function () { renderVideo(); };
+  /* the student asks FutureSelf's server for a video (topic + optional channel); only the returned list can be played */
+  actions.vsearch = function () {
+    var box = $('#vres'); if (!box) return;
+    var q = (($('#vq') || {}).value || '').trim(), ch = (($('#vch') || {}).value || '').trim();
+    if (q.length < 2) { box.innerHTML = '<div class="tipbox">Type what you want to watch.</div>'; return; }
+    if (!(window.fsApi && window.fsApi.acct)) { box.innerHTML = '<div class="tipbox">Video search needs the FutureSelf app and your account.</div>'; return; }
+    box.innerHTML = '<div class="vload"><span class="spin"></span> Searching...</div>';
+    var btn = $('[data-act=vsearch]'); if (btn) btn.disabled = true;
+    window.fsApi.acct('videos', { q: q, channel: ch }).then(function (r) {
+      if (btn) btn.disabled = false; if (!$('#vres')) return;
+      if (!r || !r.ok) { box.innerHTML = '<div class="tipbox">' + esc((r && r.error) || 'Search failed. Try again.') + '</div>'; return; }
+      var items = (r.data && r.data.items) || [];
+      if (!items.length) { box.innerHTML = '<div class="tipbox">' + esc((r.data && r.data.note) || 'No study video matched that search. Try different words.') + '</div>'; return; }
+      S.vres = items;
+      box.innerHTML = '<div class="vlist">' + items.map(function (it, i) { return '<div class="vitem"><div><b>' + esc(it.title) + '</b><small>' + esc(it.channel) + (it.sec ? ' &middot; ' + Math.max(1, Math.round(it.sec / 60)) + ' min' : '') + '</small></div><button class="btn sm pri" data-act="vplay" data-id="' + i + '">Play</button></div>'; }).join('') + '</div>';
+    }).catch(function () { if (btn) btn.disabled = false; if ($('#vres')) $('#vres').innerHTML = '<div class="tipbox">Search failed. Check your internet connection.</div>'; });
+  };
+  actions.vplay = function (el) {
+    var i = +el.dataset.id, list = S.vres || []; if (!(i >= 0 && i < list.length) || !V) return;
+    V.groups = [{ name: 'Your search', items: list.slice() }].concat((V.groups || []).filter(function (g) { return g.name !== 'Your search'; })); V.gi = 0; V.i = i; renderVideo();
+    try { V.host.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { }
+  };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target && (e.target.id === 'vq' || e.target.id === 'vch')) { e.preventDefault(); actions.vsearch(); } });
   function unmountVideo() { if (V && V.host) V.host.innerHTML = ''; V = null; }
   actions.vnext = function () { if (!V || !V.groups.length) return; V.gi = (V.gi + 1) % V.groups.length; V.i = 0; renderVideo(); };
   actions.vchan = function (el) { if (!V) return; var g = +el.dataset.id; if (!(g >= 0 && g < V.groups.length)) return; V.gi = g; V.i = 0; renderVideo(); };
@@ -727,11 +752,12 @@
   /* ---------- focus session ---------- */
   var wake = null, tickTimer = null;
   function beginSession(c) {
+    if (window.FSX && FSX.canStart && FSX.canStart(c.lock) === false) return; // on the phone: the permissions the lock needs must be on first
     S.session = { topic_id: c.topic_id, lesson_id: c.lesson_id, subject: c.subject, minutes: c.minutes, lock: c.lock, block_id: c.block_id || null, startedAt: Date.now(), startedISO: new Date().toISOString(), plannedMs: c.minutes * 60000, pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false };
     S.session.blocked = 0;
     if (window.fsApi && window.fsApi.isApp) {
       S.session.native = true;
-      window.fsApi.lockStart({ mode: c.lock, apps: S.user.settings.blocklist_apps, sites: S.user.settings.blocklist_sites, subject: c.subject, topicId: c.topic_id || '', endsAt: Date.now() + c.minutes * 60000 }).catch(function () { });
+      window.fsApi.lockStart({ mode: c.lock, apps: S.user.settings.blocklist_apps, sites: S.user.settings.blocklist_sites, subject: c.subject, topicId: c.topic_id || '', endsAt: Date.now() + c.minutes * 60000 }).then(function (r) { if (r && r.locked === false && r.reason && c.lock !== 'gentle') toast('The phone lock is not active', r.reason, true); }).catch(function () { });
     } else {
       if (c.lock !== 'gentle') { var el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen || function () { return Promise.resolve(); }).call(el).catch(function () { }); }
       try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }).catch(function () { }); } catch (e) { }

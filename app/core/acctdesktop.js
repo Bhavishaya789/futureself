@@ -11,8 +11,8 @@ function create(opts) {
   let defaultSite = ''; try { defaultSite = String(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'siteconfig.json'), 'utf8')).site || ''); } catch (e) { /* none */ }
   const client = AcctClient.create({
     defaultSite,
-    load: () => JSON.parse(fs.readFileSync(file, 'utf8')),
-    save: (o) => { try { fs.writeFileSync(file, JSON.stringify(o), { mode: 0o600 }); } catch (e) { log('[account] save failed ' + e.message); } },
+    load: () => { const o = JSON.parse(fs.readFileSync(file, 'utf8')); if (typeof o.token === 'string' && o.token.startsWith('enc:') && opts.open) o.token = opts.open(o.token.slice(4)); else if (typeof o.token === 'string' && o.token.startsWith('enc:')) o.token = ''; return o; },
+    save: (o) => { try { const w = Object.assign({}, o); if (w.token && opts.seal) { const e = opts.seal(w.token); if (e) w.token = 'enc:' + e; } fs.writeFileSync(file, JSON.stringify(w), { mode: 0o600 }); } catch (e) { log('[account] save failed ' + e.message); } },
     rand: (n) => crypto.randomBytes(n).toString('hex'),
     sha256: (s) => crypto.createHash('sha256').update(s).digest('hex'),
     http: async (method, url, body, token) => {
@@ -58,7 +58,7 @@ function create(opts) {
       Promise.resolve(client.state()).then((j) => { try { onState(j); } catch (e) { log('[account] follow ' + e.message); } }, () => { }).then(() => { busy = false; });
     }, 4000);
   }
-  const OPS = new Set(['status', 'setSite', 'skip', 'register', 'verify', 'resend', 'login', 'google', 'signout']);
+  const OPS = new Set(['status', 'setSite', 'skip', 'register', 'verify', 'resend', 'login', 'google', 'signout', 'videos']);
   return {
     client, push, follow,
     async invoke(op, payload) {

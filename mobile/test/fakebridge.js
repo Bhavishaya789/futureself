@@ -1,6 +1,8 @@
 // A stand-in for the Android side, so the web layer can be tested in a normal browser
 (function () {
-  var st = { accessibility: false, overlay: false, call: false, notifications: true, exactAlarm: true, battery: false, lockActive: false };
+  window.__lan = 1;
+  window.__nowizard = !window.__wiz;
+  var st = { accessibility: !!window.__granted, overlay: !!window.__granted, call: false, notifications: true, exactAlarm: true, battery: false, lockActive: false, manufacturer: window.__mfr || 'xiaomi', sdk: 34 };
   var contacts = [], settings = { autoLockBlocks: 'false', restrictOnPc: 'true' }, paired = null, lock = null;
   window.__calls = []; window.__log = [];
   function done(id, obj) { setTimeout(function () { window.__fsCb(id, JSON.stringify(obj)); }, 30); }

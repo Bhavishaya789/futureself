@@ -42,3 +42,16 @@ If you tell me the address I can build it into the apps so students never type i
 
 ## How the link works
 Sign in with the same email on the PC and the phone. When a Focus or Strict session starts on the PC, the PC tells the server; the phone asks the server every few seconds and locks itself for the same time. Gentle sessions do not lock the phone. If the PC dies, the phone unlocks at the time the session was due to end (plus 2 minutes).
+
+## Video search (optional but recommended): YOUTUBE_API_KEY
+
+Students can ask FutureSelf for a video ("deadlock examples", channel "Gate Smashers"). The **server** searches YouTube and sends back only a short list; the apps never search YouTube themselves.
+
+It works without any key (the server reads YouTube's public results page), but YouTube sometimes blocks servers, so an API key is more reliable:
+
+1. Open https://console.cloud.google.com and pick your FutureSelf project.
+2. Menu > **APIs & Services** > **Library**, search **YouTube Data API v3**, click **Enable**.
+3. **Credentials** > **Create credentials** > **API key**. Click **Restrict key**, choose **Restrict key** > **YouTube Data API v3**, then **Save**.
+4. In Vercel > **Settings** > **Environment Variables** add `YOUTUBE_API_KEY` with that key, then **Redeploy**.
+
+Limits: 30 searches per student per hour; the same search is cached for 6 hours (cached answers cost nothing). The free YouTube quota is about 100 new searches per day for all students together.

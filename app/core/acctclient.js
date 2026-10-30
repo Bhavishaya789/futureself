@@ -47,6 +47,11 @@
         }).then(function (ticket) { return auth('redeem', { ticket: ticket, verifier: verifier }); }).then(adopt);
       },
       signout: function () { load(); st.token = ''; st.email = ''; st.name = ''; save(); return status(); },
+      /* search for a study video: the SERVER searches YouTube, this device only gets the short list back */
+      videos: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to search for videos.'));
+        return req('/api/videos', 'POST', { q: String(p && p.q || '').slice(0, 120), channel: String(p && p.channel || '').slice(0, 60) }, true);
+      },
       /* what the other device is doing (null when the server cannot be reached or nobody is signed in) */
       state: function () {
         load(); if (!st.token || !st.site) return Promise.resolve(null);

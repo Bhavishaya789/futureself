@@ -1,5 +1,5 @@
 // FutureSelf - Electron main process
-const { app, BrowserWindow, ipcMain, Notification, Tray, Menu, nativeImage, shell, dialog, net, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification, Tray, Menu, nativeImage, shell, dialog, net, session, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -114,6 +114,7 @@ process.on('exit', () => { try { if (blocker && blocker.active()) blocker.setTas
 process.on('uncaughtException', (e) => { log('[fatal] ' + (e && e.stack || e)); try { if (blocker) blocker.stop(); } catch (_) { /* ignore */ } });
 
 app.whenReady().then(async () => {
+  try { session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'fullscreen')); session.defaultSession.setPermissionCheckHandler((_wc, perm) => perm === 'fullscreen'); } catch (e) { /* ignore */ }
   try {
     const store = await makeStore(dataDir, log);
     const contentDir = [process.env.FS_CONTENT, path.join(exeDir, 'Content'), path.join(__dirname, 'Content')].filter(Boolean).find((d) => fs.existsSync(d)) || path.join(__dirname, 'Content');
@@ -149,7 +150,10 @@ app.whenReady().then(async () => {
     /* Phone link: tells the Android app when a session runs here so the phone can lock too */
     const plink = phonelinkLib.create({ dir: dataDir, log });
     if (plink.wantsStart()) plink.start().catch((e) => log('[phonelink] could not start: ' + e.message));
-    const acct = acctLib.create({ dir: dataDir, log, openExternal: (u) => { if (!/^(https:\/\/|http:\/\/localhost)/.test(u)) throw new Error('Bad address'); return shell.openExternal(u); } });
+    /* the sign-in token is locked with the Windows account (DPAPI), so a copied account.json is useless on another PC or user */
+    const seal = (t) => { try { return safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(t).toString('base64') : ''; } catch (e) { return ''; } };
+    const unseal = (b) => { try { return safeStorage.decryptString(Buffer.from(b, 'base64')); } catch (e) { return ''; } };
+    const acct = acctLib.create({ dir: dataDir, log, seal, open: unseal, openExternal: (u) => { if (!/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1):\d+\/)/.test(u)) throw new Error('Bad address'); return shell.openExternal(u); } });
     ipcMain.handle('acct', async (_e, op, payload) => { try { return { ok: true, data: await acct.invoke(op, payload) }; } catch (e) { return { ok: false, error: e.message, needsVerify: !!e.needsVerify }; } });
     acct.follow((st) => send('remote:session', st));   // the phone's study session, so this PC can lock too
     app.on('before-quit', () => acct.stop());

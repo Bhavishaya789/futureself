@@ -15,3 +15,11 @@ body.android #bellwrap{top:calc(10px + env(safe-area-inset-top))!important;right
 .kv .row{gap:8px}
 .lessonov,.drawer{padding-top:max(20px,env(safe-area-inset-top))}
 @media (max-width:520px){.top h1{font-size:28px}.stack .card{padding:16px}.big3{font-size:30px}}
+
+.fswiz{position:fixed;inset:0;z-index:9999;background:radial-gradient(120% 80% at 50% 0,#1a1d4a,#07091c 70%);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+.fswiz-in{width:100%;max-width:440px}
+.fswiz h1{font-size:28px;margin:6px 0 10px;line-height:1.15}
+.fswiz .stack{gap:10px;margin-top:20px}
+.fswiz .btn{width:100%;min-height:50px;font-size:16px}
+.wzbar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);margin-bottom:22px;overflow:hidden}
+.wzbar i{display:block;height:100%;background:linear-gradient(90deg,#2DE2E6,#8b7bff);transition:width .4s}

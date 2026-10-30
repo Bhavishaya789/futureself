@@ -52,6 +52,8 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
             .put("exactAlarm", true) // reminders use clock alarms, which need no permission
             .put("battery", pm.isIgnoringBatteryOptimizations(act.packageName))
             .put("lockActive", Lock.isActive(act))
+            .put("manufacturer", Build.MANUFACTURER.lowercase())
+            .put("sdk", Build.VERSION.SDK_INT)
             .toString()
     }
 
@@ -64,6 +66,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
             "battery" -> Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg)
             "alarms" -> if (Build.VERSION.SDK_INT >= 31) Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, pkg) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
             "notifications" -> Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, act.packageName)
+            "autostart", "popup" -> return oem(kind)
             else -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
         }
         // Settings are closed during a lock so the student cannot switch the lock off from inside it
@@ -71,6 +74,33 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
         act.runOnUiThread {
             try { act.startActivity(i) } catch (e: Exception) {
                 try { act.startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (x: Exception) { /* nothing to open */ }
+            }
+        }
+        return okJson().toString()
+    }
+
+    /** Phone makers (Xiaomi, Oppo, Vivo, Huawei, Samsung) hide extra switches that decide whether a lock screen may appear while another app is open. Best effort: try the maker's own screen, fall back to the app's info page. */
+    private fun oem(kind: String): String {
+        if (Lock.isActive(act)) return errJson("Settings are closed while the phone is locked").toString()
+        val pk = act.packageName
+        val tries = ArrayList<Intent>()
+        fun comp(p: String, c: String) = Intent().setClassName(p, c)
+        if (kind == "popup") {
+            tries.add(Intent("miui.intent.action.APP_PERM_EDITOR").setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity").putExtra("extra_pkgname", pk))
+            tries.add(Intent("miui.intent.action.APP_PERM_EDITOR").setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.AppPermissionsEditorActivity").putExtra("extra_pkgname", pk))
+            tries.add(Intent("miui.intent.action.APP_PERM_EDITOR").putExtra("extra_pkgname", pk))
+        } else {
+            tries.add(comp("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"))
+            tries.add(comp("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"))
+            tries.add(comp("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity"))
+            tries.add(comp("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"))
+            tries.add(comp("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"))
+            tries.add(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+        tries.add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pk")))
+        act.runOnUiThread {
+            for (t in tries) {
+                try { act.startActivity(t); return@runOnUiThread } catch (e: Exception) { /* try the next one */ }
             }
         }
         return okJson().toString()
@@ -103,7 +133,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
 
     @JavascriptInterface
     fun setSetting(k: String, v: String): String {
-        if (k != "autoLockBlocks" && k != "restrictOnPc") return errJson("Unknown setting").toString()
+        if (k != "autoLockBlocks" && k != "restrictOnPc" && !k.startsWith("oem_")) return errJson("Unknown setting").toString()
         Store.putString(act, k, if (v == "true") "true" else "false")
         if (k == "restrictOnPc" && v == "true" && Link.paired(act)) Poller.begin(act)
         return okJson().toString()
@@ -128,7 +158,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
         val ends = o.optLong("endsAt", 0L)
         val now = System.currentTimeMillis()
         if (ends <= now || ends - now > 12L * 3600 * 1000) return errJson("Bad lock time").toString()
-        Lock.start(act, o.optString("subject", "Study time"), o.optString("topicId"), ends, "phone")
+        Lock.start(act, o.optString("subject", "Study time"), o.optString("topicId"), ends, "phone", if (mode == "strict") "strict" else "focus")
         Poller.begin(act)
         FocusAccessibilityService.enforce()
         return okJson().put("locked", true).toString()

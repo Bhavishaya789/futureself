@@ -11,8 +11,8 @@ android {
         applicationId = "app.futureself.mobile"
         minSdk = 26
         targetSdk = 34
-        versionCode = 120
-        versionName = "1.2.0"
+        versionCode = 140
+        versionName = "1.4.0"
     }
 
     buildTypes {

@@ -16,13 +16,17 @@ async function db() {
   }
   let c; try { c = await clientP; } catch (e) { fail(503, 'Could not reach the database. Check MONGODB_URI and Network Access in MongoDB Atlas.'); }
   const d = c.db(process.env.MONGODB_DB || 'futureself');
-  const out = { users: d.collection('users'), sessions: d.collection('sessions'), tickets: d.collection('tickets') };
+  const out = { users: d.collection('users'), sessions: d.collection('sessions'), tickets: d.collection('tickets'), vcache: d.collection('vcache'), rl: d.collection('rl') };
   if (!indexed) {
     indexed = true;
     try {
       await out.users.createIndex({ email: 1 }, { unique: true });
       await out.sessions.createIndex({ uid: 1 }, { unique: true });
       await out.tickets.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+      await out.vcache.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+      await out.vcache.createIndex({ key: 1 }, { unique: true });
+      await out.rl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+      await out.rl.createIndex({ key: 1 }, { unique: true });
     } catch (e) { indexed = false; }
   }
   return out;
@@ -43,7 +47,7 @@ function verifyToken(t) {
   let p; try { p = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')); } catch (e) { return null; }
   return p && p.exp > Date.now() ? p : null;
 }
-const newToken = (user) => sign({ uid: String(user._id), exp: Date.now() + 90 * 864e5 });
+const newToken = (user) => sign({ uid: String(user._id), tv: user.tv || 0, exp: Date.now() + 90 * 864e5 });
 function hashPw(pw) {
   const salt = crypto.randomBytes(16);
   return { salt: salt.toString('hex'), passHash: crypto.scryptSync(pw, salt, 64).toString('hex') };
@@ -69,15 +73,24 @@ async function sendMail(to, subject, text, html) {
 }
 
 /* ---------- http ---------- */
+/* how many requests one address may make (fixed window kept in the database; skipped if the database has no such collection) */
+async function limit(req, name, max, windowSec) {
+  const d = await db(); if (!d.rl) return;
+  const ip = String((req.headers['x-forwarded-for'] || '').split(',')[0].trim() || (req.socket && req.socket.remoteAddress) || 'x').slice(0, 64);
+  const bucket = Math.floor(Date.now() / (windowSec * 1000));
+  const key = name + ':' + sha256(ip) + ':' + bucket;
+  const r = await d.rl.findOneAndUpdate({ key }, { $inc: { n: 1 }, $setOnInsert: { expireAt: new Date((bucket + 2) * windowSec * 1000) } }, { upsert: true, returnDocument: 'after' });
+  const row = r && r.value !== undefined ? r.value : r; // older drivers wrap the row in { value }
+  if (row && row.n > max) fail(429, 'Too many tries from this network. Wait a minute and try again.');
+}
 function wrap(fn) {
   return async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    /* no CORS headers on purpose: only our own pages and the apps (which call from their own process) use this API */
     res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     if (req.method === 'OPTIONS') { res.statusCode = 204; return res.end(); }
     try {
-      let body = req.body;
+      let body; try { body = req.body; } catch (e) { fail(400, 'The request was not valid JSON.'); }
       if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
       const out = await fn(req, body && typeof body === 'object' ? body : {});
       res.statusCode = 200; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(out));
@@ -95,9 +108,9 @@ async function authed(req) {
   const d = await db();
   const { ObjectId } = global.__FS_FAKE_DB ? { ObjectId: String } : require('mongodb');
   let user; try { user = await d.users.findOne({ _id: new ObjectId(p.uid) }); } catch (e) { user = null; }
-  if (!user || !user.verified) fail(401, 'Please sign in again.');
+  if (!user || !user.verified || (p.tv || 0) !== (user.tv || 0)) fail(401, 'Please sign in again.');
   return { d, user };
 }
 const pub = (u) => ({ email: u.email, name: u.name || '' });
 
-module.exports = { HttpErr, fail, db, sign, verifyToken, newToken, hashPw, checkPw, codeHash, newCode, same, sha256, sendMail, wrap, authed, pub };
+module.exports = { limit, HttpErr, fail, db, sign, verifyToken, newToken, hashPw, checkPw, codeHash, newCode, same, sha256, sendMail, wrap, authed, pub };

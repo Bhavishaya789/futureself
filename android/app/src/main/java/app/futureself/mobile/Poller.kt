@@ -39,18 +39,26 @@ object Poller {
 
     private fun loop(app: Context) {
         var fails = 0
+        var lastPoll = 0L
         while (wanted(app)) {
             try {
-                if (follows(app)) {
+                val now = System.currentTimeMillis()
+                val every = if (Account.signedIn(app)) 4000L else 3000L
+                if (follows(app) && now - lastPoll >= every) {
+                    lastPoll = now
                     // the account (through the server) works on any network; the Wi-Fi link is the fallback
                     val r = if (Account.signedIn(app)) Account.state(app) else Link.state(app)
                     val st = Lock.get(app)
                     if (r != null) {
                         fails = 0
                         if (r.optBoolean("restrict") && r.optString("src", "pc") != "phone") {
+                            val mode = if (r.optString("lock") == "strict") "strict" else "focus"
                             if (!(st.active && st.source == "phone")) {
-                                Lock.start(app, r.optString("subject", "Study session").ifEmpty { "Study session" }, r.optString("topicId"), r.optLong("endsAt"), "pc")
-                                FocusAccessibilityService.enforce()
+                                // a new or changed PC session starts (or updates) the phone lock with the same mode
+                                if (!st.active || st.mode != mode || st.endsAt != r.optLong("endsAt")) {
+                                    Lock.start(app, r.optString("subject", "Study session").ifEmpty { "Study session" }, r.optString("topicId"), r.optLong("endsAt"), "pc", mode)
+                                    FocusAccessibilityService.enforce()
+                                }
                             }
                         } else if (st.active && st.source == "pc") {
                             Lock.stop(app)
@@ -62,9 +70,10 @@ object Poller {
                         if (st.active && st.source == "pc" && System.currentTimeMillis() > st.endsAt + 120000L) Lock.stop(app)
                     }
                 }
-                Lock.isActive(app) // ends timed locks
+                // while a lock runs, look at the screen every second so no app slips through a missed event
+                if (Lock.isActive(app)) FocusAccessibilityService.enforce()
             } catch (t: Throwable) { /* keep going */ }
-            try { Thread.sleep(if (Account.signedIn(app)) 4000L else 3000L) } catch (e: InterruptedException) { break }
+            try { Thread.sleep(if (Lock.get(app).active) 1000L else 1500L) } catch (e: InterruptedException) { break }
         }
         synchronized(lockObj) { thread = null }
         try { app.stopService(Intent(app, FocusService::class.java)) } catch (e: Exception) { /* ignore */ }

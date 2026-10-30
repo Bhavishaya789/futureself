@@ -65,6 +65,7 @@ const actions = {
     const d = await L.db(), user = await d.users.findOne({ email });
     if (user && user.lockUntil && user.lockUntil > Date.now()) fail(429, 'Too many wrong passwords. Try again in a few minutes.');
     if (!user || !user.passHash) {
+      L.checkPw(pw, '00', L.sha256('x')); // same work as a real check, so timing does not reveal which emails exist
       if (user && user.googleId) fail(401, 'This email uses Google sign-in. Press Continue with Google.');
       fail(401, 'Wrong email or password.');
     }
@@ -121,6 +122,14 @@ const actions = {
     return session(user);
   },
 
+  /* signs this account out of every phone and PC (all old tokens stop working) */
+  async signoutall(req) {
+    const { d, user } = await L.authed(req);
+    await d.users.updateOne({ email: user.email }, { $set: { tv: (user.tv || 0) + 1 } });
+    await d.sessions.updateOne({ uid: String(user._id) }, { $set: { state: { active: false }, updatedAt: Date.now() } });
+    return { ok: true };
+  },
+
   async me(req) {
     const { user } = await L.authed(req);
     return { ok: true, user: L.pub(user) };
@@ -129,6 +138,8 @@ const actions = {
 
 module.exports = L.wrap(async (req, b) => {
   if (req.method !== 'POST') fail(405, 'Use POST.');
-  const fn = actions[String(b.a || '')]; if (!fn) fail(400, 'Unknown action.');
+  const name = String(b.a || ''), fn = Object.prototype.hasOwnProperty.call(actions, name) ? actions[name] : null; if (!fn) fail(400, 'Unknown action.');
+  if (['register', 'login', 'verify', 'resend', 'google'].includes(name)) await L.limit(req, 'auth', 40, 600); // 40 tries per 10 minutes per network
+  if (name === 'redeem') await L.limit(req, 'redeem', 60, 600);
   return fn(req, b);
 });

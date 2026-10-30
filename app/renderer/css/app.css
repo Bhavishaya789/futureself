@@ -373,3 +373,8 @@ body[data-subj] .card{background:rgba(10,13,36,.62);backdrop-filter:blur(6px);-w
 .acor:before,.acor:after{content:"";flex:1;height:1px;background:rgba(255,255,255,.14)}
 .acadv{margin-top:18px;font-size:14px}.acadv summary{cursor:pointer;color:var(--muted,#aab0d6)}
 #acbox .in{width:100%}
+
+.vlist{display:flex;flex-direction:column;gap:8px}
+.vitem{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:12px;background:rgba(255,255,255,.03)}
+.vitem b{display:block;font-size:14px;line-height:1.35}
+.vitem small{display:block;opacity:.65;margin-top:3px}

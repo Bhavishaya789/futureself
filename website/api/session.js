@@ -7,7 +7,7 @@ module.exports = L.wrap(async (req, b) => {
   const { d, user } = await L.authed(req);
   const uid = String(user._id);
   if (req.method === 'POST') {
-    const s = b && b.active ? { active: true, subject: String(b.subject || '').slice(0, 80), topicId: String(b.topicId || '').slice(0, 80), src: b.src === 'phone' ? 'phone' : 'pc', lock: ['gentle', 'focus', 'strict'].includes(b.lock) ? b.lock : 'focus', endsAt: Math.max(0, +b.endsAt || 0), startedAt: Math.max(0, +b.startedAt || 0), paused: !!b.paused } : { active: false };
+    const s = b && b.active ? { active: true, subject: String(b.subject || '').slice(0, 80), topicId: String(b.topicId || '').slice(0, 80), src: b.src === 'phone' ? 'phone' : 'pc', lock: ['gentle', 'focus', 'strict'].includes(b.lock) ? b.lock : 'focus', endsAt: Math.min(Date.now() + 12 * 3600e3, Math.max(0, +b.endsAt || 0)), startedAt: Math.max(0, +b.startedAt || 0), paused: !!b.paused } : { active: false };
     await d.sessions.updateOne({ uid }, { $set: { uid, state: s, updatedAt: Date.now() } }, { upsert: true });
     return { ok: true };
   }

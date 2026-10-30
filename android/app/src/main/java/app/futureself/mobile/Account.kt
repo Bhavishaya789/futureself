@@ -8,10 +8,15 @@ object Account {
     @Volatile var connected = false
 
     fun site(c: Context): String = Store.getString(c, "acct_site")
-    fun signedIn(c: Context): Boolean = Store.getString(c, "acct_token").isNotEmpty() && site(c).startsWith("https://")
+    fun token(c: Context): String {
+        val raw = Store.getString(c, "acct_token"); val t = Vault.open(raw)
+        if (t.isNotEmpty() && !raw.startsWith("v1:")) Store.prefs(c).edit().putString("acct_token", Vault.seal(t)).apply()   // upgrade an old plain-text token
+        return t
+    }
+    fun signedIn(c: Context): Boolean = token(c).isNotEmpty() && site(c).startsWith("https://")
 
     fun save(c: Context, site: String, token: String) {
-        Store.prefs(c).edit().putString("acct_site", site).putString("acct_token", token).apply()
+        Store.prefs(c).edit().putString("acct_site", site).putString("acct_token", Vault.seal(token)).apply()
         if (token.isEmpty()) {
             connected = false
             val s = Lock.get(c)
@@ -30,7 +35,7 @@ object Account {
     /** what the PC is doing right now (through the server), or null when the server cannot be reached */
     fun state(c: Context): JSONObject? {
         if (!signedIn(c)) { connected = false; return null }
-        val r = Link.http("GET", site(c).trimEnd('/') + "/api/session", Store.getString(c, "acct_token"), null, 6000)
+        val r = Link.http("GET", site(c).trimEnd('/') + "/api/session", token(c), null, 6000)
         if (r == null) { connected = false; return null }
         if (r.first == 401) { Store.prefs(c).edit().putString("acct_token", "").apply(); connected = false; return null }
         if (r.first != 200) { connected = false; return null }

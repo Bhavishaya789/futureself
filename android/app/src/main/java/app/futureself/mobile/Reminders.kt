@@ -69,7 +69,7 @@ class ReminderReceiver : BroadcastReceiver() {
             o.optString("lock") != "gentle" && FocusAccessibilityService.isEnabled(ctx)
         ) {
             val mins = o.optInt("minutes", 25).coerceIn(1, 600)
-            Lock.start(ctx, o.optString("subject", "Study time"), o.optString("topicId"), System.currentTimeMillis() + mins * 60000L, "phone")
+            Lock.start(ctx, o.optString("subject", "Study time"), o.optString("topicId"), System.currentTimeMillis() + mins * 60000L, "phone", o.optString("lock"))
             Poller.begin(ctx)
             FocusAccessibilityService.enforce()
         }
@@ -79,6 +79,6 @@ class ReminderReceiver : BroadcastReceiver() {
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         Reminders.rescheduleFromStore(ctx)
-        if (Lock.isActive(ctx) || Link.paired(ctx)) Poller.begin(ctx)
+        if (Lock.isActive(ctx) || Link.paired(ctx) || Account.signedIn(ctx)) Poller.begin(ctx)
     }
 }
