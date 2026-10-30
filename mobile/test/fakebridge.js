@@ -13,7 +13,7 @@
   window.AndroidBridge = {
     version: function () { return JSON.stringify({ version: '1.0.0-test' }); },
     status: function () { return JSON.stringify(st); },
-    openSettings: function (k) { window.__log.push('settings:' + k); if (k === 'accessibility') st.accessibility = true; if (k === 'overlay') st.overlay = true; if (k === 'battery') st.battery = true; if (k === 'notifaccess') st.notifGuard = true; return JSON.stringify({ ok: true }); },
+    openSettings: function (k) { window.__log.push('settings:' + k); if (k === 'accessibility') st.accessibility = true; if (k === 'overlay') st.overlay = true; if (k === 'battery') st.battery = true; if (k === 'notifaccess') st.notifGuard = true; if (k === 'dnd') st.dnd = true; return JSON.stringify({ ok: true }); },
     updateInstall: function (id, url, sha) { window.__log.push('upd:' + url + '|' + sha); done(id, { ok: true }); },
     requestCallGuard: function () { window.__log.push('callguard'); st.callGuard = true; return JSON.stringify({ ok: true }); },
     requestPermission: function (k) { window.__log.push('perm:' + k); st[k] = true; return JSON.stringify({ ok: true }); },

@@ -99,7 +99,8 @@
       { id: 'notifications', req: false, title: 'Allow notifications', why: 'Shows the "phone locked" notice and your study reminders.', btn: 'Allow notifications', done: !!s.notifications },
       { id: 'call', req: true, title: 'Allow emergency calls', why: 'Lets the call buttons on the lock screen dial your emergency contacts in one tap.', btn: 'Allow calls', done: !!s.call },
       { id: 'callguard', req: true, hide: !(s.sdk >= 29), title: 'Only emergency numbers can call', why: 'During Focus and Strict sessions, calls from or to numbers that are not on your emergency list are stopped, so the phone cannot be used to call anyone else. Your emergency numbers ring and dial normally. Gentle mode and times with no session are not affected. Android will ask you to choose FutureSelf as the call screening app.', btn: 'Choose FutureSelf', done: !!s.callGuard, help: 'Press <b>FutureSelf</b> and confirm. This replaces another call-screening app such as Truecaller while FutureSelf is set.' },
-      { id: 'notifaccess', req: false, title: 'Hide notifications in Strict mode', why: 'Strict sessions hide every other app\'s notifications and bring them back when the session ends. Calls from your emergency numbers and alarms still show. Without this, Strict mode cannot start.', btn: 'Open the setting', done: !!s.notifGuard, help: 'Find <b>FutureSelf</b> in the list, switch it <b>On</b> and press <b>Allow</b>.', help2: (s.sdk >= 33 ? 'Greyed out? Open app info, press the <b>&#8942;</b> menu, choose <b>Allow restricted settings</b>, then try again.' : '') },
+      { id: 'dnd', req: false, title: 'Do Not Disturb access (no pop-up banners)', why: 'Lets FutureSelf switch on the phone\'s own Do Not Disturb during Focus and Strict, so message banners cannot even flash for a moment. Your old settings come back when the session ends.', btn: 'Open the setting', done: !!s.dnd, help: 'Find <b>FutureSelf</b>, switch it <b>On</b> and press <b>Allow</b>.' },
+      { id: 'notifaccess', req: false, title: 'Hide notifications during sessions', why: 'Focus and Strict sessions hide every other app\'s notifications (WhatsApp banners and so on) and bring them back when the session ends. Calls from your emergency numbers and alarms still show. Without this, Focus and Strict cannot start.', btn: 'Open the setting', done: !!s.notifGuard, help: 'Find <b>FutureSelf</b> in the list, switch it <b>On</b> and press <b>Allow</b>.', help2: (s.sdk >= 33 ? 'Greyed out? Open app info, press the <b>&#8942;</b> menu, choose <b>Allow restricted settings</b>, then try again.' : '') },
       { id: 'overlay', req: true, title: 'Show over other apps', why: 'Lets the study screen appear on top of the app you try to open. Without it the lock cannot cover other apps.', btn: 'Open the setting', done: !!s.overlay, help: 'Find <b>FutureSelf</b>, switch <b>Allow display over other apps</b> on, then press Back.' },
       { id: 'accessibility', req: true, title: 'Turn on the app lock', why: 'This is the part that notices when you open another app during a study session and brings you back. Strict mode needs it too.', btn: 'Open the setting', done: !!s.accessibility,
         help: 'Open <b>Installed apps</b> (or <b>Downloaded apps</b>), tap <b>FutureSelf</b> and switch it <b>On</b>. FutureSelf only checks which app is open. It does not read what is on the screen.',
@@ -157,7 +158,7 @@
   FSX.canStart = function (lock) {
     if (lock === 'gentle') return true;
     var s = FSPhone.status();
-    if (lock === 'strict' && !s.notifGuard) { WZ.dismissed = false; WZ.skip = {}; WZ.skip.callguard = false; wzOpen(); toast('Strict mode needs one more permission', 'Allow notification access so other apps\' notifications can be hidden.', true); return false; }
+    if ((lock === 'strict' || lock === 'focus') && !s.notifGuard) { WZ.dismissed = false; WZ.skip = {}; WZ.skip.callguard = false; wzOpen(); toast('This mode needs one more permission', 'Allow notification access so other apps\' notifications can be hidden.', true); return false; }
     if (s.accessibility && s.overlay && s.call && guardOk(s)) return true;
     WZ.dismissed = false; wzOpen(); toast('Finish the setup first', 'Allow the needed permissions so the lock and emergency calls can work.', true); return false;
   };
@@ -166,6 +167,7 @@
     wzgo: function (el) {
       var k = el.dataset.id, n = WZ.tries[k] = (WZ.tries[k] || 0) + 1, r;
       if (k === 'notifications' || k === 'call') r = n > 1 ? FSPhone.openSettings(k === 'call' ? 'app' : 'notifications') : FSPhone.requestPermission(k);
+      else if (k === 'dnd') r = FSPhone.openSettings('dnd');
       else if (k === 'notifaccess') r = n > 2 ? FSPhone.openSettings('app') : FSPhone.openSettings('notifaccess');
       else if (k === 'callguard') r = n > 1 ? FSPhone.openSettings('app') : FSPhone.requestCallGuard();
       else r = FSPhone.openSettings(k);

@@ -74,6 +74,7 @@ object Lock {
             .putString("lock_source", source)
             .putString("lock_mode", if (mode == "strict") "strict" else "focus")
             .apply()
+        if (mode == "focus" || mode == "strict") Dnd.on(c)
     }
 
     /** a phone call does not count as study time: the end moves later by as long as the call lasted */
@@ -85,6 +86,7 @@ object Lock {
 
     fun stop(c: Context) {
         Store.prefs(c).edit().putBoolean("lock_active", false).apply()
+        Dnd.off(c)
     }
 }
 

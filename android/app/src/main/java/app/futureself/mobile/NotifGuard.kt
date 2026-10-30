@@ -8,7 +8,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationManagerCompat
 
-/** Strict mode: other apps' notifications are hidden for the whole session and come back when it ends.
+/** Focus and Strict: other apps' notifications are hidden for the whole session and come back when it ends.
  *  Calls, alarms and FutureSelf's own notices are left alone. Needs "Notification access" (the student turns it on once). */
 class NotifGuard : NotificationListenerService() {
     override fun onListenerConnected() { instance = this; sweep(this) }
@@ -33,7 +33,7 @@ class NotifGuard : NotificationListenerService() {
         private fun hide(c: Context, svc: NotificationListenerService, sbn: StatusBarNotification) {
             try {
                 val st = Lock.get(c)
-                if (!Lock.isActive(c) || st.mode != "strict" || keep(c, sbn)) return
+                if (!Lock.isActive(c) || keep(c, sbn)) return
                 if (!sbn.isClearable && Build.VERSION.SDK_INT < 26) return
                 if (Build.VERSION.SDK_INT >= 26) {
                     // hidden now, shown again when the session is over

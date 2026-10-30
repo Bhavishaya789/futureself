@@ -50,6 +50,8 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
             .put("callGuard", callGuardOn())
             .put("callLast", Calls.lastCheck(act))
             .put("notifGuard", NotifGuard.enabled(act))
+            .put("dnd", Dnd.granted(act))
+            .put("appVersion", try { act.packageManager.getPackageInfo(act.packageName, 0).versionName } catch (e: Exception) { "" })
             .put("call", act.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED)
             .put("notifications", notif)
             .put("exactAlarm", true) // reminders use clock alarms, which need no permission
@@ -69,6 +71,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
             "battery" -> Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, pkg)
             "alarms" -> if (Build.VERSION.SDK_INT >= 31) Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, pkg) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
             "notifaccess" -> Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+            "dnd" -> Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
             "notifications" -> Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, act.packageName)
             "autostart", "popup" -> return oem(kind)
             else -> Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
