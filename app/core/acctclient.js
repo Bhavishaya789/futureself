@@ -21,7 +21,7 @@
       if (!st.site) return Promise.reject(new Error('Enter your FutureSelf server address first (the Vercel link of your website).'));
       return deps.http(method, st.site + path, body, auth ? st.token : null).then(function (r) {
         var j = r && r.json || {};
-        if (r.status >= 400) { var e = new Error(j.error || ('Server error ' + r.status)); e.status = r.status; e.needsVerify = !!j.needsVerify; throw e; }
+        if (r.status >= 400) { var m = j.error; if (m && typeof m === 'object') m = m.message || m.code || ''; var e = new Error(m ? String(m) : ('Server error ' + r.status + '. The server did not give a reason. Check the Vercel logs.')); e.status = r.status; e.needsVerify = !!j.needsVerify; throw e; }
         return j;
       }, function () { throw new Error('Could not reach the server. Check your internet and the server address.'); });
     }
@@ -47,10 +47,15 @@
         }).then(function (ticket) { return auth('redeem', { ticket: ticket, verifier: verifier }); }).then(adopt);
       },
       signout: function () { load(); st.token = ''; st.email = ''; st.name = ''; save(); return status(); },
-      /* PC: tell the server what the PC is doing. Never throws. */
+      /* what the other device is doing (null when the server cannot be reached or nobody is signed in) */
+      state: function () {
+        load(); if (!st.token || !st.site) return Promise.resolve(null);
+        return req('/api/session', 'GET', null, true).then(function (j) { return j; }, function (e) { if (e && e.status === 401) { st.token = ''; save(); } return null; });
+      },
+      /* tell the server what this device is doing. Never throws. */
       push: function (state) {
         load(); if (!st.token || !st.site) return Promise.resolve(false);
-        return req('/api/session', 'POST', state || { active: false }, true).then(function () { return true; }, function (e) { if (e && e.status === 401) { st.token = ''; save(); } return false; });
+        return req('/api/session', 'POST', Object.assign({ src: deps.device || 'pc' }, state || { active: false }), true).then(function () { return true; }, function (e) { if (e && e.status === 401) { st.token = ''; save(); } return false; });
       }
     };
   }

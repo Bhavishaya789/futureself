@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('fsApi', {
   onVideoClosed: (cb) => { ipcRenderer.on('video:closed', () => cb()); },
   lockStart: (cfg) => ipcRenderer.invoke('lock:start', cfg),
   lockStop: () => ipcRenderer.invoke('lock:stop'),
+  onRemote: (cb) => { ipcRenderer.on('remote:session', (_e, st) => cb(st)); },
   onNotify: (cb) => { ipcRenderer.on('notify', (_e, n) => cb(n)); },
   onDistraction: (cb) => { ipcRenderer.on('distraction', (_e, d) => cb(d)); }
 });

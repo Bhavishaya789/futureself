@@ -92,7 +92,7 @@
     if (client) return Promise.resolve(client);
     return siteP.then(function () {
       client = FSMobile.acctclient.create({
-        defaultSite: siteDefault,
+        defaultSite: siteDefault, device: 'phone',
         load: function () { return JSON.parse(localStorage.getItem('fs_acct') || '{}'); },
         save: function (o) { localStorage.setItem('fs_acct', JSON.stringify(o)); },
         rand: function (n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return hex(a); },
@@ -144,7 +144,8 @@
     allowVideo: function (id) { return Promise.resolve(jcall('allowVideo', String(id || ''))); },
     openVideo: function () { return Promise.resolve({ ok: false, error: 'Use Another video or Next channel' }); },
     closeVideo: function () { return Promise.resolve({ ok: true }); },
-    sessionState: function () { return Promise.resolve({ ok: true }); }
+    /* a study session started on this phone: tell the server so the PC locks too (it clears when the session ends) */
+    sessionState: function (st) { return getClient().then(function (c) { return c.push(st || { active: false }); }).then(function () { return { ok: true }; }, function () { return { ok: true }; }); }
   };
 
   /* the phone-only screen (permissions, emergency contacts, PC link) talks to these */

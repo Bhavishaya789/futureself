@@ -48,16 +48,26 @@ function create(opts) {
     if (beat) { clearInterval(beat); beat = null; }
     if (last.active) beat = setInterval(() => client.push(last), 25000);
   }
+  /* follow the phone: every few seconds ask the server what the other device is doing and hand the answer to onState */
+  let follower = null;
+  function follow(onState) {
+    if (follower) clearInterval(follower);
+    let busy = false;
+    follower = setInterval(() => {
+      if (busy) return; busy = true;
+      Promise.resolve(client.state()).then((j) => { try { onState(j); } catch (e) { log('[account] follow ' + e.message); } }, () => { }).then(() => { busy = false; });
+    }, 4000);
+  }
   const OPS = new Set(['status', 'setSite', 'skip', 'register', 'verify', 'resend', 'login', 'google', 'signout']);
   return {
-    client, push,
+    client, push, follow,
     async invoke(op, payload) {
       if (!OPS.has(op)) throw new Error('Unknown account action');
       const r = await client[op](payload || {});
       if (op === 'login' || op === 'verify' || op === 'google') push(last); // the session that is already running becomes visible to the phone
       return r;
     },
-    stop() { if (beat) clearInterval(beat); beat = null; }
+    stop() { if (beat) clearInterval(beat); beat = null; if (follower) clearInterval(follower); follower = null; }
   };
 }
 module.exports = { create };

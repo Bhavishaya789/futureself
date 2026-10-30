@@ -4,7 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 
-/** Background loop: ends phone locks on time, and follows the PC (locks the phone while a PC session runs). */
+/** Background loop: ends phone locks on time, and follows the PC (locks the phone while a PC session runs).
+ *  A session that this phone started itself (src = phone) is never followed back, otherwise the two would lock each other. */
 object Poller {
     @Volatile private var thread: Thread? = null
     private val lockObj = Any()
@@ -46,7 +47,7 @@ object Poller {
                     val st = Lock.get(app)
                     if (r != null) {
                         fails = 0
-                        if (r.optBoolean("restrict")) {
+                        if (r.optBoolean("restrict") && r.optString("src", "pc") != "phone") {
                             if (!(st.active && st.source == "phone")) {
                                 Lock.start(app, r.optString("subject", "Study session").ifEmpty { "Study session" }, r.optString("topicId"), r.optLong("endsAt"), "pc")
                                 FocusAccessibilityService.enforce()

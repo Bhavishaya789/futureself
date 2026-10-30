@@ -744,6 +744,7 @@
   /* tell the phone link (and so the Android app) what this session is doing */
   function pushState() {
     if (!(window.fsApi && window.fsApi.sessionState)) return; var s = S.session;
+    if (s && s.remote) return; // a session that started on the other device is only followed, never announced again
     if (!s || s.ended) { window.fsApi.sessionState({ active: false }).catch(function () { }); return; }
     window.fsApi.sessionState({ active: true, subject: s.subject, topicId: s.topic_id || '', lock: s.lock, startedAt: s.startedAt, endsAt: s.startedAt + s.plannedMs + s.pausedMs + (s.pausedAt ? Date.now() - s.pausedAt : 0), paused: !!s.pausedAt }).catch(function () { });
   }
@@ -785,7 +786,7 @@
     $('#app').innerHTML = '<div class="focus"><div class="meta"><span class="badge">' + ic('lock').replace('class="i"', 'class="i" style="width:14px;height:14px"') + ' ' + LOCKS[s.lock][0] + ' lock</span><span class="badge" id="fdist">' + s.distractions + ' distractions</span></div>' +
       '<div class="eyebrow" style="margin-bottom:10px">Now studying</div><div class="time" id="ftime">' + mmss(s.plannedMs - elapsed()) + '</div><div class="what"><b>' + esc(s.subject) + '</b>' + (topic && s.lesson_id ? ' &middot; <span id="flesson"></span>' : '') + '</div>' +
       '<div class="ctrl">' + (s.topic_id && s.lesson_id ? '<button class="btn" data-act="fdrawer">' + ic('book') + ' Open lesson</button><button class="btn" data-act="fvideo">' + ic('play') + ' Watch video</button>' : '') + (s.lock === 'gentle' ? '<button class="btn" data-act="fpause" id="fpause">Pause</button>' : '') +
-      (s.lock === 'strict' ? '<button class="btn ghost sm" data-act="fend">Emergency exit</button>' : '<button class="btn danger" data-act="fend">End early</button>') + '</div></div>';
+      (s.remote ? '<button class="btn ghost sm" data-act="fend">Emergency release</button>' : s.lock === 'strict' ? '<button class="btn ghost sm" data-act="fend">Emergency exit</button>' : '<button class="btn danger" data-act="fend">End early</button>') + '</div>' + (s.remote ? '<p class="muted" style="margin-top:18px">Started on your phone. This PC unlocks when that session ends.</p>' : '') + '</div>';
     if (s.topic_id && s.lesson_id) api('/topics/' + s.topic_id).then(function (d) { s.topicData = d.topic; d.topic.units.forEach(function (u) { u.lessons.forEach(function (l) { if (l.id === s.lesson_id) { s.lessonData = l; var f = $('#flesson'); if (f) f.textContent = l.title; } }); }); });
     clearInterval(tickTimer); tick(); tickTimer = setInterval(tick, 250);
   }
@@ -794,7 +795,7 @@
     var rem = s.plannedMs - elapsed(), t = $('#ftime');
     if (t) t.textContent = mmss(rem); document.title = (s.pausedAt ? 'Paused' : mmss(rem)) + ' | FutureSelf';
     FS3D.ok && FS3D.setProgress(elapsed() / s.plannedMs);
-    if (rem <= 0) finishSession(true);
+    if (rem <= 0) { if (s.remote) endRemote('Phone session finished'); else finishSession(true); }
   }
   actions.fpause = function () { var s = S.session; if (s.pausedAt) { s.pausedMs += Date.now() - s.pausedAt; s.pausedAt = null; $('#fpause').textContent = 'Pause'; } else { s.pausedAt = Date.now(); $('#fpause').textContent = 'Resume'; } pushState(); };
   /* inside a session the student gets the same lesson dashboard (visuals, notes, Q&A, quiz, video) as on the lesson page */
@@ -812,6 +813,12 @@
   actions.fvideo = function () { openDrawer('video'); };
   actions.fend = function () {
     var s = S.session;
+    if (s.remote) {
+      s.fsPrompt = true; modal('<h2>Emergency release</h2><p class="muted" style="margin-bottom:16px">Your phone started this session. Only release this PC if you really have to. Type <b>EXIT</b> and wait 10 seconds.</p><div class="fld"><input class="in" id="xcode" autocomplete="off" placeholder="Type EXIT"></div><div class="acts"><button class="btn pri" data-act="fclose">Keep studying</button><button class="btn danger" id="xgo" disabled data-act="frel">Wait 10s</button></div>', true);
+      var n2 = 10, iv2 = setInterval(function () { n2--; var b = $('#xgo'); if (!b) return clearInterval(iv2); if (n2 <= 0) { clearInterval(iv2); b.textContent = 'Release this PC'; b.dataset.ready = 1; chk2(); } else b.textContent = 'Wait ' + n2 + 's'; }, 1000);
+      function chk2() { var b = $('#xgo'); if (b) b.disabled = !(b.dataset.ready && $('#xcode').value.trim().toUpperCase() === 'EXIT'); }
+      $('#xcode').addEventListener('input', chk2); return;
+    }
     if (s.lock === 'strict') {
       s.fsPrompt = true; modal('<h2>Emergency exit</h2><p class="muted" style="margin-bottom:16px">Strict mode is meant to be hard to quit. Type <b>EXIT</b> and wait 10 seconds if you really must stop.</p><div class="fld"><input class="in" id="xcode" autocomplete="off" placeholder="Type EXIT"></div><div class="acts"><button class="btn pri" data-act="fclose">Keep studying</button><button class="btn danger" id="xgo" disabled data-act="fgo">Wait 10s</button></div>', true);
       var n = 10, iv = setInterval(function () { n--; var b = $('#xgo'); if (!b) return clearInterval(iv); if (n <= 0) { clearInterval(iv); b.textContent = 'End session'; b.dataset.ready = 1; chk(); } else b.textContent = 'Wait ' + n + 's'; }, 1000);
@@ -822,6 +829,34 @@
   };
   actions.fclose = function () { var s = S.session; if (s) s.fsPrompt = false; closeModal(); };
   actions.fgo = function () { closeModal(); finishSession(false); };
+
+  /* a study session that started on the other device (the phone): this PC locks too and unlocks when it ends */
+  var remoteSkip = 0;
+  actions.frel = function () { var s = S.session; if (s && s.remote) { remoteSkip = s.startedAt; closeModal(); endRemote('This PC is released'); } };
+  function beginRemote(st) {
+    var now = Date.now(), ends = +st.endsAt || now + 60000, started = Math.min(+st.startedAt || now, now);
+    S.session = { remote: true, native: true, topic_id: null, lesson_id: null, subject: st.subject || 'Study session', minutes: Math.max(1, Math.round((ends - started) / 60000)), lock: st.lock === 'strict' ? 'strict' : 'focus', block_id: null, startedAt: started, startedISO: new Date(started).toISOString(), plannedMs: Math.max(60000, ends - started), pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false, blocked: 0 };
+    window.fsApi.lockStart({ mode: S.session.lock, apps: S.user && S.user.settings ? S.user.settings.blocklist_apps : '', sites: S.user && S.user.settings ? S.user.settings.blocklist_sites : '', subject: S.session.subject, topicId: '', endsAt: ends }).catch(function () { });
+    closeModal(); location.hash = '#/focus'; renderFocus();
+  }
+  function endRemote(msg) {
+    var s = S.session; if (!s || !s.remote || s.ended) return;
+    s.ended = true; clearInterval(tickTimer);
+    try { window.fsApi.lockStop().catch(function () { }); } catch (e) { }
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { }
+    unmountVideo(); $$('.comeback,.drawer,.lessonov').forEach(function (x) { x.remove(); }); closeModal();
+    document.title = 'FutureSelf | Study goals, timetable and focus';
+    S.session = null; S.shell = true; location.hash = '#/'; if (typeof go === 'function') setTimeout(go, 50);
+    toast(msg || 'Phone session finished', 'This PC is unlocked.');
+  }
+  function onRemote(st) {
+    var s = S.session && S.session.ended && !S.session.remote ? null : S.session, on = !!(st && st.restrict && st.src === 'phone' && st.active); // a finished session (summary still open) does not block a new lock
+    if (on && st.startedAt && st.startedAt === remoteSkip) on = false;
+    if (on && !s && S.user) return beginRemote(st);
+    if (on && s && s.remote && !s.ended && st.endsAt) { s.plannedMs = Math.max(60000, st.endsAt - s.startedAt); return; }
+    if (!on && s && s.remote && !s.ended) endRemote('Phone session finished');
+  }
+  if (window.fsApi && window.fsApi.onRemote) window.fsApi.onRemote(onRemote);
 
   function finishSession(completed) {
     var s = S.session; if (!s || s.ended) return;

@@ -151,6 +151,7 @@ app.whenReady().then(async () => {
     if (plink.wantsStart()) plink.start().catch((e) => log('[phonelink] could not start: ' + e.message));
     const acct = acctLib.create({ dir: dataDir, log, openExternal: (u) => { if (!/^(https:\/\/|http:\/\/localhost)/.test(u)) throw new Error('Bad address'); return shell.openExternal(u); } });
     ipcMain.handle('acct', async (_e, op, payload) => { try { return { ok: true, data: await acct.invoke(op, payload) }; } catch (e) { return { ok: false, error: e.message, needsVerify: !!e.needsVerify }; } });
+    acct.follow((st) => send('remote:session', st));   // the phone's study session, so this PC can lock too
     app.on('before-quit', () => acct.stop());
     ipcMain.handle('phone:info', () => plink.info());
     ipcMain.handle('phone:enable', async (_e, on) => { try { await plink.setEnabled(!!on); return { ok: true, info: plink.info() }; } catch (e) { return { ok: false, error: 'Could not open the link: ' + e.message, info: plink.info() }; } });
