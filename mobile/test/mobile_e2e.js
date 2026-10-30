@@ -59,7 +59,7 @@ let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, x ==
   await page.waitForTimeout(600); const rem = await page.evaluate(() => window.__reminders || []);
   ok('timetable block becomes phone alarms', blk < 300 && rem.length >= 2 && rem.some(x => x.kind === 'remind') && rem.some(x => x.kind === 'start'), JSON.stringify(rem.map(x => x.kind + '@' + new Date(x.at).toISOString().slice(11, 16))));
   // phone study session locks the phone
-  await page.evaluate(() => FSPhone.requestPermission('call')); await page.evaluate(() => { location.hash = '#/start?topic=operating-systems&min=25'; }); await page.waitForSelector('[data-act=sbegin]'); await page.click('[data-act=sbegin]'); await page.waitForSelector('.focus'); await page.waitForTimeout(500);
+  await page.evaluate(() => { FSPhone.requestPermission('call'); FSPhone.requestCallGuard(); }); await page.evaluate(() => { location.hash = '#/start?topic=operating-systems&min=25'; }); await page.waitForSelector('[data-act=sbegin]'); await page.click('[data-act=sbegin]'); await page.waitForSelector('.focus'); await page.waitForTimeout(500);
   const ls = (await page.evaluate(() => window.__log)).find(x => x.startsWith('lockStart:')); const lj = ls && JSON.parse(ls.slice(10));
   ok('session start locks the phone with subject and end time', lj && lj.mode && lj.subject && lj.endsAt > Date.now() + 20 * 60000, ls && ls.slice(0, 120));
   await page.screenshot({ path: '/home/claude/fsw/mobile/test/m_focus.png' });

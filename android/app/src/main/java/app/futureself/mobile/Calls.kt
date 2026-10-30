@@ -22,18 +22,14 @@ object Calls {
         (c.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode == AudioManager.MODE_IN_CALL
     } catch (e: Exception) { false }
 
-    /** the phone apps (Phone, Truecaller...) that may show over the lock while a call is being made or is running */
-    fun dialerPkgs(c: Context): Set<String> {
-        val now = System.currentTimeMillis()
-        if (now - cacheAt > 30000L) {
-            cachePkgs = Dial.apps(c).map { it.first }.toSet()
-            cacheAt = now
-        }
-        return cachePkgs
-    }
+    /** an allowed call is ringing (calls from numbers outside the list are turned away before they ring) */
+    fun ringing(c: Context): Boolean = try {
+        (c.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode == AudioManager.MODE_RINGTONE
+    } catch (e: Exception) { false }
 
-    fun allows(c: Context, pkg: String): Boolean =
-        (since != 0L || System.currentTimeMillis() < graceUntil) && pkg in dialerPkgs(c)
+    /** the phone's call screens (in-call, incoming) may show over the lock only while a call is really happening.
+     *  The bare dial pad is never allowed, so nobody can dial a number that is not on the list. */
+    fun callScreenOk(c: Context): Boolean = since != 0L || inCall(c) || ringing(c) || System.currentTimeMillis() < graceUntil
 
     /** called every second while a lock runs */
     fun tick(c: Context) {
@@ -52,13 +48,15 @@ object Calls {
     }
 }
 
-/** While a study lock is on, a call from a number that is not in the emergency list is turned away; listed numbers ring as normal. */
+/** While a Focus or Strict lock is on, the phone only takes calls to and from the emergency list.
+ *  Incoming: a number not on the list is turned away before it rings; a listed number rings normally (the phone's call screen pops up).
+ *  Outgoing: a number not on the list is stopped, so the dial pad cannot be used to call anyone else.
+ *  With no lock (Gentle mode or no session) every call goes through as usual. */
 class CallGuard : CallScreeningService() {
     override fun onScreenCall(details: Call.Details) {
         val b = CallScreeningService.CallResponse.Builder()
         try {
-            val incoming = Build.VERSION.SDK_INT < 29 || details.callDirection == Call.Details.DIRECTION_INCOMING
-            if (incoming && Lock.isActive(this)) {
+            if (Lock.isActive(this)) {
                 val num = details.handle?.schemeSpecificPart ?: ""
                 if (!Contacts.matches(this, num)) b.setDisallowCall(true).setRejectCall(true).setSkipNotification(true)
             }

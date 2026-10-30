@@ -98,7 +98,7 @@
     var list = [
       { id: 'notifications', req: false, title: 'Allow notifications', why: 'Shows the "phone locked" notice and your study reminders.', btn: 'Allow notifications', done: !!s.notifications },
       { id: 'call', req: true, title: 'Allow emergency calls', why: 'Lets the call buttons on the lock screen dial your emergency contacts in one tap.', btn: 'Allow calls', done: !!s.call },
-      { id: 'callguard', req: false, hide: !(s.sdk >= 29), title: 'Only emergency numbers can ring', why: 'During a study session, calls from numbers that are not on your emergency list are turned away. Your emergency numbers ring normally. Android will ask you to choose FutureSelf as the call screening app.', btn: 'Choose FutureSelf', done: !!s.callGuard, help: 'Press <b>FutureSelf</b> and confirm. If you use Truecaller to screen calls, you can skip this step.' },
+      { id: 'callguard', req: true, hide: !(s.sdk >= 29), title: 'Only emergency numbers can call', why: 'During Focus and Strict sessions, calls from or to numbers that are not on your emergency list are stopped, so the phone cannot be used to call anyone else. Your emergency numbers ring and dial normally. Gentle mode and times with no session are not affected. Android will ask you to choose FutureSelf as the call screening app.', btn: 'Choose FutureSelf', done: !!s.callGuard, help: 'Press <b>FutureSelf</b> and confirm. This replaces another call-screening app such as Truecaller while FutureSelf is set.' },
       { id: 'overlay', req: true, title: 'Show over other apps', why: 'Lets the study screen appear on top of the app you try to open. Without it the lock cannot cover other apps.', btn: 'Open the setting', done: !!s.overlay, help: 'Find <b>FutureSelf</b>, switch <b>Allow display over other apps</b> on, then press Back.' },
       { id: 'accessibility', req: true, title: 'Turn on the app lock', why: 'This is the part that notices when you open another app during a study session and brings you back. Strict mode needs it too.', btn: 'Open the setting', done: !!s.accessibility,
         help: 'Open <b>Installed apps</b> (or <b>Downloaded apps</b>), tap <b>FutureSelf</b> and switch it <b>On</b>. FutureSelf only checks which app is open. It does not read what is on the screen.',
@@ -112,7 +112,8 @@
     }
     return list;
   }
-  function wzNeeded(s) { return !s.accessibility || !s.overlay || !s.call; }
+  function guardOk(s) { return !(s.sdk >= 29) || !!s.callGuard; }
+  function wzNeeded(s) { return !s.accessibility || !s.overlay || !s.call || !guardOk(s); }
   function wzCurrent(list) { for (var i = 0; i < list.length; i++) if (!list[i].done && !list[i].skipped) return i; return -1; }
   function wzRender() {
     var s = FSPhone.status(), list = wzSteps(s); WZ.list = list;
@@ -123,7 +124,7 @@
     if (sig === WZ.sig && el.firstChild) return; WZ.sig = sig;
     var bar = '<div class="wzbar"><i style="width:' + Math.round(100 * doneCount / n) + '%"></i></div>';
     if (i < 0) {
-      var ready = s.accessibility && s.overlay && s.call;
+      var ready = s.accessibility && s.overlay && s.call && guardOk(s);
       el.innerHTML = '<div class="fswiz-in">' + bar + '<div class="eyebrow">' + (ready ? 'All set' : 'Almost') + '</div><h1>' + (ready ? 'FutureSelf is ready' : 'The lock is not ready yet') + '</h1><p class="muted">' +
         (ready ? 'Focus and Strict study sessions will now cover every other app. Phone calls stay available.' : 'Some needed permissions are still off, so study sessions will not lock this phone. You can finish them any time in the Phone tab.') + '</p>' +
         '<div class="stack"><button class="btn pri" data-act="wztest">Test the lock for 1 minute</button><button class="btn" data-act="wzcontacts">Add emergency numbers</button><button class="btn ghost" data-act="wzclose">' + (ready ? 'Done' : 'Close') + '</button></div></div>';
@@ -154,7 +155,7 @@
   /* the session start screen asks before it begins: no lock without the permissions */
   FSX.canStart = function (lock) {
     if (lock === 'gentle') return true;
-    var s = FSPhone.status(); if (s.accessibility && s.overlay && s.call) return true;
+    var s = FSPhone.status(); if (s.accessibility && s.overlay && s.call && guardOk(s)) return true;
     WZ.dismissed = false; wzOpen(); toast('Finish the setup first', 'Allow the needed permissions so the lock and emergency calls can work.', true); return false;
   };
 

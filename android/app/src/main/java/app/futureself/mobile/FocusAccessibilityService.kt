@@ -34,8 +34,7 @@ class FocusAccessibilityService : AccessibilityService() {
 
         private val ALWAYS = setOf(
             "com.android.systemui", "android", "com.android.phone", "com.android.server.telecom",
-            "com.android.dialer", "com.google.android.dialer", "com.samsung.android.dialer",
-            "com.samsung.android.incallui", "com.android.incallui", "com.android.emergency",
+            "com.android.emergency",
             "com.google.android.permissioncontroller", "com.android.permissioncontroller"
         )
         /** parts of the system UI that Strict mode closes (the pull-down panel, quick tiles, the power menu) */
@@ -79,12 +78,10 @@ class FocusAccessibilityService : AccessibilityService() {
 
     private fun allowed(pkg: String): Boolean {
         if (pkg == packageName || pkg in ALWAYS) return true
-        if (Calls.allows(this, pkg)) return true
-        if (pkg.contains("incallui") || pkg.contains("dialer") || pkg.contains("telecom")) return true
-        try {
-            val tm = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
-            if (tm.defaultDialerPackage == pkg) return true
-        } catch (e: Exception) { /* ignore */ }
+        // phone apps (Phone, Truecaller...) only while a call is happening: the plain dial pad is blocked like any other app
+        var phoneApp = pkg.contains("incallui") || pkg.contains("dialer") || pkg.contains("telecom") || pkg == "com.truecaller"
+        try { if ((getSystemService(Context.TELECOM_SERVICE) as TelecomManager).defaultDialerPackage == pkg) phoneApp = true } catch (e: Exception) { /* ignore */ }
+        if (phoneApp) return Calls.callScreenOk(this)
         try {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             if (imm.enabledInputMethodList.any { it.packageName == pkg }) return true

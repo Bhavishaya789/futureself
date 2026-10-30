@@ -2,7 +2,7 @@
 (function () {
   window.__lan = 1;
   window.__nowizard = !window.__wiz;
-  var st = { accessibility: !!window.__granted, overlay: !!window.__granted, call: !!window.__granted, notifications: true, exactAlarm: true, battery: false, lockActive: false, manufacturer: window.__mfr || 'xiaomi', sdk: 34 };
+  var st = { accessibility: !!window.__granted, overlay: !!window.__granted, call: !!window.__granted, notifications: true, exactAlarm: true, battery: false, lockActive: false, callGuard: !!window.__granted, manufacturer: window.__mfr || 'xiaomi', sdk: 34 };
   var contacts = [], settings = { autoLockBlocks: 'false', restrictOnPc: 'true' }, paired = null, lock = null;
   window.__calls = []; window.__log = [];
   function done(id, obj) { setTimeout(function () { window.__fsCb(id, JSON.stringify(obj)); }, 30); }
