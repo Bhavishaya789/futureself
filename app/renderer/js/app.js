@@ -525,7 +525,7 @@
       (a.feedback ? '<p class="fb">' + esc(a.feedback) + '</p>' : '') +
       '<details class="qa" ' + (scored ? '' : 'open') + '><summary>Model answer</summary><div class="ma">' + fmt(a.model_answer).replace(/\n/g, '<br>') + '</div></details>' +
       '<h4 style="margin:14px 0 6px">Marking points ' + (scored ? '' : '<small class="muted">(tick what your answer covered)</small>') + '</h4>' + rubricHTML(a, pi, !scored) +
-      (scored ? '' : '<div class="row wrap" style="margin-top:12px"><button class="btn pri" data-act="pself" data-id="' + a._id + '" data-pi="' + pi + '">Save my score</button>' + (curLesson.ai ? '<button class="btn" data-act="pai" data-id="' + a._id + '" data-pi="' + pi + '">' + ic('spark') + ' Check with AI</button>' : '<span class="muted" style="font-size:13px">AI checking is optional: add your key to .env to turn it on.</span>') + '</div>') + '</div>';
+      (scored ? '' : '<div class="row wrap" style="margin-top:12px"><button class="btn pri" data-act="pself" data-id="' + a._id + '" data-pi="' + pi + '">Save my score</button>' + ((curLesson.ai || (window.fsApi && window.fsApi.acct)) ? '<button class="btn" data-act="pai" data-id="' + a._id + '" data-pi="' + pi + '">' + ic('spark') + ' Check with AI</button>' : '<span class="muted" style="font-size:13px">Sign in to your FutureSelf account to get AI checking.</span>') + '</div>') + '</div>';
   }
   actions.psubmit = function (el) {
     var c = curLesson, pi = +el.dataset.pi, imgs = S.pimgs[pi] || []; if (!imgs.length) return;
@@ -546,9 +546,29 @@
     api('/practice/' + el.dataset.id + '/score', { method: 'POST', body: { ticks: ticks } }).then(function (r) { scored(r, pi); }).catch(function (e) { toast('Could not save', e.message, true); });
   };
   actions.pai = function (el) {
-    var pi = el.dataset.pi; el.disabled = true; el.textContent = 'Reading your answer...';
-    api('/practice/' + el.dataset.id + '/ai', { method: 'POST', body: {} }).then(function (r) { scored(r, pi); }).catch(function (e) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', e.message, true); });
+    var pi = el.dataset.pi, id = el.dataset.id, a = S.pr.filter(function (x) { return x._id === id; })[0];
+    function fail(msg) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', msg, true); }
+    el.disabled = true; el.textContent = 'Reading your answer...';
+    function local() { api('/practice/' + id + '/ai', { method: 'POST', body: {} }).then(function (r) { scored(r, pi); }).catch(function (e) { fail(e.message); }); }
+    if (!(window.fsApi && window.fsApi.acct) || !a) return local();
+    window.fsApi.acct('status', {}).then(function (st) {
+      if (!(st && st.ok && st.data && st.data.signedIn)) { if (curLesson.ai) return local(); return fail('Sign in to your FutureSelf account (Account page) to use AI checking.'); }   // not signed in: the old private-key way, if it is set up
+      var p = (curLesson.l.problems || [])[+pi] || {};
+      return Promise.all(a.files.map(function (f, i) { return api('/practice/' + id + '/image/' + i).then(function (r) { return r.data; }); })).then(function (images) {
+        return window.fsApi.acct('check', { question: p.q || '', model: a.model_answer || '', rubric: a.rubric || [], images: images });
+      }).then(function (r) {
+        if (!r || !r.ok) throw new Error((r && r.error) || 'The server could not check it.');
+        return api('/practice/' + id + '/aiapply', { method: 'POST', body: { awarded: r.data.awarded, feedback: r.data.feedback } });
+      }).then(function (r) { scored(r, pi); });
+    }).catch(function (e) { fail(e.message || 'Try again.'); });
   };
+  if (window.fsApi && window.fsApi.acct) window.fsApi.acct('status', {}).then(function (st) { S.signedIn = !!(st && st.ok && st.data && st.data.signedIn); }).catch(function () { });
+  /* tap any answer photo to read it full screen inside the app (scroll or pinch to look closer) */
+  document.addEventListener('click', function (e) {
+    var im = e.target && e.target.closest && e.target.closest('.thumbs .th img'); if (!im) return;
+    var srcs = $$('.thumbs .th img', im.closest('.thumbs')).map(function (x) { return x.src; });
+    modal('<div class="pzoom"><div class="row spread"><b>Your answer photo</b><button class="btn sm" data-act="close">Close</button></div><div class="pzs">' + srcs.map(function (u) { return '<img src="' + u + '" alt="Answer photo">'; }).join('') + '</div></div>');
+  });
   function loadPractice() {
     var c = curLesson; if (!c || !$('#phist0') && !(c.l.problems || []).length) return;
     api('/practice/' + c.t.id + '/' + c.l.id).then(function (d) {

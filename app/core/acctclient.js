@@ -52,6 +52,11 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to search for videos.'));
         return req('/api/videos', 'POST', { q: String(p && p.q || '').slice(0, 120), channel: String(p && p.channel || '').slice(0, 60) }, true);
       },
+      /* the SERVER marks a photographed answer (the AI key never leaves the server) */
+      check: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use AI checking.'));
+        return req('/api/check', 'POST', { question: p.question, model: p.model, rubric: p.rubric, images: p.images }, true);
+      },
       /* what the other device is doing (null when the server cannot be reached or nobody is signed in) */
       state: function () {
         load(); if (!st.token || !st.site) return Promise.resolve(null);

@@ -20,7 +20,7 @@ class LockBridge(private val act: Activity) {
     fun contacts(): String = Contacts.load(act).toString()
 
     @JavascriptInterface
-    fun call(number: String) { act.runOnUiThread { Dial.start(act, number) } }
+    fun call(number: String) { act.runOnUiThread { Dial.press(act, number) } }
 
     @JavascriptInterface
     fun openApp() {

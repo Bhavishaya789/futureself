@@ -378,3 +378,5 @@ body[data-subj] .card{background:rgba(10,13,36,.62);backdrop-filter:blur(6px);-w
 .vitem{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:12px;background:rgba(255,255,255,.03)}
 .vitem b{display:block;font-size:14px;line-height:1.35}
 .vitem small{display:block;opacity:.65;margin-top:3px}
+.thumbs .th img{cursor:zoom-in}
+.pzoom{width:min(94vw,820px)}.pzs{display:grid;gap:12px;max-height:78vh;overflow:auto;margin-top:12px;-webkit-overflow-scrolling:touch}.pzs img{width:100%;height:auto;border-radius:10px;background:#fff;touch-action:pinch-zoom pan-x pan-y}

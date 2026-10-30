@@ -16,7 +16,7 @@ function create(opts) {
     rand: (n) => crypto.randomBytes(n).toString('hex'),
     sha256: (s) => crypto.createHash('sha256').update(s).digest('hex'),
     http: async (method, url, body, token) => {
-      const r = await fetch(url, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body || {}), signal: AbortSignal.timeout(15000) });
+      const r = await fetch(url, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body || {}), signal: AbortSignal.timeout(75000) });
       let j = null; try { j = await r.json(); } catch (e) { /* not json */ }
       return { status: r.status, json: j };
     },
@@ -58,7 +58,7 @@ function create(opts) {
       Promise.resolve(client.state()).then((j) => { try { onState(j); } catch (e) { log('[account] follow ' + e.message); } }, () => { }).then(() => { busy = false; });
     }, 4000);
   }
-  const OPS = new Set(['status', 'setSite', 'skip', 'register', 'verify', 'resend', 'login', 'google', 'signout', 'videos']);
+  const OPS = new Set(['status', 'setSite', 'skip', 'register', 'verify', 'resend', 'login', 'google', 'signout', 'videos', 'check']);
   return {
     client, push, follow,
     async invoke(op, payload) {

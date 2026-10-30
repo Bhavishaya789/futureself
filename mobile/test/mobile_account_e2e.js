@@ -8,9 +8,9 @@ global.__FS_FAKE_DB = { users: col(), sessions: col(), tickets: col() };
 const mails = []; global.__FS_MAIL = async (m) => mails.push(m);
 const vrr = (id, t, c, l) => ({ videoRenderer: { videoId: id, title: { runs: [{ text: t }] }, ownerText: { runs: [{ text: c }] }, lengthText: { simpleText: l } } });
 const ytPage = '<html><script>var ytInitialData = ' + JSON.stringify({ c: [vrr('aaaaaaaaaaa', 'SQL Joins explained with examples', 'Gate Smashers', '15:20'), vrr('bbbbbbbbbbb', 'Joins in SQL for beginners', 'Neso Academy', '18:00'), vrr('ccccccccccc', 'Funny cat song', 'Cats', '3:00')] }) + ';</script></html>';
-global.__FS_FETCH = async (u) => /youtube\.com\/results/.test(String(u)) ? { ok: true, text: async () => ytPage } : { ok: true, json: async () => ({ aud: 'cid123', iss: 'accounts.google.com', email_verified: 'true', exp: String(Math.floor(Date.now() / 1000) + 600), email: 'gg@x.com', sub: 's', name: 'Gee' }) };
+global.__FS_FETCH = async (u) => /api\.anthropic\.com/.test(String(u)) ? { ok: true, json: async () => ({ content: [{ text: '{"awarded":[1,1,1,1,1,1,1,1],"feedback":"Clear working. Add the final unit."}' }] }) } : /youtube\.com\/results/.test(String(u)) ? { ok: true, text: async () => ytPage } : { ok: true, json: async () => ({ aud: 'cid123', iss: 'accounts.google.com', email_verified: 'true', exp: String(Math.floor(Date.now() / 1000) + 600), email: 'gg@x.com', sub: 's', name: 'Gee' }) };
 const A = '/home/claude/fsw/website/api/';
-const routes = { '/api/auth': require(A + 'auth.js'), '/api/session': require(A + 'session.js'), '/api/videos': require(A + 'videos.js') };
+const routes = { '/api/check': require(A + 'check.js'), '/api/auth': require(A + 'auth.js'), '/api/session': require(A + 'session.js'), '/api/videos': require(A + 'videos.js') };
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 const srv = http.createServer((q, r) => {
   const p0 = q.url.split('?')[0];
@@ -65,6 +65,20 @@ let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, c ? 
   await page.fill('#vq', 'sql joins'); await page.fill('#vch', 'No Such Channel'); await page.click('[data-act=vsearch]'); await page.waitForTimeout(800);
   ok('no match shows a note', /No study video from/.test(await page.textContent('#vres')), await page.textContent('#vres'));
   await page.screenshot({ path: '/home/claude/fsw/mobile/test/m_vsearch.png', fullPage: true });
+  /* ---- practice answer: photo uploaded on the phone, marked by the SERVER's AI, photo opens inside the app ---- */
+  process.env.ANTHROPIC_API_KEY = 'sk-test';
+  await page.evaluate(() => { location.hash = '#/lesson/database-management-system/joins'; }); await page.waitForSelector('#ltabs .tab[data-id=practice]', { timeout: 8000 });
+  await page.click('#ltabs .tab[data-id=practice]'); await page.waitForSelector('.pfile', { state: 'attached' });
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  await page.setInputFiles('.pfile[data-pi="0"]', { name: 'answer.png', mimeType: 'image/png', buffer: png }); await page.waitForSelector('#pth0 img');
+  await page.click('#psub0'); await page.waitForSelector('[data-act=pai]', { timeout: 8000 });
+  ok('AI check is offered when signed in', true);
+  await page.click('[data-act=pai]'); await page.waitForSelector('#pres0 .badge', { timeout: 15000 }).catch(() => { });
+  const res = await page.textContent('#pres0'); ok('server AI marked the answer', /AI checked/.test(res) && /Clear working/.test(res), res.slice(0, 200));
+  await page.click('[data-act=pview]'); await page.waitForSelector('.th.big img', { timeout: 5000 });
+  await page.click('.th.big img'); await page.waitForSelector('.pzoom img'); ok('answer photo opens full screen inside the app', true);
+  await page.click('.pzoom [data-act=close]'); await page.waitForTimeout(200); ok('viewer closes', !(await page.$('.pzoom')));
+  delete process.env.ANTHROPIC_API_KEY;
   await page.evaluate(() => { location.hash = '#/account'; }); await page.waitForTimeout(500);
   await page.click('[data-act=acout]'); await page.waitForSelector('#acbox'); ok('signed out clears native token', (await page.evaluate(() => window.__acct)).token === '');
   await page.click('[data-act=acmode]'); await page.fill('#ace', 'phone@x.com'); await page.fill('#acp', 'longenough1'); await page.click('[data-act=acsubmit]'); await page.waitForTimeout(1200);

@@ -55,3 +55,6 @@ It works without any key (the server reads YouTube's public results page), but Y
 4. In Vercel > **Settings** > **Environment Variables** add `YOUTUBE_API_KEY` with that key, then **Redeploy**.
 
 Limits: 30 searches per student per hour; the same search is cached for 6 hours (cached answers cost nothing). The free YouTube quota is about 100 new searches per day for all students together.
+
+## Turn on AI checking of photographed answers (optional)
+In Vercel > your project > Settings > Environment Variables add `ANTHROPIC_API_KEY` (a key from console.anthropic.com), then Redeploy. After that, every signed-in student can press "Check with AI" on a practice answer, on the PC and on the phone. The key stays on the server and each account gets 40 checks a day. Without the key the button explains that, and students can still score themselves against the model answer.

@@ -268,6 +268,15 @@ function createApi(opts) {
     const r = await store.update('answers', a._id, { score, awarded, mode: 'ai', feedback: String(out.feedback || '').slice(0, 700) });
     return { attempt: revealOf(r, prob), practice: await refreshPractice(a.topic_id, a.lesson_id) };
   });
+  /* the marks came from the FutureSelf server's AI check: store them (clamped to the rubric) */
+  add('POST', /^\/practice\/(\w+)\/aiapply$/, async (m, d) => {
+    const a = await store.findOne('answers', { _id: m[1] }); if (!a) throw bad('Attempt not found', 404);
+    const prob = lessonOf(a.topic_id, a.lesson_id).problems[a.pi], got = Array.isArray(d.awarded) ? d.awarded : [];
+    const awarded = prob.rubric.map((r, i) => Math.max(0, Math.min(r.m, Math.round((Number(got[i]) || 0) * 2) / 2)));
+    const score = awarded.reduce((x, y) => x + y, 0);
+    const r = await store.update('answers', a._id, { score, awarded, mode: 'ai', feedback: String(d.feedback || '').slice(0, 700) });
+    return { attempt: revealOf(r, prob), practice: await refreshPractice(a.topic_id, a.lesson_id) };
+  });
   add('GET', /^\/practice\/(\w+)\/image\/(\d+)$/, async (m) => {
     const a = await store.findOne('answers', { _id: m[1] }); const f = a && a.files[parseInt(m[2], 10)]; if (!f) throw bad('Photo not found', 404);
     const ext = f.split('.').pop(); return { data: 'data:image/' + (ext === 'jpg' ? 'jpeg' : ext) + ';base64,' + await files.get(f) };

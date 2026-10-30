@@ -160,28 +160,43 @@ object Dial {
     fun start(act: Activity, raw: String) {
         val n = check(act, raw) ?: run { return }
         val apps = apps(act)
-        if (apps.size < 2) { call(act, n, null); return }
+        if (apps.size < 2) { val r = call(act, n, null); if (!r.optBoolean("ok", true)) say(act, r.optString("error")); return }
         val granted = act.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
         val labels = ArrayList<CharSequence>(); val pkgs = ArrayList<String?>()
         if (granted) { labels.add("Phone (calls straight away)"); pkgs.add(null) }
         for (a in apps) { labels.add(a.second + if (granted) " (opens its dialer)" else ""); pkgs.add(a.first) }
-        android.app.AlertDialog.Builder(act)
+        android.app.AlertDialog.Builder(act, android.R.style.Theme_DeviceDefault_Dialog_Alert)
             .setTitle("Call $n with")
-            .setItems(labels.toTypedArray()) { _, i -> call(act, n, pkgs[i]) }
+            .setItems(labels.toTypedArray()) { _, i -> val r = call(act, n, pkgs[i]); if (!r.optBoolean("ok", true)) say(act, r.optString("error")) }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    /** pkg == null: place the call directly through the phone's calling app; otherwise open that app's dialer with the number */
+    /** pkg == null: place the call directly through the phone's calling app; otherwise open that app's dialer with the number.
+     *  If one way is refused by the phone, the next one is tried, so a Call press never does nothing. */
     fun call(c: Context, raw: String, pkg: String?): JSONObject {
         val n = Contacts.normalize(raw) ?: return errJson("That is not a phone number")
         if (check(c, n) == null) return errJson("That number is not in your emergency list")
         val granted = c.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
-        val direct = pkg == null && granted
-        val i = Intent(if (direct) Intent.ACTION_CALL else Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(n)))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (pkg != null) i.setPackage(pkg)
+        val uri = Uri.parse("tel:" + Uri.encode(n))
+        val tries = ArrayList<Pair<Intent, Boolean>>()
+        if (pkg == null && granted) tries.add(Pair(Intent(Intent.ACTION_CALL, uri), true))
+        if (pkg != null) tries.add(Pair(Intent(Intent.ACTION_DIAL, uri).setPackage(pkg), false))
+        tries.add(Pair(Intent(Intent.ACTION_DIAL, uri), false))
         Calls.grace(c, 120000L)
-        return try { c.startActivity(i); okJson().put("direct", direct) } catch (e: Exception) { errJson("This phone cannot place calls") }
+        for (t in tries) {
+            try { c.startActivity(t.first.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); return okJson().put("direct", t.second) } catch (e: Exception) { /* try the next way */ }
+        }
+        return errJson("This phone would not start the call. Allow Phone permission for FutureSelf in the app settings.")
+    }
+
+    private fun say(c: Context, msg: String) { android.widget.Toast.makeText(c, msg, android.widget.Toast.LENGTH_LONG).show() }
+
+    /** the Call button for the lock screen and the app: shows why when a call cannot start */
+    fun press(act: Activity, raw: String) {
+        if (check(act, raw) == null) { say(act, "That number is not in your emergency list"); return }
+        val granted = act.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
+        if (!granted) say(act, "Calls are not allowed yet. Opening the dialer instead. Allow Phone permission for FutureSelf for one-tap calling.")
+        start(act, raw)
     }
 }

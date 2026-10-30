@@ -147,7 +147,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
     @JavascriptInterface
     fun callNumber(n: String): String {
         if (Contacts.normalize(n) == null) return errJson("That is not a phone number").toString()
-        act.runOnUiThread { Dial.start(act, n) }
+        act.runOnUiThread { Dial.press(act, n) }
         return okJson().toString()
     }
 
@@ -234,7 +234,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
             if (method != "GET" && method != "POST") return@later errJson("Not allowed")
             if (!Account.hostOk(act, url)) return@later errJson("Not allowed")
             if (body.length > 20000) return@later errJson("Request too large")
-            val r = Link.http(method, url, if (token.isEmpty()) null else token, if (method == "POST") body else null, 15000)
+            val r = Link.http(method, url, if (token.isEmpty()) null else token, if (method == "POST") body else null, 75000)
                 ?: return@later errJson("Could not reach the server")
             val j = try { JSONObject(r.second) } catch (e: Exception) { JSONObject() }
             okJson().put("status", r.first).put("json", j)

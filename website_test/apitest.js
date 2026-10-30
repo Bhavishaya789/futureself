@@ -129,6 +129,22 @@ let bad = 0; const T = (n, ok, x) => { console.log((ok ? 'PASS ' : 'FAIL ') + n 
   for (let i = 0; i < 40 && !limited; i++) { const x = await call(vid, 'POST', { q: 'deadlock topic ' + i }, tok); if (x.s === 429) limited = x; }
   T('rate limit stops endless searching (429)', !!limited && /limit/.test(limited.j.error), limited);
   global.__FS_FETCH = async () => ({ ok: true, json: async () => google });
+  /* ---- AI answer checking runs on the server ---- */
+  const img = 'data:image/jpeg;base64,' + Buffer.from('fakejpegbytes').toString('base64'), rub = [{ t: 'Defines a deadlock', m: 2 }, { t: 'Gives the four conditions', m: 3 }];
+  const chk = require('../website/api/check.js');
+  const savedFetch = global.__FS_FETCH, body0 = { question: 'What is deadlock?', model: 'm', rubric: rub, images: [img] };
+  r = await call(chk, 'POST', body0, null); T('check needs sign-in', r.s === 401, r);
+  r = await call(chk, 'POST', body0, tok); T('check says so when the server has no AI key', r.s === 503 && /ANTHROPIC_API_KEY/.test(r.j.error), r);
+  process.env.ANTHROPIC_API_KEY = 'sk-test'; let sent = null;
+  global.__FS_FETCH = async (u, o) => { sent = { u, o }; return { ok: true, json: async () => ({ content: [{ text: 'Here: {"awarded":[2,9],"feedback":"Good definition. List all four conditions."}' }] }) }; };
+  r = await call(chk, 'POST', body0, tok); T('check returns clamped marks and feedback', r.s === 200 && r.j.awarded[0] === 2 && r.j.awarded[1] === 3 && /Good/.test(r.j.feedback), r);
+  T('the key is sent only to Anthropic', sent && sent.u === 'https://api.anthropic.com/v1/messages' && sent.o.headers['x-api-key'] === 'sk-test');
+  r = await call(chk, 'POST', { ...body0, images: ['data:text/html;base64,AAAA'] }, tok); T('non-image refused', r.s === 400, r);
+  r = await call(chk, 'POST', { ...body0, images: [] }, tok); T('no photo refused', r.s === 400, r);
+  r = await call(chk, 'POST', { ...body0, images: ['data:image/jpeg;base64,' + 'A'.repeat(5 * 1024 * 1024)] }, tok); T('oversize photos refused', r.s === 413, r);
+  global.__FS_FETCH = async () => ({ ok: false, json: async () => ({ error: { message: 'secret detail' } }) });
+  r = await call(chk, 'POST', body0, tok); T('AI failure is friendly and leaks nothing', r.s === 502 && !/secret/.test(JSON.stringify(r.j)), r);
+  delete process.env.ANTHROPIC_API_KEY; global.__FS_FETCH = savedFetch;
   /* ---- security hardening ---- */
   r = await call(sess, 'POST', { active: true, subject: 'x', lock: 'strict', endsAt: Date.now() + 99 * 3600e3, src: 'pc' }, tok);
   r = await call(sess, 'GET', null, tok); T('a session cannot lock the other device for more than 12 hours', r.j.endsAt <= Date.now() + 12 * 3600e3 + 1000, r.j);
