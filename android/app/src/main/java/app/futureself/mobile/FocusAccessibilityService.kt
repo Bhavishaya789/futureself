@@ -79,6 +79,7 @@ class FocusAccessibilityService : AccessibilityService() {
 
     private fun allowed(pkg: String): Boolean {
         if (pkg == packageName || pkg in ALWAYS) return true
+        if (Calls.allows(this, pkg)) return true
         if (pkg.contains("incallui") || pkg.contains("dialer") || pkg.contains("telecom")) return true
         try {
             val tm = getSystemService(Context.TELECOM_SERVICE) as TelecomManager

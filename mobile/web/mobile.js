@@ -15,6 +15,7 @@
   window.__fsEvent = function (json) {
     var e; try { e = JSON.parse(json); } catch (x) { return; }
     if (e.type === 'distraction') listeners.distraction.forEach(function (f) { try { f({ kind: 'app', name: e.name || 'another app' }); } catch (x) { } });
+    if (e.type === 'call' && window.FSX && FSX.onCall) FSX.onCall(!!e.on, e.ms || 0);
     if (e.type === 'refresh' && window.FSX && FSX.onRefresh) FSX.onRefresh();
     if (e.type === 'auth' && authWaiter) { var w = authWaiter; authWaiter = null; if (/^[a-f0-9]{48}$/.test(e.ticket || '')) w.res(e.ticket); else w.rej(new Error('Sign-in did not finish.')); }
   };
@@ -153,6 +154,7 @@
     status: function () { return jcall('status'); },
     openSettings: function (kind) { return jcall('openSettings', kind); },
     requestPermission: function (kind) { return jcall('requestPermission', kind); },
+    requestCallGuard: function () { return jcall('requestCallGuard'); },
     contacts: function () { var r = jcall('getContacts'); return Array.isArray(r) ? r : (r && r.contacts) || []; },
     saveContacts: function (list) { return jcall('saveContacts', JSON.stringify(list)); },
     call: function (number) { return jcall('callNumber', String(number)); },

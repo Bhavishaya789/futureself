@@ -14,6 +14,7 @@
     version: function () { return JSON.stringify({ version: '1.0.0-test' }); },
     status: function () { return JSON.stringify(st); },
     openSettings: function (k) { window.__log.push('settings:' + k); if (k === 'accessibility') st.accessibility = true; if (k === 'overlay') st.overlay = true; if (k === 'battery') st.battery = true; return JSON.stringify({ ok: true }); },
+    requestCallGuard: function () { window.__log.push('callguard'); st.callGuard = true; return JSON.stringify({ ok: true }); },
     requestPermission: function (k) { window.__log.push('perm:' + k); st[k] = true; return JSON.stringify({ ok: true }); },
     getContacts: function () { return JSON.stringify(contacts); },
     saveContacts: function (j) { var l = JSON.parse(j); if (l.length > 5) return JSON.stringify({ ok: false, error: 'Max 5' }); contacts = l; return JSON.stringify({ ok: true }); },

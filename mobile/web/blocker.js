@@ -10,7 +10,7 @@
   function tick() {
     var cur = (L && j(L.info())) || info;
     if (L && cur && cur.active === false) { try { L.finish(); } catch (e) { } return; }
-    var ms = Math.max(0, (cur.endsAt || 0) - Date.now()), s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    var ms = Math.max(0, (cur.endsAt || 0) - (cur.pausedAt || Date.now())), s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
     tEl.textContent = (h ? h + ':' + pad(m) : pad(m)) + ':' + pad(x);
   }
   tick(); setInterval(tick, 1000);

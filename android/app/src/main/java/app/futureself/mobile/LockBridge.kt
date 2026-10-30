@@ -13,14 +13,14 @@ class LockBridge(private val act: Activity) {
         val on = Lock.isActive(act)
         val s = Lock.get(act)
         return JSONObject().put("active", on).put("subject", s.subject).put("endsAt", s.endsAt)
-            .put("topicId", s.topicId).put("source", s.source).toString()
+            .put("topicId", s.topicId).put("source", s.source).put("pausedAt", Calls.pausedAt()).toString()
     }
 
     @JavascriptInterface
     fun contacts(): String = Contacts.load(act).toString()
 
     @JavascriptInterface
-    fun call(number: String) { act.runOnUiThread { Dial.call(act, number) } }
+    fun call(number: String) { act.runOnUiThread { Dial.start(act, number) } }
 
     @JavascriptInterface
     fun openApp() {

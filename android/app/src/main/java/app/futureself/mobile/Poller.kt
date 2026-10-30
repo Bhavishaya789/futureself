@@ -72,6 +72,7 @@ object Poller {
                 }
                 // while a lock runs, look at the screen every second so no app slips through a missed event
                 if (Lock.isActive(app)) FocusAccessibilityService.enforce()
+                Calls.tick(app)
             } catch (t: Throwable) { /* keep going */ }
             try { Thread.sleep(if (Lock.get(app).active) 1000L else 1500L) } catch (e: InterruptedException) { break }
         }

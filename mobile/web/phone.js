@@ -98,12 +98,14 @@
     var list = [
       { id: 'notifications', req: false, title: 'Allow notifications', why: 'Shows the "phone locked" notice and your study reminders.', btn: 'Allow notifications', done: !!s.notifications },
       { id: 'call', req: false, title: 'Allow emergency calls', why: 'Lets the call buttons on the lock screen dial your emergency contacts in one tap.', btn: 'Allow calls', done: !!s.call },
+      { id: 'callguard', req: false, hide: !(s.sdk >= 29), title: 'Only emergency numbers can ring', why: 'During a study session, calls from numbers that are not on your emergency list are turned away. Your emergency numbers ring normally. Android will ask you to choose FutureSelf as the call screening app.', btn: 'Choose FutureSelf', done: !!s.callGuard, help: 'Press <b>FutureSelf</b> and confirm. If you use Truecaller to screen calls, you can skip this step.' },
       { id: 'overlay', req: true, title: 'Show over other apps', why: 'Lets the study screen appear on top of the app you try to open. Without it the lock cannot cover other apps.', btn: 'Open the setting', done: !!s.overlay, help: 'Find <b>FutureSelf</b>, switch <b>Allow display over other apps</b> on, then press Back.' },
       { id: 'accessibility', req: true, title: 'Turn on the app lock', why: 'This is the part that notices when you open another app during a study session and brings you back. Strict mode needs it too.', btn: 'Open the setting', done: !!s.accessibility,
         help: 'Open <b>Installed apps</b> (or <b>Downloaded apps</b>), tap <b>FutureSelf</b> and switch it <b>On</b>. FutureSelf only checks which app is open. It does not read what is on the screen.',
         help2: (s.sdk >= 33 ? 'Switch greyed out or "Restricted setting"? Tap <b>Open app info</b>, press the <b>&#8942;</b> menu (top right), choose <b>Allow restricted settings</b>, then try again. Android does this for apps installed from a file.' : '') },
       { id: 'battery', req: false, title: 'Keep FutureSelf awake', why: 'Stops the phone from putting FutureSelf to sleep, so the lock keeps working with the screen off.', btn: 'Allow', done: !!s.battery }
     ];
+    list = list.filter(function (x) { return !x.hide; });
     if (OEM.test(s.manufacturer || '')) {
       list.push({ id: 'autostart', req: false, manual: true, title: 'Allow auto-start', why: 'Your phone brand can close FutureSelf in the background. Switch FutureSelf <b>on</b> in the Auto-start list.', btn: 'Open Auto-start', done: FSPhone.getSetting('oem_autostart') === 'true' });
       if (/xiaomi|redmi|poco/.test(s.manufacturer || '')) list.push({ id: 'popup', req: false, manual: true, title: 'Allow pop-ups while in the background', why: 'On Xiaomi / Redmi phones the study screen cannot open over another app unless you allow <b>Display pop-up windows while running in the background</b> and <b>Show on Lock screen</b>.', btn: 'Open app permissions', done: FSPhone.getSetting('oem_popup') === 'true' });
@@ -160,6 +162,7 @@
     wzgo: function (el) {
       var k = el.dataset.id, n = WZ.tries[k] = (WZ.tries[k] || 0) + 1, r;
       if (k === 'notifications' || k === 'call') r = n > 1 ? FSPhone.openSettings(k === 'call' ? 'app' : 'notifications') : FSPhone.requestPermission(k);
+      else if (k === 'callguard') r = n > 1 ? FSPhone.openSettings('app') : FSPhone.requestCallGuard();
       else r = FSPhone.openSettings(k);
       if (r && r.ok === false) toast('Could not open', r.error, true);
       WZ.sig = ''; setTimeout(wzRender, 300);

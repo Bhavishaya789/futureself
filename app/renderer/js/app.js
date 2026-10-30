@@ -1003,7 +1003,15 @@
   document.addEventListener('change', function (e) { if (e.target.id === 'pfx') { FX.setEnabled(e.target.checked); toast(e.target.checked ? 'Effects on' : 'Effects off'); if (e.target.checked) FX.fireworks(2); } });
   document.addEventListener('selectstart', function (e) { if (document.body.style.cursor === 'grabbing') e.preventDefault(); });
 
-  window.FSX = window.FSX || {}; FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S };
+  /* phone only: a call stops the timer, and it carries on when the call ends */
+  window.FSX = window.FSX || {};
+  FSX.onCall = function (on) {
+    var s = S.session; if (!s || s.ended || s.remote) return;
+    if (on && !s.pausedAt) { s.pausedAt = Date.now(); s.callPause = true; }
+    else if (!on && s.callPause) { s.pausedMs += Date.now() - s.pausedAt; s.pausedAt = null; s.callPause = false; }
+    pushState();
+  };
+  FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S };
   if (window.FSX && FSX.actions) Object.assign(actions, FSX.actions);
   go();
 })();

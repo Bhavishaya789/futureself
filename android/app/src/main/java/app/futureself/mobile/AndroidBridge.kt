@@ -47,6 +47,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
         return JSONObject()
             .put("accessibility", FocusAccessibilityService.isEnabled(act))
             .put("overlay", Settings.canDrawOverlays(act))
+            .put("callGuard", callGuardOn())
             .put("call", act.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED)
             .put("notifications", notif)
             .put("exactAlarm", true) // reminders use clock alarms, which need no permission
@@ -106,6 +107,23 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
         return okJson().toString()
     }
 
+    private fun callGuardOn(): Boolean = try {
+        Build.VERSION.SDK_INT >= 29 && (act.getSystemService(android.app.role.RoleManager::class.java)).isRoleHeld(android.app.role.RoleManager.ROLE_CALL_SCREENING)
+    } catch (e: Exception) { false }
+
+    /** asks Android to make FutureSelf the call-screening app, so calls from numbers outside the emergency list are turned away during a lock */
+    @JavascriptInterface
+    fun requestCallGuard(): String {
+        if (Build.VERSION.SDK_INT < 29) return errJson("This needs Android 10 or newer").toString()
+        val rm = act.getSystemService(android.app.role.RoleManager::class.java)
+        if (rm.isRoleHeld(android.app.role.RoleManager.ROLE_CALL_SCREENING)) return okJson().toString()
+        act.runOnUiThread {
+            try { act.startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_CALL_SCREENING), 21) }
+            catch (e: Exception) { try { act.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + act.packageName))) } catch (x: Exception) { /* nothing */ } }
+        }
+        return okJson().toString()
+    }
+
     @JavascriptInterface
     fun requestPermission(kind: String): String {
         val perm = when (kind) {
@@ -128,7 +146,9 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
 
     @JavascriptInterface
     fun callNumber(n: String): String {
-        return Dial.call(act, n).toString()
+        if (Contacts.normalize(n) == null) return errJson("That is not a phone number").toString()
+        act.runOnUiThread { Dial.start(act, n) }
+        return okJson().toString()
     }
 
     @JavascriptInterface

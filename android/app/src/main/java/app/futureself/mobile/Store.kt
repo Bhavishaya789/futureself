@@ -1,6 +1,7 @@
 package app.futureself.mobile
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -57,7 +58,7 @@ object Lock {
         if (!s.active) return false
         val now = System.currentTimeMillis()
         if (now - s.startedAt > MAX_MS) { stop(c); return false }
-        if (s.source == "phone" && now >= s.endsAt) { stop(c); return false }
+        if (s.source == "phone" && now >= s.endsAt && !Calls.onCall()) { stop(c); return false }
         return true
     }
 
@@ -75,6 +76,13 @@ object Lock {
             .apply()
     }
 
+    /** a phone call does not count as study time: the end moves later by as long as the call lasted */
+    fun extend(c: Context, ms: Long) {
+        if (ms <= 0) return
+        val p = Store.prefs(c)
+        p.edit().putLong("lock_ends", p.getLong("lock_ends", 0L) + ms).putLong("lock_started", p.getLong("lock_started", 0L) + ms).apply()
+    }
+
     fun stop(c: Context) {
         Store.prefs(c).edit().putBoolean("lock_active", false).apply()
     }
@@ -84,6 +92,15 @@ object Lock {
 object Contacts {
     const val MAX = 5
     private val NUM = Regex("^\\+?[0-9]{3,15}$")
+
+    /** same number even if one side has +91 / 0 in front */
+    fun matches(c: Context, raw: String): Boolean {
+        val d = raw.filter { it.isDigit() }
+        if (d.length < 3) return false
+        val tail = d.takeLast(10)
+        if (d == "112") return true
+        return numbers(c).any { val x = it.filter { ch -> ch.isDigit() }; x.length >= 3 && x.takeLast(10) == tail }
+    }
 
     fun normalize(raw: String): String? {
         val n = raw.replace(Regex("[\\s\\-().]"), "")
@@ -120,12 +137,51 @@ object Contacts {
 
 /** Calls only numbers the student saved, plus 112. The page cannot dial anything else. */
 object Dial {
-    fun call(c: Context, raw: String): JSONObject {
+    private fun check(c: Context, raw: String): String? {
+        val n = Contacts.normalize(raw) ?: return null
+        return if (n == "112" || Contacts.numbers(c).contains(n)) n else null
+    }
+
+    /** the phone apps that can place a call (the normal Phone app, Truecaller and so on): package name to label */
+    fun apps(c: Context): List<Pair<String, String>> {
+        val pm = c.packageManager
+        val q = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+        val out = ArrayList<Pair<String, String>>()
+        try {
+            for (r in pm.queryIntentActivities(q, 0)) {
+                val p = r.activityInfo.packageName
+                if (out.none { it.first == p }) out.add(Pair(p, r.loadLabel(pm).toString()))
+            }
+        } catch (e: Exception) { /* none */ }
+        return out
+    }
+
+    /** the Call button: if there is more than one phone app, ask which one; the first choice dials straight away */
+    fun start(act: Activity, raw: String) {
+        val n = check(act, raw) ?: run { return }
+        val apps = apps(act)
+        if (apps.size < 2) { call(act, n, null); return }
+        val granted = act.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
+        val labels = ArrayList<CharSequence>(); val pkgs = ArrayList<String?>()
+        if (granted) { labels.add("Phone (calls straight away)"); pkgs.add(null) }
+        for (a in apps) { labels.add(a.second + if (granted) " (opens its dialer)" else ""); pkgs.add(a.first) }
+        android.app.AlertDialog.Builder(act)
+            .setTitle("Call $n with")
+            .setItems(labels.toTypedArray()) { _, i -> call(act, n, pkgs[i]) }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    /** pkg == null: place the call directly through the phone's calling app; otherwise open that app's dialer with the number */
+    fun call(c: Context, raw: String, pkg: String?): JSONObject {
         val n = Contacts.normalize(raw) ?: return errJson("That is not a phone number")
-        if (n != "112" && !Contacts.numbers(c).contains(n)) return errJson("That number is not in your emergency list")
+        if (check(c, n) == null) return errJson("That number is not in your emergency list")
         val granted = c.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
-        val i = Intent(if (granted) Intent.ACTION_CALL else Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(n)))
+        val direct = pkg == null && granted
+        val i = Intent(if (direct) Intent.ACTION_CALL else Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(n)))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        return try { c.startActivity(i); okJson().put("direct", granted) } catch (e: Exception) { errJson("This phone cannot place calls") }
+        if (pkg != null) i.setPackage(pkg)
+        Calls.grace(c, 120000L)
+        return try { c.startActivity(i); okJson().put("direct", direct) } catch (e: Exception) { errJson("This phone cannot place calls") }
     }
 }
