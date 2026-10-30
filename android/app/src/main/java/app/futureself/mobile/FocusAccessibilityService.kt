@@ -51,10 +51,7 @@ class FocusAccessibilityService : AccessibilityService() {
         /** look at the app on screen right now (used the moment a lock starts, and every second while a lock runs) */
         fun enforce() {
             val svc = instance ?: return
-            try {
-                val root = svc.rootInActiveWindow
-                svc.check(root?.packageName?.toString(), root?.className?.toString())
-            } catch (e: Exception) { /* ignore */ }
+            try { svc.scan() } catch (e: Exception) { /* ignore */ }
         }
     }
 
@@ -73,7 +70,22 @@ class FocusAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && event.eventType != AccessibilityEvent.TYPE_WINDOWS_CHANGED) return
-        check(event.packageName?.toString(), event.className?.toString())
+        // window-list events carry no package name, so look at the windows themselves (this is what catches the pulled-down notification panel)
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) scan() else check(event.packageName?.toString(), event.className?.toString())
+    }
+
+    /** looks at the window the student is really using right now (the one with focus), whatever its type */
+    private fun scan() {
+        if (!Lock.isActive(this)) return
+        var pkg: String? = null; var cls: String? = null
+        try {
+            val ws = windows
+            val w = ws?.firstOrNull { it.isActive } ?: ws?.firstOrNull { it.isFocused }
+            val r = w?.root ?: rootInActiveWindow
+            pkg = r?.packageName?.toString(); cls = r?.className?.toString()
+        } catch (e: Exception) { /* fall back below */ }
+        if (pkg == null) { try { val r = rootInActiveWindow; pkg = r?.packageName?.toString(); cls = r?.className?.toString() } catch (e: Exception) { /* none */ } }
+        check(pkg, cls)
     }
 
     private fun allowed(pkg: String): Boolean {
@@ -91,12 +103,15 @@ class FocusAccessibilityService : AccessibilityService() {
 
     private fun check(pkg: String?, cls: String?) {
         if (pkg == null || !Lock.isActive(this)) return
-        val strict = Lock.get(this).mode == "strict"
 
-        // Strict: push the notification shade, quick settings and power menu shut
-        if (strict && (pkg == "com.android.systemui" || pkg == "android")) {
+        // Focus and Strict: the pulled-down panel (notifications, quick tiles) and the power menu are closed at once
+        if (pkg.contains("systemui") || pkg == "android") {
             val c = cls ?: ""
-            if (SHADE.containsMatchIn(c) && !SYSTEM_OK.containsMatchIn(c)) closeShade()
+            if (SYSTEM_OK.containsMatchIn(c)) return
+            if (pkg == "android") { if (SHADE.containsMatchIn(c)) closeShade(); return }
+            try { if ((getSystemService(Context.KEYGUARD_SERVICE) as android.app.KeyguardManager).isKeyguardLocked) return } catch (e: Exception) { /* ignore */ }
+            if (Calls.callScreenOk(this)) return   // a call is ringing or running: its controls live in the panel
+            closeShade()
             return
         }
         if (allowed(pkg)) return
@@ -118,14 +133,25 @@ class FocusAccessibilityService : AccessibilityService() {
 
     private fun closeShade() {
         val now = SystemClock.elapsedRealtime()
-        if (now - lastShadeClose < 400) return
+        if (now - lastShadeClose < 350) return
         lastShadeClose = now
         try {
             if (Build.VERSION.SDK_INT >= 31) performGlobalAction(GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE)
             else performGlobalAction(GLOBAL_ACTION_BACK)
-            // the power menu is not a shade: Back closes it
-            main.postDelayed({ if (Lock.isActive(this)) try { performGlobalAction(GLOBAL_ACTION_BACK) } catch (e: Exception) { /* ignore */ } }, 250)
         } catch (e: Exception) { /* ignore */ }
+        // Some phones (MIUI, ColorOS...) ignore that. If the panel is still there, Back, then the lock screen on top of it.
+        main.postDelayed({
+            if (!Lock.isActive(this)) return@postDelayed
+            try { performGlobalAction(GLOBAL_ACTION_BACK) } catch (e: Exception) { /* ignore */ }
+        }, 200)
+        main.postDelayed({
+            if (!Lock.isActive(this)) return@postDelayed
+            val still = try { rootInActiveWindow?.packageName?.toString()?.contains("systemui") == true } catch (e: Exception) { false }
+            if (still) {
+                try { startActivity(Intent(this, BlockerActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NO_ANIMATION)) } catch (e: Exception) { /* ignore */ }
+                try { performGlobalAction(GLOBAL_ACTION_HOME) } catch (e: Exception) { /* ignore */ }
+            }
+        }, 550)
     }
 
     private fun label(pkg: String): String = try {

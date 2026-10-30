@@ -13,3 +13,5 @@ h1{margin:4px 0 0;font-family:'Sora',sans-serif;font-size:28px;line-height:1.2;m
 .call:first-child{border-top:0}.call b{display:block;font-size:16px}.call small{color:#9aa3c7}
 .call button{border:0;border-radius:12px;padding:12px 18px;font-weight:700;font-size:15px;color:#fff;background:#e0314f;min-height:46px;min-width:84px}
 .call.fam button{background:#1f9d6b}
+
+.gw{margin:14px auto 0;max-width:360px;padding:10px 14px;border-radius:12px;background:rgba(224,49,79,.18);border:1px solid rgba(224,49,79,.5);color:#ffd5dc;font-size:14px}.gw button{margin-left:6px;border:0;border-radius:8px;padding:6px 10px;font-weight:700;background:#e0314f;color:#fff}

@@ -70,6 +70,11 @@ let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, x ==
   const berrs = []; bp.on('pageerror', e => berrs.push(e.message)); await bp.goto(base + '/blocker.html'); await bp.waitForTimeout(2200);
   ok('blocker shows subject, countdown and contacts', await bp.evaluate(() => document.getElementById('subj').textContent === 'Operating Systems' && /^\d+:\d\d$/.test(document.getElementById('time').textContent) && document.querySelectorAll('.call').length === 3), await bp.evaluate(() => document.getElementById('time').textContent));
   await bp.click('.call.fam button'); ok('blocker call button', (await bp.evaluate(() => window.__called)) === '+919876543210');
+  ok('no call-protection warning when it is ON', await bp.evaluate(() => document.getElementById('guardwarn').hidden === true));
+  const bq = await ctx.newPage(); await bq.addInitScript(() => { window.LockBridge = { info: () => JSON.stringify({ active: true, subject: 'X', endsAt: Date.now() + 90000, topicId: '', source: 'phone', guard: false }), contacts: () => '[]', call: () => { }, openApp: () => { window.__opened = 1; }, finish: () => { } }; });
+  await bq.goto(base + '/blocker.html'); await bq.waitForTimeout(600);
+  ok('lock screen warns when call protection is OFF', await bq.evaluate(() => document.getElementById('guardwarn').hidden === false));
+  await bq.click('#gwfix'); ok('warning button opens the app to fix it', await bq.evaluate(() => window.__opened === 1)); await bq.close();
   await bp.screenshot({ path: '/home/claude/fsw/mobile/test/m_blocker.png' }); ok('blocker no errors', berrs.length === 0, JSON.stringify(berrs));
   await br.close(); srv.close(); console.log(fail ? 'FAILED ' + fail : 'ALL PASS'); process.exit(fail ? 1 : 0);
 })().catch(e => { console.error('E2E FAIL', e); process.exit(1); });

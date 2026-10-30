@@ -13,6 +13,13 @@ object Calls {
     @Volatile private var cachePkgs: Set<String> = emptySet()
     @Volatile private var cacheAt = 0L
 
+    /** is FutureSelf the phone's call-screening app (the thing that turns unlisted callers away)? */
+    fun guardOn(c: Context): Boolean = try {
+        Build.VERSION.SDK_INT < 29 || c.getSystemService(android.app.role.RoleManager::class.java).isRoleHeld(android.app.role.RoleManager.ROLE_CALL_SCREENING)
+    } catch (e: Exception) { false }
+
+    fun lastCheck(c: Context): String = Store.getString(c, "cg_last")
+
     fun onCall(): Boolean = since != 0L
     fun pausedAt(): Long = since
 
@@ -58,7 +65,10 @@ class CallGuard : CallScreeningService() {
         try {
             if (Lock.isActive(this)) {
                 val num = details.handle?.schemeSpecificPart ?: ""
-                if (!Contacts.matches(this, num)) b.setDisallowCall(true).setRejectCall(true).setSkipNotification(true)
+                val ok = Contacts.matches(this, num)
+                if (!ok) b.setDisallowCall(true).setRejectCall(true).setSkipNotification(true)
+                val t = java.text.SimpleDateFormat("HH:mm", java.util.Locale.US).format(java.util.Date())
+                Store.putString(this, "cg_last", t + "  " + (if (num.isEmpty()) "hidden number" else num.takeLast(4).padStart(num.length.coerceAtMost(10), '*')) + (if (ok) "  allowed" else "  turned away"))
             }
         } catch (e: Exception) { /* on any doubt, let the call through */ }
         respondToCall(details, b.build())

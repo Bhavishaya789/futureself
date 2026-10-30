@@ -28,7 +28,7 @@
         var on = !!s[p[0]];
         return '<div class="kv perm"><span><b>' + p[1] + '</b>' + (p[4] ? ' <small class="muted">(needed)</small>' : '') + '<br><small class="muted">' + p[2] + '</small></span>' +
           (on ? '<span class="badge">On</span>' : '<button class="btn sm pri" data-act="phperm" data-id="' + p[0] + '">' + p[3] + '</button>') + '</div>';
-      }).join('') + '<div class="row wrap" style="margin-top:12px"><button class="btn" data-act="wzopen">Open the setup guide</button></div></div>';
+      }).join('') + '<div class="row wrap" style="margin-top:12px"><button class="btn" data-act="wzopen">Open the setup guide</button></div>' + (s.callLast ? '<p class="muted" style="margin-top:10px;font-size:13px">Last call checked: ' + esc(s.callLast) + '</p>' : '') + '</div>';
   }
 
   function contactsCard(list) {

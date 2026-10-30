@@ -48,6 +48,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
             .put("accessibility", FocusAccessibilityService.isEnabled(act))
             .put("overlay", Settings.canDrawOverlays(act))
             .put("callGuard", callGuardOn())
+            .put("callLast", Calls.lastCheck(act))
             .put("notifGuard", NotifGuard.enabled(act))
             .put("call", act.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED)
             .put("notifications", notif)

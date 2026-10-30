@@ -13,7 +13,7 @@ class LockBridge(private val act: Activity) {
         val on = Lock.isActive(act)
         val s = Lock.get(act)
         return JSONObject().put("active", on).put("subject", s.subject).put("endsAt", s.endsAt)
-            .put("topicId", s.topicId).put("source", s.source).put("pausedAt", Calls.pausedAt()).toString()
+            .put("topicId", s.topicId).put("source", s.source).put("pausedAt", Calls.pausedAt()).put("guard", Calls.guardOn(act)).toString()
     }
 
     @JavascriptInterface

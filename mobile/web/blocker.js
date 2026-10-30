@@ -5,6 +5,7 @@
   document.getElementById('subj').textContent = info.subject || 'Focus time';
   if (info.source === 'pc') document.getElementById('why').textContent = 'A study session is running on your PC, so this phone is locked too. It opens again when the session ends.';
   try { Float3D.set(info.topicId || 'generic', '#7C5CFF', '#2DE2E6'); } catch (e) { }
+  if (info.guard === false) { var gw = document.getElementById('guardwarn'); gw.hidden = false; document.getElementById('gwfix').onclick = function () { try { L.openApp(); } catch (e) { } }; }
   var tEl = document.getElementById('time');
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function tick() {
