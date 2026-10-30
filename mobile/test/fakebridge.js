@@ -2,7 +2,7 @@
 (function () {
   window.__lan = 1;
   window.__nowizard = !window.__wiz;
-  var st = { accessibility: !!window.__granted, overlay: !!window.__granted, call: !!window.__granted, notifications: true, exactAlarm: true, battery: false, lockActive: false, callGuard: !!window.__granted, manufacturer: window.__mfr || 'xiaomi', sdk: 34 };
+  var st = { accessibility: !!window.__granted, overlay: !!window.__granted, call: !!window.__granted, notifications: true, exactAlarm: true, battery: false, lockActive: false, callGuard: !!window.__granted, notifGuard: !!window.__granted, manufacturer: window.__mfr || 'xiaomi', sdk: 34 };
   var contacts = [], settings = { autoLockBlocks: 'false', restrictOnPc: 'true' }, paired = null, lock = null;
   window.__calls = []; window.__log = [];
   function done(id, obj) { setTimeout(function () { window.__fsCb(id, JSON.stringify(obj)); }, 30); }
@@ -13,7 +13,7 @@
   window.AndroidBridge = {
     version: function () { return JSON.stringify({ version: '1.0.0-test' }); },
     status: function () { return JSON.stringify(st); },
-    openSettings: function (k) { window.__log.push('settings:' + k); if (k === 'accessibility') st.accessibility = true; if (k === 'overlay') st.overlay = true; if (k === 'battery') st.battery = true; return JSON.stringify({ ok: true }); },
+    openSettings: function (k) { window.__log.push('settings:' + k); if (k === 'accessibility') st.accessibility = true; if (k === 'overlay') st.overlay = true; if (k === 'battery') st.battery = true; if (k === 'notifaccess') st.notifGuard = true; return JSON.stringify({ ok: true }); },
     requestCallGuard: function () { window.__log.push('callguard'); st.callGuard = true; return JSON.stringify({ ok: true }); },
     requestPermission: function (k) { window.__log.push('perm:' + k); st[k] = true; return JSON.stringify({ ok: true }); },
     getContacts: function () { return JSON.stringify(contacts); },

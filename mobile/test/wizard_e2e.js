@@ -21,7 +21,9 @@ let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, c ? 
   await page.click('[data-act=wzgo]'); await page.waitForTimeout(1300);
   ok('calls granted -> call screening step', /Only emergency numbers/i.test(await txt()), await txt());
   await page.click('[data-act=wzgo]'); await page.waitForTimeout(1300);
-  ok('call screening granted -> overlay', /over other apps/i.test(await txt()), await txt());
+  ok('call screening granted -> notification access for Strict', /Hide notifications in Strict/i.test(await txt()), await txt());
+  await page.click('[data-act=wzgo]'); await page.waitForTimeout(1300);
+  ok('notification access granted -> overlay', /over other apps/i.test(await txt()), await txt());
   ok('overlay is marked needed', /needed/.test(await txt()));
   await page.click('[data-act=wzgo]'); await page.waitForTimeout(1300);
   ok('overlay granted -> accessibility', /app lock/i.test(await txt()));
