@@ -16,6 +16,7 @@
     var e; try { e = JSON.parse(json); } catch (x) { return; }
     if (e.type === 'distraction') listeners.distraction.forEach(function (f) { try { f({ kind: 'app', name: e.name || 'another app' }); } catch (x) { } });
     if (e.type === 'call' && window.FSX && FSX.onCall) FSX.onCall(!!e.on, e.ms || 0);
+    if (e.type === 'update' && window.FSX && FSX.onUpdateProgress) FSX.onUpdateProgress(e.pct || 0);
     if (e.type === 'refresh' && window.FSX && FSX.onRefresh) FSX.onRefresh();
     if (e.type === 'auth' && authWaiter) { var w = authWaiter; authWaiter = null; if (/^[a-f0-9]{48}$/.test(e.ticket || '')) w.res(e.ticket); else w.rej(new Error('Sign-in did not finish.')); }
   };
@@ -118,7 +119,7 @@
   }
   /* the phone's background lock service needs the sign-in too, so it can follow the PC */
   function syncAccount(c) { var s = c.status(); jcall('accountSave', JSON.stringify({ site: s.site, token: s.signedIn ? c.token() : '' })); }
-  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1 };
+  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, update: 1 };
   function acct(op, payload) {
     if (!ACCT_OPS[op]) return Promise.resolve({ ok: false, error: 'Unknown account action' });
     return getClient().then(function (c) {
@@ -136,6 +137,7 @@
       });
     },
     info: function () { var v = jcall('version'); return Promise.resolve({ platform: 'android', version: (v && v.version) || 'dev', native: true, contentDir: 'inside the app' }); },
+    updateInstall: function (p) { return acall('updateInstall', String(p.url || ''), String(p.sha256 || '')); },
     onNotify: function (cb) { listeners.notify.push(cb); },
     onDistraction: function (cb) { listeners.distraction.push(cb); },
     onVideoClosed: function () { },

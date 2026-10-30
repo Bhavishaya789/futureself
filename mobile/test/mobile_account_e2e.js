@@ -8,9 +8,9 @@ global.__FS_FAKE_DB = { users: col(), sessions: col(), tickets: col() };
 const mails = []; global.__FS_MAIL = async (m) => mails.push(m);
 const vrr = (id, t, c, l) => ({ videoRenderer: { videoId: id, title: { runs: [{ text: t }] }, ownerText: { runs: [{ text: c }] }, lengthText: { simpleText: l } } });
 const ytPage = '<html><script>var ytInitialData = ' + JSON.stringify({ c: [vrr('aaaaaaaaaaa', 'SQL Joins explained with examples', 'Gate Smashers', '15:20'), vrr('bbbbbbbbbbb', 'Joins in SQL for beginners', 'Neso Academy', '18:00'), vrr('ccccccccccc', 'Funny cat song', 'Cats', '3:00')] }) + ';</script></html>';
-global.__FS_FETCH = async (u) => /api\.anthropic\.com/.test(String(u)) ? { ok: true, json: async () => ({ content: [{ text: '{"awarded":[1,1,1,1,1,1,1,1],"feedback":"Clear working. Add the final unit."}' }] }) } : /youtube\.com\/results/.test(String(u)) ? { ok: true, text: async () => ytPage } : { ok: true, json: async () => ({ aud: 'cid123', iss: 'accounts.google.com', email_verified: 'true', exp: String(Math.floor(Date.now() / 1000) + 600), email: 'gg@x.com', sub: 's', name: 'Gee' }) };
+global.__FS_FETCH = async (u) => /api\.github\.com/.test(String(u)) ? { ok: true, json: async () => ({ tag_name: 'v9.9.9', body: 'Faster lock.', assets: [{ name: 'FutureSelf.apk', browser_download_url: 'https://github.com/o/r/releases/download/v9.9.9/FutureSelf.apk', digest: 'sha256:' + 'c'.repeat(64), size: 9e6 }] }) } : /api\.anthropic\.com/.test(String(u)) ? { ok: true, json: async () => ({ content: [{ text: '{"awarded":[1,1,1,1,1,1,1,1],"feedback":"Clear working. Add the final unit."}' }] }) } : /youtube\.com\/results/.test(String(u)) ? { ok: true, text: async () => ytPage } : { ok: true, json: async () => ({ aud: 'cid123', iss: 'accounts.google.com', email_verified: 'true', exp: String(Math.floor(Date.now() / 1000) + 600), email: 'gg@x.com', sub: 's', name: 'Gee' }) };
 const A = '/home/claude/fsw/website/api/';
-const routes = { '/api/check': require(A + 'check.js'), '/api/auth': require(A + 'auth.js'), '/api/session': require(A + 'session.js'), '/api/videos': require(A + 'videos.js') };
+const routes = { '/api/update': require(A + 'update.js'), '/api/check': require(A + 'check.js'), '/api/auth': require(A + 'auth.js'), '/api/session': require(A + 'session.js'), '/api/videos': require(A + 'videos.js') };
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 const srv = http.createServer((q, r) => {
   const p0 = q.url.split('?')[0];
@@ -65,6 +65,16 @@ let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, c ? 
   await page.fill('#vq', 'sql joins'); await page.fill('#vch', 'No Such Channel'); await page.click('[data-act=vsearch]'); await page.waitForTimeout(800);
   ok('no match shows a note', /No study video from/.test(await page.textContent('#vres')), await page.textContent('#vres'));
   await page.screenshot({ path: '/home/claude/fsw/mobile/test/m_vsearch.png', fullPage: true });
+  /* ---- in-app update: check, banner, one button hands the new APK to the installer ---- */
+  await page.evaluate(() => { location.hash = '#/settings'; }); await page.waitForSelector('#updcard', { timeout: 8000 });
+  if (await page.$('#updcard [data-act=updcheck]')) await page.click('#updcard [data-act=updcheck]'); await page.waitForSelector('#updcard [data-act=updgo]', { timeout: 8000 });
+  ok('settings shows the new version and notes', /9\.9\.9/.test(await page.textContent('#updcard')) && /Faster lock/.test(await page.textContent('#updcard')), await page.textContent('#updcard'));
+  ok('update banner is shown', !!(await page.$('.updbar')));
+  await page.click('#updcard [data-act=updgo]'); await page.waitForTimeout(800);
+  const ulog = (await page.evaluate(() => window.__log)).filter((x) => /^upd:/.test(x));
+  ok('Update now hands the GitHub file and its checksum to the phone installer', ulog.length === 1 && ulog[0] === 'upd:https://github.com/o/r/releases/download/v9.9.9/FutureSelf.apk|' + 'c'.repeat(64), ulog);
+  ok('tells the student to press Update in Android', /installer opened/i.test(await page.textContent('#updcard')) || /installer opened/i.test(await page.textContent('.updbar') || ''), await page.textContent('#updcard'));
+  await page.screenshot({ path: '/home/claude/fsw/mobile/test/m_update.png' });
   /* ---- practice answer: photo uploaded on the phone, marked by the SERVER's AI, photo opens inside the app ---- */
   process.env.ANTHROPIC_API_KEY = 'sk-test';
   await page.evaluate(() => { location.hash = '#/lesson/database-management-system/joins'; }); await page.waitForSelector('#ltabs .tab[data-id=practice]', { timeout: 8000 });

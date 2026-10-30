@@ -52,6 +52,8 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to search for videos.'));
         return req('/api/videos', 'POST', { q: String(p && p.q || '').slice(0, 120), channel: String(p && p.channel || '').slice(0, 60) }, true);
       },
+      /* newest version published on GitHub (the server reads it; no sign-in needed) */
+      update: function () { load(); return req('/api/update', 'GET', null, false); },
       /* the SERVER marks a photographed answer (the AI key never leaves the server) */
       check: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use AI checking.'));

@@ -11,13 +11,28 @@ android {
         applicationId = "app.futureself.mobile"
         minSdk = 26
         targetSdk = 34
-        versionCode = 180
-        versionName = "1.8.0"
+        versionCode = 190
+        versionName = "1.9.0"
+    }
+
+    // One fixed signing key, so every new APK can be installed over the old one (in-app updates need this).
+    signingConfigs {
+        create("fs") {
+            storeFile = file("futureself-signing.p12")
+            storeType = "pkcs12"
+            storePassword = "futureself"
+            keyAlias = "futureself"
+            keyPassword = "futureself"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("fs")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("fs")
         }
     }
     compileOptions {

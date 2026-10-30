@@ -196,6 +196,9 @@ app.whenReady().then(async () => {
       videoWin.loadURL(url, { httpReferrer: 'https://futureself.app/' });
       return { ok: true };
     });
+    /* in-app update (Windows): see core/winupdate.js */
+    const winUpdate = require('./core/winupdate').create({ fetch: (u) => net.fetch(u, { redirect: 'follow' }), spawn: require('child_process').spawn, platform: process.platform, tmp: require('os').tmpdir(), send, quit: () => app.quit() });
+    ipcMain.handle('update:install', (_e, p) => winUpdate.install(p));
     ipcMain.handle('video:close', () => { if (videoWin && !videoWin.isDestroyed()) videoWin.close(); return { ok: true }; });
     ipcMain.handle('lock:start', (_e, cfg) => {
       const r = blocker.start({ mode: cfg.mode, apps: cfg.apps, sites: cfg.sites });

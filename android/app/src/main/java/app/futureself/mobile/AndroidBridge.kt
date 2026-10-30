@@ -230,6 +230,10 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
         return okJson().toString()
     }
 
+    /** in-app update: download the new APK from the GitHub release and open Android's installer */
+    @JavascriptInterface
+    fun updateInstall(id: Int, url: String, sha: String) { later(id) { Updater.install(act, url, sha) } }
+
     /** web requests to the student's own FutureSelf server (the page itself is not allowed to call other sites) */
     @JavascriptInterface
     fun httpJson(id: Int, method: String, url: String, token: String, body: String) {

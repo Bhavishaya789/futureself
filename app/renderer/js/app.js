@@ -968,7 +968,7 @@
         '<div class="card winonly"><h2>Distraction blocklist</h2><p class="muted" style="margin-bottom:14px">While a Focus or Strict session runs, FutureSelf closes these programs and closes browser windows that show these sites. Gentle mode only warns. Use program names like discord.exe and site names like instagram.</p>' +
         '<div class="fld"><label class="f" for="pa">Apps</label><input class="in" id="pa" value="' + esc(s.blocklist_apps) + '"></div><div class="fld"><label class="f" for="pw">Websites</label><input class="in" id="pw" value="' + esc(s.blocklist_sites) + '"></div></div>' +
         '<div class="row spread wrap"><span></span><button class="btn pri" data-act="psave">Save settings</button></div>' +
-        '<div class="card"><h2>System</h2><div class="kv"><span>Storage</span><b>' + (cfg.storage === 'mongo' ? 'MongoDB' : 'Local file (set MONGO_URI in .env for MongoDB)') + '</b></div><div class="kv"><span>Telegram</span><b>' + (cfg.channels.telegram ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Email (SMTP)</span><b>' + (cfg.channels.email ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Push (FCM)</span><b>' + (cfg.channels.fcm ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>AI helper key</span><b>' + (cfg.channels.ai ? 'Configured' : 'Not configured') + '</b></div></div></div></div>';
+        '<div class="card" id="updcard" style="margin-top:18px">' + updCardInner() + '</div>' + '<div class="card"><h2>System</h2><div class="kv"><span>Storage</span><b>' + (cfg.storage === 'mongo' ? 'MongoDB' : 'Local file (set MONGO_URI in .env for MongoDB)') + '</b></div><div class="kv"><span>Telegram</span><b>' + (cfg.channels.telegram ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Email (SMTP)</span><b>' + (cfg.channels.email ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Push (FCM)</span><b>' + (cfg.channels.fcm ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>AI helper key</span><b>' + (cfg.channels.ai ? 'Configured' : 'Not configured') + '</b></div></div></div></div>';
       window.__pl = s.default_lock;
     });
   }
@@ -1022,6 +1022,58 @@
   });
   document.addEventListener('change', function (e) { if (e.target.id === 'pfx') { FX.setEnabled(e.target.checked); toast(e.target.checked ? 'Effects on' : 'Effects off'); if (e.target.checked) FX.fireworks(2); } });
   document.addEventListener('selectstart', function (e) { if (document.body.style.cursor === 'grabbing') e.preventDefault(); });
+
+  /* ---------- in-app updates: check the newest GitHub release, one button to install it ---------- */
+  var UPD = { info: null, cur: '', busy: false, pct: 0, msg: '', hide: '' };
+  function vparts(v) { return String(v || '0').replace(/^v/i, '').split('.').map(function (x) { return parseInt(x, 10) || 0; }); }
+  function vnewer(a, b) { var x = vparts(a), y = vparts(b); for (var i = 0; i < 4; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; }
+  function updKind() { return (window.fsApi && window.fsApi.platform === 'android') ? 'and' : 'win'; }
+  function updAsset() { var i = UPD.info; return i && i[updKind()] ? i[updKind()] : null; }
+  function updReady() { return !!(UPD.info && UPD.info.version && vnewer(UPD.info.version, UPD.cur) && updAsset()); }
+  function updCheck(manual) {
+    if (!(window.fsApi && window.fsApi.acct && window.fsApi.info)) return Promise.resolve();
+    UPD.msg = manual ? 'Checking...' : UPD.msg; updPaint();
+    return window.fsApi.info().then(function (i) { UPD.cur = (i && i.version) || ''; return window.fsApi.acct('update', {}); }).then(function (r) {
+      if (r && r.ok && r.data) { UPD.info = r.data; UPD.msg = updReady() ? '' : (vnewer(r.data.version, UPD.cur) ? 'Version ' + r.data.version + ' is out, but its ' + (updKind() === 'and' ? 'Android' : 'Windows') + ' file is not attached to the release yet.' : (manual ? 'You have the newest version.' : '')); }
+      else if (manual) UPD.msg = (r && r.error) || 'Could not check for updates.';
+      try { localStorage.setItem('fs_upd_at', String(Date.now())); } catch (e) { }
+      updPaint();
+    }).catch(function () { if (manual) UPD.msg = 'Could not check for updates.'; updPaint(); });
+  }
+  function updPaint() {
+    var bar = $('.updbar'), show = updReady() && UPD.hide !== (UPD.info && UPD.info.version) && !(S.session && !S.session.ended);
+    if (!show) { if (bar) bar.remove(); } else {
+      if (!bar) { bar = document.createElement('div'); bar.className = 'updbar'; document.body.appendChild(bar); }
+      bar.innerHTML = '<span><b>Update ' + esc(UPD.info.version) + ' is ready.</b> ' + esc(UPD.busy ? (UPD.msg || 'Working...') : 'Your progress and account stay as they are.') + '</span>' +
+        (UPD.busy ? '<em>' + (UPD.pct ? UPD.pct + '%' : '') + '</em>' : '<button class="btn sm pri" data-act="updgo">Update now</button><button class="btn sm ghost" data-act="updlater">Later</button>');
+    }
+    var card = $('#updcard'); if (card) card.innerHTML = updCardInner();
+  }
+  function updCardInner() {
+    var ready = updReady();
+    return '<h2>App updates</h2><div class="kv"><span>This version</span><b>' + esc(UPD.cur || '...') + '</b></div>' +
+      (ready ? '<div class="tipbox" style="margin:12px 0"><b>Version ' + esc(UPD.info.version) + ' is ready.</b>' + (UPD.info.notes ? '<br>' + esc(UPD.info.notes).replace(/\n/g, '<br>') : '') + '</div>' +
+        '<div class="row wrap"><button class="btn pri" data-act="updgo"' + (UPD.busy ? ' disabled' : '') + '>' + (UPD.busy ? 'Updating ' + (UPD.pct ? UPD.pct + '%' : '...') : 'Update now') + '</button></div>' :
+        '<p class="muted" style="margin:10px 0">' + esc(UPD.msg || 'Press the button to see if a newer version is out.') + '</p><div class="row wrap"><button class="btn" data-act="updcheck">Check for updates</button></div>') +
+      (ready && UPD.msg ? '<p class="muted" style="margin-top:10px">' + esc(UPD.msg) + '</p>' : '');
+  }
+  actions.updcheck = function () { updCheck(true); };
+  actions.updlater = function () { UPD.hide = UPD.info ? UPD.info.version : ''; updPaint(); };
+  actions.updgo = function () {
+    var a = updAsset(); if (!a || UPD.busy) return;
+    if (S.session && !S.session.ended) return toast('Finish your session first', 'Updates can be installed when no study session is running.', true);
+    UPD.busy = true; UPD.pct = 0; UPD.msg = 'Downloading...'; updPaint();
+    window.fsApi.updateInstall({ url: a.url, sha256: a.sha256 }).then(function (r) {
+      UPD.busy = false;
+      if (r && r.ok) { UPD.msg = updKind() === 'and' ? 'Android\'s installer opened. Press Update there.' : 'Installing. FutureSelf will close and open again by itself.'; toast('Update ready', UPD.msg); }
+      else { UPD.msg = (r && r.error) || 'The update failed. Try again.'; toast('Update problem', UPD.msg, true); }
+      updPaint();
+    }).catch(function (e) { UPD.busy = false; UPD.msg = (e && e.message) || 'The update failed.'; updPaint(); });
+  };
+  function updProgress(n) { UPD.pct = n; if (UPD.busy) updPaint(); }
+  if (window.fsApi && window.fsApi.onUpdateProgress) window.fsApi.onUpdateProgress(updProgress);
+  window.FSX = window.FSX || {}; FSX.onUpdateProgress = updProgress;
+  (function () { var last = 0; try { last = +localStorage.getItem('fs_upd_at') || 0; } catch (e) { } if (Date.now() - last > 6 * 3600 * 1000) setTimeout(function () { updCheck(false); }, 5000); else setTimeout(function () { updCheck(false); }, 6000); })();
 
   /* phone only: a call stops the timer, and it carries on when the call ends */
   window.FSX = window.FSX || {};

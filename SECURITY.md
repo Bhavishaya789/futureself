@@ -26,3 +26,7 @@ Passwords are stored as salted scrypt hashes. Tokens are HMAC-signed and expire 
 * Registration says "this email already has an account". That is convenient but lets someone test whether an email is registered.
 * Ten wrong passwords lock an account for 10 minutes, so someone could annoy a user by guessing on purpose.
 * Debug-signed APK: for a public release, sign the APK with your own key (keep the key file private and backed up).
+
+## In-app updates (v1.9.0)
+* Updates are read from your own GitHub Release and downloaded only from `github.com` over HTTPS. The Windows installer and the APK are checked against GitHub's SHA-256 checksum when it is present, and the Windows file must be a real installer (starts with "MZ").
+* Android only installs an update that is signed with the same key as the installed app. The signing key (`android/app/futureself-signing.p12`) is in the repository so that GitHub builds always use the same key. Because the repository is public, anyone could sign an app with that key, so only install FutureSelf from your own release page. For a Play Store release, create a private key and keep it out of the repository.
