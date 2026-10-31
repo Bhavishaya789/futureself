@@ -1,0 +1,23 @@
+{
+ "title": "Informatics Practices (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "database",
+ "color": "#9B6BFF",
+ "tagline": "Informatics Practices for Class 11 (CBSE): Python, data handling, SQL.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Computer System",
+  "Introduction to Python",
+  "Data Handling: lists, tuples, dictionaries",
+  "Introduction to NumPy",
+  "Database Concepts and SQL",
+  "Societal Impacts"
+ ],
+ "id": "class-11-informatics-practices"
+}

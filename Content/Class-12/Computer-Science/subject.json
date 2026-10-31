@@ -1,0 +1,30 @@
+{
+ "title": "Computer Science (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "code",
+ "color": "#2DE2E6",
+ "tagline": "Computer Science with Python for Class 12 board exam (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Revision of Python",
+  "Functions",
+  "Exception Handling",
+  "File Handling",
+  "Stack",
+  "Queue and Sorting",
+  "Searching",
+  "Understanding Data and Database Concepts",
+  "Structured Query Language (SQL)",
+  "Computer Networks",
+  "Data Communication",
+  "Security Aspects",
+  "Python and SQL connectivity"
+ ],
+ "id": "class-12-computer-science"
+}

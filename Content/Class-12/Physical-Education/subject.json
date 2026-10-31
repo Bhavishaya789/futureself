@@ -1,0 +1,27 @@
+{
+ "title": "Physical Education (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "gear",
+ "color": "#2FA66A",
+ "tagline": "Physical Education for Class 12 board exam (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Management of Sporting Events",
+  "Children and Women in Sports",
+  "Yoga as Preventive measure for Lifestyle Disease",
+  "Physical Education and Sports for CWSN",
+  "Sports and Nutrition",
+  "Test and Measurement in Sports",
+  "Physiology and Injuries in Sports",
+  "Biomechanics and Sports",
+  "Psychology and Sports",
+  "Training in Sports"
+ ],
+ "id": "class-12-physical-education"
+}

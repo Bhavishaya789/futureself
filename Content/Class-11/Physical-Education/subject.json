@@ -1,0 +1,27 @@
+{
+ "title": "Physical Education (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "gear",
+ "color": "#2FA66A",
+ "tagline": "Physical Education for Class 11 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Changing Trends and Career in Physical Education",
+  "Olympic Value Education",
+  "Yoga",
+  "Physical Education and Sports for CWSN",
+  "Physical Fitness, Wellness and Lifestyle",
+  "Test and Measurement in Sports",
+  "Fundamentals of Anatomy and Physiology",
+  "Fundamentals of Kinesiology and Biomechanics",
+  "Psychology and Sports",
+  "Training and Doping"
+ ],
+ "id": "class-11-physical-education"
+}

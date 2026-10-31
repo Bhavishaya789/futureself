@@ -1,0 +1,21 @@
+{
+ "title": "Economics (Class 9)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#2DE2E6",
+ "tagline": "Economics (NCERT Social Science, Class 9).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "The Story of Village Palampur",
+  "People as Resource",
+  "Poverty as a Challenge",
+  "Food Security in India"
+ ],
+ "id": "class-9-economics"
+}

@@ -1,0 +1,32 @@
+{
+ "title": "History (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "flag",
+ "color": "#E4572E",
+ "tagline": "Themes in Indian History I, II and III (NCERT, Class 12 board exam).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Bricks, Beads and Bones",
+  "Kings, Farmers and Towns",
+  "Kinship, Caste and Class",
+  "Thinkers, Beliefs and Buildings",
+  "Through the Eyes of Travellers",
+  "Bhakti-Sufi Traditions",
+  "An Imperial Capital: Vijayanagara",
+  "Peasants, Zamindars and the State",
+  "Kings and Chronicles",
+  "Colonialism and the Countryside",
+  "Rebels and the Raj",
+  "Colonial Cities",
+  "Mahatma Gandhi and the Nationalist Movement",
+  "Understanding Partition",
+  "Framing the Constitution"
+ ],
+ "id": "class-12-history"
+}

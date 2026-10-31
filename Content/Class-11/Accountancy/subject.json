@@ -1,0 +1,29 @@
+{
+ "title": "Accountancy (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#C9A227",
+ "tagline": "Accountancy for Class 11 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Introduction to Accounting",
+  "Theory Base of Accounting",
+  "Recording of Transactions I",
+  "Recording of Transactions II",
+  "Bank Reconciliation Statement",
+  "Trial Balance and Rectification of Errors",
+  "Depreciation, Provisions and Reserves",
+  "Bills of Exchange",
+  "Financial Statements I",
+  "Financial Statements II",
+  "Accounts from Incomplete Records",
+  "Applications of Computers in Accounting"
+ ],
+ "id": "class-11-accountancy"
+}

@@ -1,0 +1,30 @@
+{
+ "title": "Economics (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#2DE2E6",
+ "tagline": "Economics for Class 11 (CBSE): Indian Economic Development and Statistics.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Indian Economy on the Eve of Independence",
+  "Indian Economy 1950-1990",
+  "Liberalisation, Privatisation and Globalisation",
+  "Poverty",
+  "Human Capital Formation in India",
+  "Rural Development",
+  "Employment",
+  "Infrastructure",
+  "Environment and Sustainable Development",
+  "Comparative Development Experiences of India and Its Neighbours",
+  "Statistics: Introduction, Collection, Organisation and Presentation of Data",
+  "Statistics: Measures of Central Tendency and Dispersion",
+  "Statistics: Correlation, Index Numbers and Use of Statistical Tools"
+ ],
+ "id": "class-11-economics"
+}

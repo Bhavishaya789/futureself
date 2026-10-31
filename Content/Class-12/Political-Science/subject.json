@@ -1,0 +1,35 @@
+{
+ "title": "Political Science (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "people",
+ "color": "#7C5CFF",
+ "tagline": "Contemporary World Politics and Politics in India Since Independence (NCERT, Class 12 board exam).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "The Cold War Era",
+  "The End of Bipolarity",
+  "US Hegemony in World Politics",
+  "Alternative Centres of Power",
+  "Contemporary South Asia",
+  "International Organisations",
+  "Security in the Contemporary World",
+  "Environment and Natural Resources",
+  "Globalisation",
+  "Challenges of Nation Building",
+  "Era of One-Party Dominance",
+  "Politics of Planned Development",
+  "India's External Relations",
+  "Challenges to the Congress System",
+  "Crisis of the Democratic Order",
+  "Rise of Popular Movements",
+  "Regional Aspirations",
+  "Recent Developments in Indian Politics"
+ ],
+ "id": "class-12-political-science"
+}

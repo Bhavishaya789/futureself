@@ -1,0 +1,28 @@
+{
+ "title": "History (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "flag",
+ "color": "#E4572E",
+ "tagline": "Themes in World History (NCERT, Class 11).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "From the Beginning of Time",
+  "Writing and City Life",
+  "An Empire Across Three Continents",
+  "The Central Islamic Lands",
+  "Nomadic Empires",
+  "The Three Orders",
+  "Changing Cultural Traditions",
+  "Confrontation of Cultures",
+  "The Industrial Revolution",
+  "Displacing Indigenous Peoples",
+  "Paths to Modernisation"
+ ],
+ "id": "class-11-history"
+}

@@ -1,0 +1,28 @@
+{
+ "title": "Economics (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#2DE2E6",
+ "tagline": "Economics for Class 12 board exam (CBSE): Microeconomics and Macroeconomics.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Introduction to Microeconomics",
+  "Theory of Consumer Behaviour",
+  "Production and Costs",
+  "Theory of the Firm under Perfect Competition",
+  "Market Equilibrium",
+  "Non-competitive Markets",
+  "National Income Accounting",
+  "Money and Banking",
+  "Determination of Income and Employment",
+  "Government Budget and the Economy",
+  "Open Economy Macroeconomics"
+ ],
+ "id": "class-12-economics"
+}

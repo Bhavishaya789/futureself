@@ -1,0 +1,23 @@
+{
+ "title": "Geography (Class 9)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "globe",
+ "color": "#2FA66A",
+ "tagline": "Contemporary India I (NCERT Social Science, Class 9).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "India: Size and Location",
+  "Physical Features of India",
+  "Drainage",
+  "Climate",
+  "Natural Vegetation and Wildlife",
+  "Population"
+ ],
+ "id": "class-9-geography"
+}

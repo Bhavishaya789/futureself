@@ -1,0 +1,22 @@
+{
+ "title": "Economics (Class 10)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#2DE2E6",
+ "tagline": "Understanding Economic Development (NCERT Social Science, Class 10 board exam).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Development",
+  "Sectors of the Indian Economy",
+  "Money and Credit",
+  "Globalisation and the Indian Economy",
+  "Consumer Rights"
+ ],
+ "id": "class-10-economics"
+}

@@ -1,0 +1,34 @@
+{
+ "title": "Geography (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "globe",
+ "color": "#2FA66A",
+ "tagline": "Fundamentals of Human Geography and India: People and Economy (NCERT, Class 12 board exam).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Human Geography: Nature and Scope",
+  "The World Population",
+  "Human Development",
+  "Primary Activities",
+  "Secondary Activities",
+  "Tertiary and Quaternary Activities",
+  "Transport and Communication",
+  "International Trade",
+  "Human Settlements",
+  "India: Population and Migration",
+  "India: Human Settlements",
+  "Land Resources and Agriculture",
+  "Water and Mineral Resources",
+  "Manufacturing Industries",
+  "Planning and Sustainable Development",
+  "India: Transport, Communication and International Trade",
+  "Geographical Perspective on Selected Issues and Problems"
+ ],
+ "id": "class-12-geography"
+}

@@ -1,0 +1,27 @@
+{
+ "title": "Sociology (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "people",
+ "color": "#FF8A5B",
+ "tagline": "Sociology for Class 11 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Introducing Sociology",
+  "Understanding Society",
+  "Social Institutions: Continuity and Change",
+  "Culture and Socialisation",
+  "Doing Sociology: Research Methods",
+  "Social Structure, Stratification and Social Processes",
+  "Social Change and Social Order in Rural and Urban Society",
+  "Environment and Society",
+  "Introducing Western Sociologists",
+  "Indian Sociologists"
+ ],
+ "id": "class-11-sociology"
+}

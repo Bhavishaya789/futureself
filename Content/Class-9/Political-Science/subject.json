@@ -1,0 +1,22 @@
+{
+ "title": "Political Science (Class 9)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "people",
+ "color": "#7C5CFF",
+ "tagline": "Democratic Politics I (NCERT Social Science, Class 9).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "What is Democracy? Why Democracy?",
+  "Constitutional Design",
+  "Electoral Politics",
+  "Working of Institutions",
+  "Democratic Rights"
+ ],
+ "id": "class-9-political-science"
+}

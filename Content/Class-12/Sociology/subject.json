@@ -1,0 +1,31 @@
+{
+ "title": "Sociology (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "people",
+ "color": "#FF8A5B",
+ "tagline": "Sociology for Class 12 board exam (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Introducing Indian Society",
+  "The Demographic Structure of Indian Society",
+  "Social Institutions: Continuity and Change",
+  "The Market as a Social Institution",
+  "Patterns of Social Inequality and Exclusion",
+  "The Challenges of Cultural Diversity",
+  "Structural Change",
+  "Cultural Change",
+  "The Story of Indian Democracy",
+  "Change and Development in Rural Society",
+  "Change and Development in Industrial Society",
+  "Globalisation and Social Change",
+  "Mass Media and Communications",
+  "Social Movements"
+ ],
+ "id": "class-12-sociology"
+}

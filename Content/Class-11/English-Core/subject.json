@@ -1,0 +1,21 @@
+{
+ "title": "English Core (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#FF8A5B",
+ "tagline": "English Core for Class 11 (CBSE): Hornbill, Snapshots, writing and grammar.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Hornbill prose: The Portrait of a Lady; We're Not Afraid to Die... if We Can All Be Together; Discovering Tut: the Saga Continues; Landscape of the Soul; The Ailing Planet: the Green Movement's Role; The Browning Version; The Adventure; Silk Road",
+  "Hornbill poems: A Photograph; The Laburnum Top; The Voice of the Rain; Childhood; Father to Son",
+  "Snapshots: The Summer of the Beautiful White Horse; The Address; Ranga's Marriage; Albert Einstein at School; Mother's Day; The Ghat of the Only World; Birth; The Tale of Melon City",
+  "Reading, writing skills (notice, poster, letter, article, speech, debate) and grammar"
+ ],
+ "id": "class-11-english-core"
+}

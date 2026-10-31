@@ -1,0 +1,21 @@
+{
+ "title": "English Core (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#FF8A5B",
+ "tagline": "English Core for Class 12 board exam (CBSE): Flamingo, Vistas, writing and grammar.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Flamingo prose: The Last Lesson; Lost Spring; Deep Water; The Rattrap; Indigo; Poets and Pancakes; The Interview; Going Places",
+  "Flamingo poems: My Mother at Sixty-six; Keeping Quiet; A Thing of Beauty; A Roadside Stand; Aunt Jennifer's Tigers",
+  "Vistas: The Third Level; The Tiger King; Journey to the End of the Earth; The Enemy; On the Face of It; Memories of Childhood",
+  "Reading, writing skills (notice, invitation, reply, letter to editor, article, report) and grammar"
+ ],
+ "id": "class-12-english-core"
+}

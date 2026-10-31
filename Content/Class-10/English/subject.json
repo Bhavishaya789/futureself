@@ -1,0 +1,23 @@
+{
+ "title": "English (Class 10)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#FF8A5B",
+ "tagline": "Language and Literature for Class 10 (CBSE board exam): reading, writing, grammar and literature.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Reading: unseen passages (factual, discursive, literary)",
+  "Writing: formal letter, analytical paragraph, article, story, notice",
+  "Grammar: tenses, modals, determiners, reported speech, active and passive, gap filling, editing, omission",
+  "First Flight prose: A Letter to God; Nelson Mandela: Long Walk to Freedom; Two Stories about Flying; From the Diary of Anne Frank; Glimpses of India; Mijbil the Otter; Madam Rides the Bus; The Sermon at Benares; The Proposal",
+  "First Flight poems: Dust of Snow; Fire and Ice; A Tiger in the Zoo; How to Tell Wild Animals; The Ball Poem; Amanda!; The Trees; Fog; The Tale of Custard the Dragon; For Anne Gregory",
+  "Footprints Without Feet: A Triumph of Surgery; The Thief's Story; The Midnight Visitor; A Question of Trust; Footprints without Feet; The Making of a Scientist; The Necklace; Bholi; The Book That Saved the Earth"
+ ],
+ "id": "class-10-english"
+}

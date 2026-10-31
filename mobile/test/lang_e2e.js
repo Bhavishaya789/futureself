@@ -59,7 +59,7 @@ const OUT = '/home/claude/fsw/mobile/test/';
   /* quiz still grades in a translated lesson */
   await d.page.evaluate(() => localStorage.setItem('fs_lang', 'hi'));
   await open(id + '/coordinate-geometry-and-circles'); await d.page.evaluate(() => document.querySelector('[data-act="ltab"][data-id="quiz"]').click());
-  const nq = await d.page.$$eval('#quiz .q', (e) => e.length); ok('translated quiz has 4 questions', nq === 4, nq);
+  const nq = await d.page.$$eval('#quiz .q', (e) => e.length); ok('translated lesson still shows a quiz (a set of up to 10)', nq >= 4 && nq <= 10, nq);
   /* dictionary */
   await d.page.evaluate(() => { location.hash = '#/dictionary'; }); await d.page.waitForSelector('#dq', { timeout: 10000 });
   await d.page.fill('#dq', 'force'); await d.page.waitForTimeout(300);

@@ -1,0 +1,28 @@
+{
+ "title": "Artificial Intelligence and IT (Class 9)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "brain",
+ "color": "#9B6BFF",
+ "tagline": "Skill subject: AI (417) and Information Technology (402) topics for Class 9 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Introduction to AI and AI project cycle",
+  "Neural networks basics",
+  "Communication skills",
+  "Self-management skills",
+  "ICT skills",
+  "Entrepreneurial skills",
+  "Green skills",
+  "Digital documentation (word processing)",
+  "Electronic spreadsheet",
+  "Database management system",
+  "Web applications and security"
+ ],
+ "id": "class-9-artificial-intelligence-and-it"
+}
