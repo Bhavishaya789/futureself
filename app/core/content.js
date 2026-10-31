@@ -111,12 +111,24 @@ function parseVideo(lines, problems, file) {
   return out;
 }
 
+/* formula sheet: "## Group" starts a group; "Name | formula | when to use it (optional)" is one row */
+function parseFormulas(lines) {
+  const out = []; let g = '';
+  lines.forEach((l) => {
+    l = l.trim(); if (!l) return;
+    if (/^##\s+/.test(l)) { g = l.replace(/^##\s+/, '').trim(); return; }
+    const p = l.split('|').map((x) => x.trim()); if (p.length < 2 || !p[0] || !p[1]) return;
+    out.push({ g, n: p[0], f: p[1], x: p.slice(2).join(' | ') });
+  });
+  return out;
+}
+
 function parseTopic(text, file, problems) {
   const lines = text.replace(/\r/g, '').split('\n');
-  const t = { title: '', minutes: 20, yt: [], blocks: [], qa: [], quiz: [], visuals: [], problems: [], videos: [] };
-  let sec = 'head'; const bufs = { study: [], qa: [], quiz: [], visual: [], problems: [], video: [] };
+  const t = { title: '', minutes: 20, yt: [], blocks: [], qa: [], quiz: [], visuals: [], problems: [], videos: [], formulas: [] };
+  let sec = 'head'; const bufs = { study: [], qa: [], quiz: [], visual: [], problems: [], video: [], formulas: [] };
   lines.forEach((l) => {
-    const m = l.match(/^@(study|qa|quiz|visual|problems|video)\s*$/);
+    const m = l.match(/^@(study|qa|quiz|visual|problems|video|formulas)\s*$/);
     if (m) { sec = m[1]; return; }
     if (sec === 'head') {
       if (/^# /.test(l)) t.title = l.slice(2).trim();
@@ -127,6 +139,7 @@ function parseTopic(text, file, problems) {
   if (!t.title) problems.push(file + ': missing "# Title"');
   t.blocks = parseStudy(bufs.study); t.qa = parseQA(bufs.qa); t.quiz = parseQuiz(bufs.quiz, problems, file);
   t.visuals = parseVisual(bufs.visual, problems, file); t.problems = parseProblems(bufs.problems, problems, file); t.videos = parseVideo(bufs.video, problems, file);
+  t.formulas = parseFormulas(bufs.formulas);
   if (!t.blocks.length) problems.push(file + ': empty @study');
   if (!t.yt.length) t.yt.push(t.title + ' explained');
   return t;
@@ -174,8 +187,8 @@ function loadContent(root, opts) {
             if (!fs.existsSync(tp)) return;
             try {
               const t = parseTopic(fs.readFileSync(tp, 'utf8'), '_translations/' + lg + '/' + file, problems);
-              const same = t.quiz.length === les.quiz.length && t.quiz.every((q, i) => q.o.length === les.quiz[i].o.length);
-              if (!same) { problems.push('_translations/' + lg + '/' + file + ': quiz must have the same number of questions and options as the English lesson'); return; }
+              const same = t.quiz.length <= les.quiz.length && t.quiz.every((q, i) => q.o.length === les.quiz[i].o.length); // a translation may cover the first questions only; the rest show in English
+              if (!same) { problems.push('_translations/' + lg + '/' + file + ': quiz must match the first questions of the English lesson (same option counts)'); return; }
               (les.tr = les.tr || {})[lg] = { title: t.title, blocks: t.blocks, qa: t.qa, quiz: t.quiz };
             } catch (e) { problems.push('_translations/' + lg + '/' + file + ': ' + e.message); }
           });

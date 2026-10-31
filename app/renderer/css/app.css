@@ -522,3 +522,11 @@ select.dd-native{position:absolute;opacity:0;pointer-events:none;width:1px;heigh
 .dd-layer.sheet .dd-panel::before{content:'';display:block;width:44px;height:5px;border-radius:3px;background:var(--line-2);margin:8px auto 0}
 .dd-layer.sheet .dd-opt{padding:15px 14px}
 @media (prefers-reduced-motion:reduce){.dd-panel,.dd-opt,.dd-btn{transition:none;animation:none}}
+
+/* formula sheet */
+.fscroll{overflow-x:auto;margin-top:10px}
+.ftable{width:100%;border-collapse:collapse;font-size:14.5px}
+.ftable th,.ftable td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line,rgba(127,127,127,.25));vertical-align:top}
+.ftable thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
+.ftable .fm{font-family:ui-monospace,Consolas,monospace;font-weight:600;white-space:pre-wrap;min-width:160px}
+.ftable .fgrp th{background:rgba(124,92,255,.14);font-size:13px;opacity:1;text-transform:none;letter-spacing:0}

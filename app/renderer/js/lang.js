@@ -27,7 +27,9 @@
     var id = get();
     if (id === 'en' || !l || !l.tr || !l.tr[id]) return l;
     var t = l.tr[id], o = Object.assign({}, l);
-    o.title = t.title || l.title; o.blocks = t.blocks; o.qa = t.qa.length ? t.qa : l.qa; o.quiz = t.quiz.length ? t.quiz : l.quiz; o._tr = id;
+    o.title = t.title || l.title; o.blocks = t.blocks; o._tr = id;
+    /* a translation may cover only the first questions: show those, then carry on in English */
+    o.qa = t.qa.length ? t.qa.concat(l.qa.slice(t.qa.length)) : l.qa; o.quiz = t.quiz.length ? t.quiz.concat(l.quiz.slice(t.quiz.length)) : l.quiz;
     return o;
   }
   function bar(l) {

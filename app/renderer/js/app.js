@@ -637,17 +637,34 @@
   }
   actions.fclose2 = function () { closeModal(); };
   actions.gopractice = function (el) { S.ltab = 'practice'; S.ltabFor = el.dataset.key; closeModal(); };
+  /* a big question bank shows a fresh set of 10 each time (not the ones just seen) */
+  function quizSet(l, key) {
+    var n = l.quiz.length, all = []; for (var i = 0; i < n; i++) all.push(i);
+    if (n <= 15) return all;
+    S.qseen = S.qseen || {}; var seen = S.qseen[key] || [];
+    var pool = all.filter(function (i) { return seen.indexOf(i) < 0; }); if (pool.length < 10) { seen = []; pool = all; }
+    for (var j = pool.length - 1; j > 0; j--) { var k = Math.floor(Math.random() * (j + 1)), t = pool[j]; pool[j] = pool[k]; pool[k] = t; }
+    var pick = pool.slice(0, 10); S.qseen[key] = seen.concat(pick); return pick;
+  }
+  function formulaPane(l) {
+    var f = l.formulas || []; if (!f.length) return '';
+    var rows = '', g = null;
+    f.forEach(function (x) { if (x.g !== g) { g = x.g; if (g) rows += '<tr class="fgrp"><th colspan="3">' + esc(g) + '</th></tr>'; } rows += '<tr><td><b>' + fmt(x.n) + '</b></td><td class="fm">' + esc(x.f) + '</td><td class="muted">' + fmt(x.x || '') + '</td></tr>'; });
+    return '<div class="pane" data-pane="formulas"' + (S.ltab === 'formulas' ? '' : ' hidden') + '><div class="card"><div class="eyebrow">Formula sheet</div><h2>All formulas for this chapter</h2><div class="fscroll"><table class="ftable"><thead><tr><th>What</th><th>Formula</th><th>Use it when</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+  }
   /* the lesson dashboard (tabs + content), used on the lesson page and inside a running session */
   function lessonPanes(t, l, p, inSess) {
-      var tabs = [['study', 'Study'], ['qa', 'Q&amp;A (' + l.qa.length + ')'], ['quiz', 'Quiz (' + l.quiz.length + ')'], ['practice', 'Practice (' + (l.problems || []).length + ')'], ['video', 'Videos']];
-      var qaHTML = l.qa.length ? l.qa.map(function (x) { return '<details class="qa"><summary>' + fmt(x.q) + '</summary><div>' + fmt(x.a) + '</div></details>'; }).join('') : '<div class="empty">No Q&amp;A for this topic yet.</div>';
-      var quizHTML = l.quiz.length ? l.quiz.map(function (q, qi) {
-        return '<div class="q" data-q="' + qi + '"><p>' + (qi + 1) + '. ' + fmt(q.q) + '</p>' + q.o.map(function (o, oi) { return '<div class="opt" data-act="pick" data-q="' + qi + '" data-o="' + oi + '">' + fmt(o) + '</div>'; }).join('') + '<div class="why" hidden></div></div>';
-      }).join('') + '<div class="row spread wrap"><button class="btn pri" data-act="grade">Check answers</button><span id="score" class="muted">' + (p.quiz ? 'Best score: ' + p.quiz.score + '/' + p.quiz.total : '') + '</span></div>' : '<div class="empty">No quiz for this topic yet.</div>';
+      var tabs = [['study', 'Study']].concat((l.formulas || []).length ? [['formulas', 'Formulas (' + l.formulas.length + ')']] : []).concat([['qa', 'Q&amp;A (' + l.qa.length + ')'], ['quiz', 'Quiz (' + l.quiz.length + ')'], ['practice', 'Practice (' + (l.problems || []).length + ')'], ['video', 'Videos']]);
+      var QA_SHOW = 25;
+      var qaHTML = l.qa.length ? (l.qa.length > QA_SHOW ? '<input class="in" id="qasearch" type="search" placeholder="Search these ' + l.qa.length + ' questions" aria-label="Search questions" style="margin-bottom:12px">' : '') + l.qa.map(function (x, xi) { return '<details class="qa"' + (xi >= QA_SHOW ? ' data-more="1" hidden' : '') + '><summary>' + (xi + 1) + '. ' + fmt(x.q) + '</summary><div>' + fmt(x.a) + '</div></details>'; }).join('') + (l.qa.length > QA_SHOW ? '<div class="row" style="margin-top:10px"><button class="btn sm" data-act="qamore">Show the other ' + (l.qa.length - QA_SHOW) + ' questions</button></div>' : '') : '<div class="empty">No Q&amp;A for this topic yet.</div>';
+      var qset = quizSet(l, t.id + '/' + l.id);
+      var quizHTML = l.quiz.length ? qset.map(function (qi, pos) { var q = l.quiz[qi];
+        return '<div class="q" data-q="' + qi + '"><p>' + (pos + 1) + '. ' + fmt(q.q) + '</p>' + q.o.map(function (o, oi) { return '<div class="opt" data-act="pick" data-q="' + qi + '" data-o="' + oi + '">' + fmt(o) + '</div>'; }).join('') + '<div class="why" hidden></div></div>';
+      }).join('') + '<div class="row spread wrap"><button class="btn pri" data-act="grade">Check answers</button><span id="score" class="muted">' + (l.quiz.length > qset.length ? 'A fresh set of ' + qset.length + ' from ' + l.quiz.length + ' questions. ' : '') + (p.quiz ? 'Best score: ' + p.quiz.score + '/' + p.quiz.total : '') + '</span></div>' : '<div class="empty">No quiz for this topic yet.</div>';
       if (inSess) tabs = tabs.filter(function (x) { return x[0] !== 'practice'; });
       return '<div class="tabs" id="ltabs">' + tabs.map(function (x) { return '<button class="tab' + (S.ltab === x[0] ? ' on' : '') + '" data-act="ltab" data-id="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
         '<div class="pane" data-pane="study"' + (S.ltab === 'study' ? '' : ' hidden') + '>' + (l.visuals && l.visuals.length ? '<div class="card visbox"><div class="eyebrow">See it</div>' + Visuals.render(l.visuals) + '</div>' : '') + '<div class="card prose">' + blocksHTML(l.blocks) + '</div><div class="row spread wrap" style="margin-top:14px"><button class="btn" data-act="ltab" data-id="video">' + ic('play') + ' Watch videos</button><button class="btn pri" data-act="ltab" data-id="qa">Next: Q&amp;A ' + ic('arrow') + '</button></div></div>' +
-        '<div class="pane" data-pane="qa"' + (S.ltab === 'qa' ? '' : ' hidden') + '><div class="card"><div class="row spread wrap" style="margin-bottom:6px"><h2 style="margin:0">Questions and answers</h2><button class="btn sm" data-act="qaall">Show all answers</button></div><p class="muted" style="margin-bottom:16px">Try to answer each question in your own words first, then click it to check.</p>' + qaHTML + '</div></div>' +
+        '' + formulaPane(l) + '<div class="pane" data-pane="qa"' + (S.ltab === 'qa' ? '' : ' hidden') + '><div class="card"><div class="row spread wrap" style="margin-bottom:6px"><h2 style="margin:0">Questions and answers</h2><button class="btn sm" data-act="qaall">Show all answers</button></div><p class="muted" style="margin-bottom:16px">Try to answer each question in your own words first, then click it to check.</p>' + qaHTML + '</div></div>' +
         '<div class="pane" data-pane="quiz"' + (S.ltab === 'quiz' ? '' : ' hidden') + '><div class="card"><h2>Check yourself</h2><div id="quiz">' + quizHTML + '</div></div></div>' +
         '<div class="pane" data-pane="practice"' + (S.ltab === 'practice' ? '' : ' hidden') + '>' + (inSess ? '' : practicePane(l)) + '</div>' +
         '<div class="pane" data-pane="video"' + (S.ltab === 'video' ? '' : ' hidden') + '>' + videoPane(inSess) + '</div>';
@@ -676,6 +693,12 @@
     if (S.ltab === 'video') lessonVideoMount(); else if (!S.vs) unmountVideo();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  actions.qamore = function (el) { $$('details.qa[data-more]').forEach(function (d) { d.hidden = false; }); el.parentNode.remove(); };
+  document.addEventListener('input', function (e) {
+    if (!e.target || e.target.id !== 'qasearch') return; var q = e.target.value.trim().toLowerCase(), more = $('[data-act=qamore]');
+    $$('details.qa').forEach(function (d) { d.hidden = q ? (d.textContent.toLowerCase().indexOf(q) < 0) : !!d.dataset.more; });
+    if (more) more.parentNode.hidden = !!q;
+  });
   actions.qaall = function (el) { var ds = $$('details.qa'), open = ds.some(function (d) { return !d.open; }); ds.forEach(function (d) { d.open = open; }); el.textContent = open ? 'Hide all answers' : 'Show all answers'; };
   actions.markdone = function () {
     var c = curLesson, nv = !c.p.done;
@@ -687,20 +710,21 @@
   };
   actions.grade = function () {
     var c = curLesson, score = 0, box = $('#quiz');
-    var unanswered = c.l.quiz.some(function (q, i) { return !$('.opt.sel[data-q="' + i + '"]', box); });
+    var ids = $$('.q', box).map(function (e) { return +e.dataset.q; });
+    var unanswered = ids.some(function (i) { return !$('.opt.sel[data-q="' + i + '"]', box); });
     if (unanswered) return toast('Answer every question first', '', true);
     box.dataset.graded = 1;
-    c.l.quiz.forEach(function (q, i) {
-      var sel = $('.opt.sel[data-q="' + i + '"]', box), si = +sel.dataset.o, ok = si === q.a;
+    ids.forEach(function (i) {
+      var q = c.l.quiz[i], sel = $('.opt.sel[data-q="' + i + '"]', box), si = +sel.dataset.o, ok = si === q.a;
       if (ok) score++;
       $$('.opt[data-q="' + i + '"]', box).forEach(function (o) { var oi = +o.dataset.o; o.classList.remove('sel'); if (oi === q.a) o.classList.add('right'); else if (oi === si) o.classList.add('wrong'); });
       var w = $('.q[data-q="' + i + '"] .why', box); w.hidden = false; w.textContent = (ok ? 'Correct. ' : 'Not quite. ') + q.why;
     });
-    $('#score').textContent = 'You scored ' + score + '/' + c.l.quiz.length;
+    $('#score').textContent = 'You scored ' + score + '/' + ids.length;
     $('[data-act=grade]').textContent = 'Try again'; $('[data-act=grade]').dataset.act = 'retry';
-    $$('.q', box).forEach(function (q, i) { var sel = c.l.quiz[i] && $('.opt[data-q="' + i + '"].right', box); var chosen = $('.opt[data-q="' + i + '"].wrong', box); if (sel && !chosen) { var r = sel.getBoundingClientRect(); FX.burst(r.left + 30, r.top + r.height / 2, 14, { speed: 240, gravity: 120 }); } });
-    if (score === c.l.quiz.length) { chime(); FS3D.ok && FS3D.burst(); FX.confetti(innerWidth / 2, innerHeight * 0.6, 90); setTimeout(function () { FX.fireworks(3); }, 300); }
-    api('/progress', { method: 'POST', body: { topic_id: c.t.id, lesson_id: c.l.id, quiz: { score: score, total: c.l.quiz.length } } }).catch(function () { });
+    $$('.q', box).forEach(function (qe) { var i = +qe.dataset.q; var sel = $('.opt[data-q="' + i + '"].right', box); var chosen = $('.opt[data-q="' + i + '"].wrong', box); if (sel && !chosen) { var r = sel.getBoundingClientRect(); FX.burst(r.left + 30, r.top + r.height / 2, 14, { speed: 240, gravity: 120 }); } });
+    if (score === ids.length) { chime(); FS3D.ok && FS3D.burst(); FX.confetti(innerWidth / 2, innerHeight * 0.6, 90); setTimeout(function () { FX.fireworks(3); }, 300); }
+    api('/progress', { method: 'POST', body: { topic_id: c.t.id, lesson_id: c.l.id, quiz: { score: score, total: ids.length } } }).catch(function () { });
   };
   actions.retry = function () { S.ltab = 'quiz'; go(); };
 
