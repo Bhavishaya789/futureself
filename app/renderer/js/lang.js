@@ -27,12 +27,7 @@
     var id = get();
     if (id === 'en' || !l || !l.tr || !l.tr[id]) return l;
     var t = l.tr[id], o = Object.assign({}, l);
-    o.title = t.title || l.title; o._tr = id;
-    /* the translated summary comes first; the full English explanation (the "Deep dive" sections) follows it, so nothing is lost in translation */
-    var bl = l.blocks || [], start = -1, end = bl.length;
-    for (var i = 0; i < bl.length; i++) { if (bl[i].t === 'h' && /^Deep dive/i.test(bl[i].x)) { start = i; break; } }
-    if (start > -1) { for (var j = start; j < bl.length; j++) { if (bl[j].t === 'h' && /saransh/i.test(bl[j].x)) { end = j; break; } } }
-    o.blocks = start > -1 ? t.blocks.concat([{ t: 'h', x: 'Full explanation (English)' }], bl.slice(start, end)) : t.blocks;
+    o.title = t.title || l.title; o.blocks = t.blocks; o._tr = id;
     /* a translation may cover only the first questions: show those, then carry on in English */
     o.qa = t.qa.length ? t.qa.concat(l.qa.slice(t.qa.length)) : l.qa; o.quiz = t.quiz.length ? t.quiz.concat(l.quiz.slice(t.quiz.length)) : l.quiz;
     return o;
