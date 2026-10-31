@@ -59,6 +59,19 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use AI checking.'));
         return req('/api/check', 'POST', { question: p.question, model: p.model, rubric: p.rubric, images: p.images }, true);
       },
+      /* the shared profile: with p = { name?, photo?, avatar? } it saves, with nothing it just reads. Returns the user. */
+      profile: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to sync your profile.'));
+        var save_ = p && (p.name !== undefined || p.photo !== undefined || p.avatar !== undefined);
+        var body = { a: save_ ? 'profile' : 'me' };
+        if (save_) { ['name', 'photo', 'avatar'].forEach(function (k) { if (p[k] !== undefined) body[k] = p[k]; }); }
+        return req('/api/auth', 'POST', body, true).then(function (j) { if (j.user && j.user.name && j.user.name !== st.name) { st.name = j.user.name; save(); } return j.user; }, function (e) { if (e && e.status === 401) { st.token = ''; save(); } throw e; });
+      },
+      /* the SERVER looks at a picture and suggests 3D avatar options (nothing is stored) */
+      avatarFromPhoto: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to make an avatar from a picture.'));
+        return req('/api/avatar', 'POST', { photo: String(p && p.photo || '') }, true);
+      },
       /* friends, leaderboard and study rooms (the server keeps them; p.a is the action) */
       social: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use friends and study rooms.'));

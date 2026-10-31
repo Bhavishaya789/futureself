@@ -10,7 +10,7 @@ const copyDir = (a, b) => fs.cpSync(a, b, { recursive: true });
 rm(OUT); fs.mkdirSync(OUT, { recursive: true });
 ['css', 'fonts', 'vendor', 'icons'].forEach((d) => { if (fs.existsSync(path.join(R, d))) copyDir(path.join(R, d), path.join(OUT, d)); });
 fs.mkdirSync(path.join(OUT, 'js'), { recursive: true });
-['fx.js', 'float3d.js', 'subjectfx.js', 'vguard.js', 'visuals.js', 'scene.js', 'account.js', 'extras.js', 'app.js'].forEach((f) => fs.copyFileSync(path.join(R, 'js', f), path.join(OUT, 'js', f)));
+['fx.js', 'float3d.js', 'subjectfx.js', 'vguard.js', 'visuals.js', 'scene.js', 'account.js', 'profile.js', 'extras.js', 'app.js'].forEach((f) => fs.copyFileSync(path.join(R, 'js', f), path.join(OUT, 'js', f)));
 ['mobile.js', 'phone.js'].forEach((f) => fs.copyFileSync(path.join(__dirname, 'web', f), path.join(OUT, 'js', f)));
 fs.appendFileSync(path.join(OUT, 'css/app.css'), '\n' + fs.readFileSync(path.join(__dirname, 'web/mobile.css'), 'utf8'));
 fs.copyFileSync(path.join(__dirname, 'web/blocker.css'), path.join(OUT, 'css/blocker.css'));
@@ -35,7 +35,7 @@ fs.writeFileSync(path.join(OUT, 'content.json'), JSON.stringify(r.topics));
 let html = fs.readFileSync(path.join(R, 'index.html'), 'utf8');
 html = html.replace(/<script src="js\/[^"]+"><\/script>\n?/g, '');
 html = html.replace("frame-src https://www.youtube-nocookie.com;", "frame-src https://www.youtube-nocookie.com;");
-html = html.replace('<script src="vendor/three.min.js"></script>', '<script src="vendor/three.min.js"></script>\n<script src="js/fsmobile.js"></script>\n<script src="js/mobile.js"></script>\n<script src="js/phone.js"></script>\n<script src="js/account.js"></script>\n<script src="js/extras.js"></script>\n<script src="js/fx.js"></script>\n<script src="js/float3d.js"></script>\n<script src="js/subjectfx.js"></script>\n<script src="js/vguard.js"></script>\n<script src="js/visuals.js"></script>\n<script src="js/scene.js"></script>\n<script src="js/app.js"></script>');
+html = html.replace('<script src="vendor/three.min.js"></script>', '<script src="vendor/three.min.js"></script>\n<script src="js/fsmobile.js"></script>\n<script src="js/mobile.js"></script>\n<script src="js/phone.js"></script>\n<script src="js/account.js"></script>\n<script src="js/profile.js"></script>\n<script src="js/extras.js"></script>\n<script src="js/fx.js"></script>\n<script src="js/float3d.js"></script>\n<script src="js/subjectfx.js"></script>\n<script src="js/vguard.js"></script>\n<script src="js/visuals.js"></script>\n<script src="js/scene.js"></script>\n<script src="js/app.js"></script>');
 if (!/js\/app\.js/.test(html)) { html = html.replace('</body>', ['fsmobile', 'mobile', 'phone', 'account', 'extras', 'fx', 'float3d', 'subjectfx', 'vguard', 'visuals', 'scene', 'app'].map((n) => '<script src="js/' + n + '.js"></script>').join('\n') + '\n</body>'); }
 fs.writeFileSync(path.join(OUT, 'index.html'), html);
 const size = (p) => fs.statSync(p).size;

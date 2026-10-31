@@ -7,6 +7,8 @@ const { fail } = L;
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const normEmail = (e) => String(e || '').trim().toLowerCase();
 const CODE_MIN = 15, RESEND_GAP = 45000;
+const PHOTO_MAX = 90000; // a 256 px jpeg is about 20 KB
+const AV_KEYS = ['skin', 'hair', 'hc', 'eyes', 'mouth', 'top', 'tc', 'acc', 'bg'];
 
 async function mailCode(user, code) {
   const text = 'Your FutureSelf verification code is ' + code + '. It works for ' + CODE_MIN + ' minutes. If you did not ask for it, ignore this email.';
@@ -133,6 +135,34 @@ const actions = {
   async me(req) {
     const { user } = await L.authed(req);
     return { ok: true, user: L.pub(user) };
+  },
+
+  /* the profile (name, photo, 3D avatar) lives on the account, so every phone and PC shows the same one */
+  async profile(req, b) {
+    const { d, user } = await L.authed(req);
+    const set = {};
+    if (b.name !== undefined) {
+      const n = String(b.name).trim().slice(0, 60);
+      if (n.length < 2) fail(400, 'Your name needs at least 2 letters.');
+      set.name = n;
+    }
+    if (b.photo !== undefined) {
+      const p = String(b.photo || '');
+      if (p && (p.length > PHOTO_MAX || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(p))) fail(400, 'That photo is too big or not a picture. Choose another one.');
+      set.photo = p;
+    }
+    if (b.avatar !== undefined) {
+      if (b.avatar === null) set.avatar = null;
+      else {
+        const a = {}, src = b.avatar && typeof b.avatar === 'object' ? b.avatar : {};
+        AV_KEYS.forEach((k) => { const v = Math.round(Number(src[k])); a[k] = v >= 0 && v <= 15 ? v : 0; });
+        a.v = 1; set.avatar = a;
+      }
+    }
+    if (!Object.keys(set).length) return { ok: true, user: L.pub(user) };
+    set.profileAt = Date.now();
+    await d.users.updateOne({ email: user.email }, { $set: set });
+    return { ok: true, user: L.pub(Object.assign({}, user, set)) };
   }
 };
 
@@ -141,5 +171,6 @@ module.exports = L.wrap(async (req, b) => {
   const name = String(b.a || ''), fn = Object.prototype.hasOwnProperty.call(actions, name) ? actions[name] : null; if (!fn) fail(400, 'Unknown action.');
   if (['register', 'login', 'verify', 'resend', 'google'].includes(name)) await L.limit(req, 'auth', 40, 600); // 40 tries per 10 minutes per network
   if (name === 'redeem') await L.limit(req, 'redeem', 60, 600);
+  if (name === 'profile') await L.limit(req, 'profile', 60, 600);
   return fn(req, b);
 });

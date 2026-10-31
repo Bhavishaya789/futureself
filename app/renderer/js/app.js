@@ -82,6 +82,8 @@
     return order.map(function (k) { return '<optgroup label="' + (k ? 'Semester ' + k : 'Electives') + '">' + groups[k].map(function (t) { return '<option value="' + t.id + '"' + (t.id === sel ? ' selected' : '') + '>' + esc(t.title) + '</option>'; }).join('') + '</optgroup>'; }).join('');
   }
   function topicById(id) { return S.topics.filter(function (t) { return t.id === id; })[0]; }
+  function avHome() { return window.FSX && FSX.avatarHtml ? FSX.avatarHtml(S.user, 46) : ''; }
+  function meHtml() { return window.FSX && FSX.meHtml ? FSX.meHtml(S.user) : '<div class="avatar">' + esc((S.user.name || '?').charAt(0).toUpperCase()) + '</div><div><b>' + esc(S.user.name) + '</b><span>Local profile</span></div>'; }
   function firstName() { return (S.user && S.user.name || '').split(' ')[0]; }
   var LOCKS = (window.fsApi && fsApi.platform === 'android') ? { gentle: ['Gentle', 'Reminder only. Other apps stay usable.'], focus: ['Focus', 'Other apps are blocked until the time ends. Emergency calls still work.'], strict: ['Strict', 'Like Focus, and the session cannot be ended early.'] } : { gentle: ['Gentle', 'Warns and counts every time you leave. Pause allowed.'], focus: ['Focus', 'Fullscreen lock. Leaving is logged and ending early needs confirmation.'], strict: ['Strict', 'Fullscreen lock with no pause. Early exit needs a 10 second emergency code.'] };
 
@@ -131,7 +133,7 @@
     var v = $('#view');
     var map = Object.assign({ home: viewHome, learn: viewLearn, topic: viewTopic, lesson: viewLesson, timetable: viewTimetable, start: viewStart, progress: viewProgress, settings: viewSettings }, (window.FSX && FSX.routes) || {});
     var fn = map[r.name] || viewHome;
-    FS3D.ok && FS3D.setMode(r.name === 'home' && innerWidth >= 1100 ? 'dash' : 'dim');
+    FS3D.ok && FS3D.setMode(r.name === 'home' ? (innerWidth >= 1100 ? 'dash' : innerWidth < 860 ? 'stage' : 'dim') : 'dim');
     if (r.name === 'topic' || r.name === 'lesson') SubjectFX.set(r.a); else SubjectFX.clear();
     Promise.resolve(fn(v, r)).then(function () { polish(v); if (window.FSX && FSX.after) try { FSX.after(r, v); } catch (e) { } }).catch(function (e) { v.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
@@ -143,11 +145,23 @@
     if (!S.shell || !$('#view')) {
       $('#app').innerHTML =
         '<aside class="side"><div class="brand"><div class="mark"><i></i></div><div>FutureSelf<small>Study lock-in</small></div></div><nav class="nav" id="nav"></nav><button class="btn sm sidesearch" data-act="gsearch">' + ic('search') + ' Search topics <kbd>Ctrl K</kbd></button>' +
-        '<div class="me"><div class="avatar">' + esc((S.user.name || '?').charAt(0).toUpperCase()) + '</div><div><b>' + esc(S.user.name) + '</b><span>Local profile</span></div></div></aside>' +
+        '<a class="me" href="#/account" aria-label="Your profile">' + meHtml() + '</a></aside>' +
         '<main class="main"><div id="bellwrap" style="position:fixed;top:18px;right:22px;z-index:25"></div><div id="view" class="view"></div></main>';
       S.shell = true; drawBell();
     }
-    $('#nav').innerHTML = nav.map(function (n) { return '<a href="#/' + (n[0] === 'home' ? '' : n[0]) + '" class="' + (key === n[0] ? 'on' : '') + '">' + ic(n[1]) + '<span class="l">' + n[2] + '</span></a>'; }).join('');
+    var link = function (n, inSheet) { return '<a href="#/' + (n[0] === 'home' ? '' : n[0]) + '" class="' + (key === n[0] ? 'on' : '') + '">' + ic(n[1]) + '<span class="l">' + n[2] + '</span></a>'; };
+    var sheet = $('#msheet'); if (sheet) sheet.remove(); document.body.classList.remove('msheet-open');
+    if (innerWidth < 860) {
+      /* on a phone: four main tabs and a More button, so the labels are never cut off */
+      var main = ['home', 'learn', 'start', 'progress'], rest = nav.filter(function (n) { return main.indexOf(n[0]) < 0; });
+      $('#nav').innerHTML = nav.filter(function (n) { return main.indexOf(n[0]) > -1; }).map(link).join('') +
+        '<a href="#" class="moreb' + (rest.some(function (n) { return n[0] === key; }) ? ' on' : '') + '" data-act="more">' + ic('more') + '<span class="l">More</span></a>';
+      var d = document.createElement('div'); d.id = 'msheet'; d.className = 'msheet';
+      d.innerHTML = '<div class="msback" data-act="more"></div><div class="msbox"><div class="msgrip"></div><div class="msgrid">' + rest.map(link).join('') + '</div></div>';
+      document.body.appendChild(d);
+    } else {
+      $('#nav').innerHTML = nav.map(link).join('');
+    }
   }
 
   /* ---------- notifications ---------- */
@@ -235,7 +249,7 @@
       var cont = S.topics.filter(function (t) { return !t.planned; }).sort(function (a, b) { return (b.done > 0) - (a.done > 0) || (b.done - a.done) || ((a.semester === prefSem ? 0 : 1) - (b.semester === prefSem ? 0 : 1)); }).slice(0, 4).map(function (t) {
         return '<a class="item" href="#/topic/' + t.id + '"><div class="ico-box" style="background:' + t.color + '26;color:' + t.color + '">' + ic(t.icon) + '</div><div class="grow"><b>' + esc(t.title) + '</b><small>' + t.done + ' of ' + t.lessons + ' lessons</small><div class="bar" style="margin-top:8px;height:5px"><i style="width:' + Math.round(100 * t.done / t.lessons) + '%"></i></div></div></a>';
       }).join('');
-      v.innerHTML = '<div class="hero-col"><div class="top"><div><div class="eyebrow">' + now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + '</div><h1>' + greeting() + ', <span class="grad-text">' + esc(firstName()) + '</span></h1><p class="muted">' + (st.streak ? 'You are on a ' + st.streak + '-day streak. Keep it going.' : 'Study 10 minutes today to start a streak.') + '</p></div></div>' +
+      v.innerHTML = '<div class="hero-col"><div class="top"><div class="hello"><a class="hav" href="#/account" aria-label="Your profile">' + avHome() + '</a><div class="hellotx"><div class="eyebrow">' + now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + '</div><h1>' + greeting() + ', <span class="grad-text">' + esc(firstName()) + '</span></h1><p class="muted">' + (st.streak ? 'You are on a ' + st.streak + '-day streak. Keep it going.' : 'Study 10 minutes today to start a streak.') + '</p></div></div></div><div class="orbstage" id="orbstage"></div>' +
         '<div class="grid g3 compact" style="margin-bottom:18px">' +
         '<div class="card stat tilt"><div class="lbl">' + ic('clock') + ' Today</div><div class="big"><span data-count="' + st.today_minutes + '">' + st.today_minutes + '</span><small>/ ' + st.daily_goal + ' min</small></div><div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
         '<div class="card stat tilt"><div class="lbl" style="color:var(--gold)">' + ic('flame') + ' Streak</div><div class="big"><span data-count="' + st.streak + '">' + st.streak + '</span><small>' + (st.streak === 1 ? 'day' : 'days') + '</small></div><div class="muted" style="font-size:13px;margin-top:14px">Best: ' + st.best_streak + '</div></div>' +
@@ -245,6 +259,9 @@
         '<div class="card"><h2>Continue learning</h2><div class="list">' + cont + '</div></div></div></div>';
     });
   }
+  actions.more = function () { document.body.classList.toggle('msheet-open'); };
+  var rzT = 0, rzW = innerWidth < 860;
+  window.addEventListener('resize', function () { clearTimeout(rzT); rzT = setTimeout(function () { var nw = innerWidth < 860; if (nw !== rzW && S.shell) { rzW = nw; ensureShell(parseHash().name); go(); } }, 200); });
   actions.bell = function () { S.bellOpen = !S.bellOpen; drawBell(); };
   actions.readall = function () { api('/notifications/read', { method: 'POST' }).then(function () { S.notifs.forEach(function (n) { n.read = true; }); drawBell(); }); };
   document.addEventListener('click', function (e) { if (S.bellOpen && !e.target.closest('#bellwrap')) { S.bellOpen = false; drawBell(); } });
@@ -1002,7 +1019,7 @@
   /* ---------- global events ---------- */
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-act]'); if (!el) return;
-    var fn = actions[el.dataset.act]; if (fn) { if (el.tagName !== 'A' && el.dataset.act !== 'ovl') e.preventDefault(); fn(el, e); }
+    var fn = actions[el.dataset.act]; if (fn) { if ((el.tagName !== 'A' || el.dataset.act === 'more') && el.dataset.act !== 'ovl') e.preventDefault(); fn(el, e); }
   });
   var tiltEl = null;
   document.addEventListener('mousemove', function (e) {

@@ -161,7 +161,7 @@
   }
   function friendsBody() {
     var d = F.data;
-    if (F.signed === false) return '<div class="card" style="max-width:520px"><h2>Sign in first</h2><p class="muted" style="margin:8px 0 14px">Friends and study rooms use your FutureSelf account, the same one that links your PC and phone.</p><a class="btn pri" href="#/account">Go to Account</a></div>';
+    if (F.signed === false) return '<div class="card" style="max-width:520px"><h2>Sign in first</h2><p class="muted" style="margin:8px 0 14px">Friends and study rooms use your FutureSelf account, the same one that links your PC and phone.</p><a class="btn pri" href="#/account">Go to Profile</a></div>';
     if (!d) return '<div class="muted">' + (F.err ? esc(F.err) : 'Loading...') + '</div>';
     var inc = d.incoming.length ? '<div class="card" style="margin-bottom:18px"><h2>Friend requests</h2>' + d.incoming.map(function (x) { return '<div class="item" style="margin-bottom:8px"><div class="grow"><b>' + esc(x.name) + '</b><small>wants to be your study friend</small></div><button class="btn sm pri" data-act="facc" data-id="' + esc(x.id) + '">Accept</button><button class="btn sm ghost" data-act="fdec" data-id="' + esc(x.id) + '">Decline</button></div>'; }).join('') + '</div>' : '';
     return inc + '<div class="grid g2" style="align-items:start"><div class="card"><div class="row spread"><h2 style="margin:0">This week</h2><small class="muted">resets Monday</small></div><div id="lb" style="margin-top:12px">' + boardHTML(d) + '</div>' +

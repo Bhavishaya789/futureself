@@ -33,7 +33,7 @@ let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, c ? 
   const page = await ctx.newPage(); const errs = []; page.on('pageerror', (e) => errs.push(e.message)); page.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   const go = async (h, sel) => { await page.evaluate((x) => { location.hash = x; }, h); if (sel) await page.waitForSelector(sel, { timeout: 15000 }); };
   await page.goto(base + '/index.html'); await page.waitForSelector('.side', { timeout: 20000 });
-  ok('Friends is in the navigation', (await page.$$eval('#nav a', (a) => a.map((x) => x.textContent))).some((t) => /Friends/.test(t)));
+  await page.click('[data-act=more]'); await page.waitForSelector('#msheet .msgrid a'); ok('Friends is in the More menu', (await page.$$eval('#msheet .msgrid a', (a) => a.map((x) => x.textContent))).some((t) => /Friends/.test(t))); await page.screenshot({ path: '/home/claude/fsw/mobile/test/m_more.png' }); await page.click('#msheet .msback', { position: { x: 20, y: 20 } });
   await go('#/friends', '#lb'); await page.waitForSelector('[data-act=facc]', { timeout: 8000 });
   ok('friend request from Bhav is shown', /Bhav/.test(await page.textContent('#fbody')));
   await page.screenshot({ path: '/home/claude/fsw/mobile/test/m_friends_req.png', fullPage: true });

@@ -408,3 +408,58 @@ body[data-subj] .card{background:rgba(10,13,36,.62);backdrop-filter:blur(6px);-w
   .nav a span.l{overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
   .rcodebig{font-size:28px;letter-spacing:6px}
 }
+
+/* ---- profile, avatar and the phone layout (1.11) ---- */
+.pav{display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--grad);color:#07091a;font-weight:700;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.14)}
+.pav img{width:100%;height:100%;object-fit:cover;display:block}
+a.me{text-decoration:none;color:inherit}
+a.me:hover{border-color:var(--line-2)}
+.side .me b{display:block;font-size:14px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side .me span:not(.pav){display:block;font-size:12px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hello{display:flex;gap:14px;align-items:center;min-width:0}
+.hav{flex:none;text-decoration:none}
+.hellotx{min-width:0}
+.orbstage{display:none}
+.profcard .prof-top{display:flex;gap:18px;align-items:center;margin-bottom:18px}
+.pbig{width:112px;height:112px;border-radius:50%;overflow:hidden;flex:none;display:grid;place-items:center;background:var(--grad);box-shadow:0 0 0 3px rgba(255,255,255,.14),0 14px 40px rgba(124,92,255,.35)}
+.pbig img,.pbig canvas{width:100%;height:100%;object-fit:cover;display:block}
+.pletter{font-size:48px;font-weight:700;color:#07091a}
+.pfbtns{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px}
+.pfnote{font-size:13px;margin:8px 0 0}
+.avstage{display:grid;place-items:center;gap:8px;position:sticky;top:-26px;z-index:2;background:#0c1030;padding:6px 0 12px;margin-bottom:6px}
+.avstage canvas{width:min(250px,60vw);aspect-ratio:1;height:auto;border-radius:24px;border:1px solid var(--line-2);cursor:grab;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.avopts{display:grid;gap:16px}
+.avrow b{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.avsw{display:flex;flex-wrap:wrap;gap:9px}
+.swc{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.18);padding:0}
+.swc.on{border-color:#fff;box-shadow:0 0 0 3px rgba(124,92,255,.75)}
+.msheet{display:none;position:fixed;inset:0;z-index:40}
+body.msheet-open .msheet{display:block}
+.msback{position:absolute;inset:0;background:rgba(3,4,14,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.msbox{position:absolute;left:12px;right:12px;bottom:calc(80px + env(safe-area-inset-bottom));background:#0c1030;border:1px solid var(--line-2);border-radius:24px;padding:10px 14px 16px;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:pop .25s cubic-bezier(.2,.9,.3,1.2) both}
+.msgrip{width:40px;height:4px;border-radius:4px;background:rgba(255,255,255,.2);margin:0 auto 12px}
+.msgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.msgrid a{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;font-weight:600;text-decoration:none}
+.msgrid a.on{background:linear-gradient(120deg,rgba(124,92,255,.3),rgba(45,226,230,.14));border-color:var(--line-2)}
+.msgrid a svg{width:24px;height:24px}
+@media (max-width:859px){
+  .orbstage{display:block;height:210px;margin:2px 0 16px}
+  .hav .pav{width:50px!important;height:50px!important}
+  .hellotx h1{font-size:clamp(22px,6.5vw,28px);line-height:1.15}
+  .hellotx .eyebrow{font-size:11px;letter-spacing:.14em;padding-right:52px}
+  .top{margin-bottom:16px}
+  .hero-col>.top{margin-bottom:2px}
+  .hello .hellotx ~ *{display:none}
+  .hero-col .top p.muted{margin-top:6px;font-size:14px}
+  .nav a{flex:1;min-width:0;padding:7px 2px}
+  .nav a .l{font-size:11px}
+  .pbig{width:92px;height:92px}
+  .profcard .prof-top{gap:14px}
+}
+@media (max-width:859px){
+  #scene.faint{opacity:.14}
+  .phead{margin-bottom:14px}
+  .pfbtns .btn{flex:1 1 150px;justify-content:center}
+}
+
+.avnote{font-size:12.5px;line-height:1.45;margin:2px 6px 0;text-align:center;max-width:300px}

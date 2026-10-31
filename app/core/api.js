@@ -79,7 +79,7 @@ function createApi(opts) {
     u.settings = Object.assign(DEFAULTS(systemTz), u.settings || {});
     return u;
   }
-  const publicUser = (u) => ({ id: u._id, name: u.name, email: '', settings: u.settings });
+  const publicUser = (u) => ({ id: u._id, name: u.name, email: '', settings: u.settings, photo: u.photo || '', avatar: u.avatar || null, profile_at: u.profile_at || 0, profile_dirty: !!u.profile_dirty });
 
   function cleanBlock(d) {
     const subject = String(d.subject || '').trim();
@@ -162,6 +162,25 @@ function createApi(opts) {
       if (n.length < 2) throw bad('Name is too short');
       patch.name = n.slice(0, 60);
     }
+    /* photo and 3D avatar. A change made on this device is marked "dirty" until it has been sent to the account; a change that came FROM the account (body.sync) is not. */
+    let edited = patch.name !== undefined && patch.name !== u.name;
+    if (body.photo !== undefined) {
+      const p = String(body.photo || '');
+      if (p && (p.length > 90000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(p))) throw bad('That photo is too big or not a picture');
+      if (p !== (u.photo || '')) edited = true; patch.photo = p;
+    }
+    if (body.avatar !== undefined) {
+      if (body.avatar === null) patch.avatar = null;
+      else {
+        const a = {}, src = body.avatar && typeof body.avatar === 'object' ? body.avatar : {};
+        ['skin', 'hair', 'hc', 'eyes', 'mouth', 'top', 'tc', 'acc', 'bg'].forEach((k) => { const v = Math.round(Number(src[k])); a[k] = v >= 0 && v <= 15 ? v : 0; });
+        a.v = 1; patch.avatar = a;
+      }
+      if (JSON.stringify(patch.avatar) !== JSON.stringify(u.avatar || null)) edited = true;
+    }
+    if (body.sync && typeof body.sync === 'object') { patch.profile_at = Math.max(0, +body.sync.at || 0); patch.profile_dirty = false; }
+    else if (edited) patch.profile_dirty = true;
+    else if (body.profile_clean) patch.profile_dirty = false;
     const s = Object.assign({}, u.settings), inc = body.settings || {};
     if (inc.timezone !== undefined) { if (!validTz(inc.timezone)) throw bad('Unknown timezone'); s.timezone = inc.timezone; }
     if (inc.daily_goal !== undefined) s.daily_goal = Math.max(5, Math.min(600, parseInt(inc.daily_goal, 10) || 60));
