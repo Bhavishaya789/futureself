@@ -21,7 +21,7 @@
   /* what the student is studying */
   var TRACKS = [['class9', 'Class 9', 'School (CBSE)'], ['class10', 'Class 10', 'School (CBSE)'], ['class11', 'Class 11', 'School (CBSE)'], ['class12', 'Class 12', 'School (CBSE)'], ['jee', 'JEE Main and Advanced', 'Entrance exams'], ['neet', 'NEET', 'Entrance exams'], ['govt', 'Government exams and GK', 'Competitive exams'], ['btech1', 'B.Tech, Year 1', 'B.Tech'], ['btech2', 'B.Tech, Year 2', 'B.Tech'], ['btech3', 'B.Tech, Year 3', 'B.Tech'], ['btech4', 'B.Tech, Year 4', 'B.Tech']];
   FSX.tracks = TRACKS;
-  FSX.trackLabel = function (id) { for (var i = 0; i < TRACKS.length; i++) if (TRACKS[i][0] === id) return TRACKS[i][1]; return ''; };
+  FSX.trackLabel = function (s) { return String(s || '').split(',').map(function (id) { for (var i = 0; i < TRACKS.length; i++) if (TRACKS[i][0] === id.trim()) return TRACKS[i][1]; return ''; }).filter(Boolean).join(' + '); };
   FSX.trackOptions = function (sel) { var groups = [], by = {}; TRACKS.forEach(function (t) { if (!by[t[2]]) { by[t[2]] = []; groups.push(t[2]); } by[t[2]].push(t); }); return '<option value="">Choose...</option>' + groups.map(function (g) { return '<optgroup label="' + g + '">' + by[g].map(function (t) { return '<option value="' + t[0] + '"' + (t[0] === sel ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</optgroup>'; }).join(''); };
 
   var A3 = (function () {
@@ -275,18 +275,31 @@
 
   /* ------------------------------------------------------------ "what are you studying?" ------------------------------------------------------------ */
   var T = { asked: false };
+  function lsg(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lss(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
+  var MAINS = ['School (CBSE)', 'B.Tech'];
   function chooserHtml(sel, first) {
-    var groups = [], by = {}; TRACKS.forEach(function (t) { if (!by[t[2]]) { by[t[2]] = []; groups.push(t[2]); } by[t[2]].push(t); });
-    return '<h2 style="margin-bottom:6px">' + (first ? 'What are you studying?' : 'Change what you are studying') + '</h2><p class="muted" style="margin:0 0 14px">' + (first ? 'FutureSelf shows the right subjects first. You can change this any time in Profile.' : 'Your Learn page will show the subjects for this.') + '</p>' +
-      groups.map(function (g) { return '<div class="avrow" style="margin-bottom:14px"><b>' + g + '</b><div class="chips">' + by[g].map(function (t) { return '<button class="chip' + (t[0] === sel ? ' on' : '') + '" data-act="trkset" data-id="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div></div>'; }).join('') +
-      '<div class="acts"><button class="btn ghost" data-act="trkskip">' + (first ? 'Not now' : 'Cancel') + '</button></div>';
+    var cur = String(sel || '').split(',').filter(Boolean), main = '', ex = [];
+    cur.forEach(function (id) { var t = TRACKS.filter(function (x) { return x[0] === id; })[0]; if (t && MAINS.indexOf(t[2]) > -1 && !main) main = id; else ex.push(id); });
+    var mains = TRACKS.filter(function (t) { return MAINS.indexOf(t[2]) > -1; });
+    var chip = function (t, act, on) { return '<button class="chip' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + t[0] + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + t[1] + '</button>'; };
+    return '<h2 style="margin-bottom:6px">' + (first ? 'What are you studying?' : 'Change what you are studying') + '</h2><p class="muted" style="margin:0 0 14px">Tell us your class or B.Tech year, and any exam or extra subjects. Your Learn page and the subject list when you start a session will follow this. You can change it any time in Profile.</p>' +
+      '<div class="avrow" style="margin-bottom:14px"><b>1. My class or B.Tech year</b><div class="chips" id="trkmains">' + mains.map(function (t) { return chip(t, 'trkmain', t[0] === main); }).join('') + '</div></div>' +
+      '<div class="avrow" style="margin-bottom:14px"><b>2. Extra exams or subjects (optional, pick any)</b><div class="chips" id="trkexs">' + TRACKS.map(function (t) { return chip(t, 'trkextra', ex.indexOf(t[0]) > -1); }).join('') + '</div></div>' +
+      '<div class="acerr" id="trkerr"></div><div class="acts"><button class="btn ghost" data-act="trkskip">' + (first ? 'Not now' : 'Cancel') + '</button><button class="btn pri" data-act="trksave">Save</button></div>';
   }
+  function trackWanted() {
+    var S = H().S; if (!S.user) return false;
+    if (!S.user.track) return true;
+    return lsg('fs_asktrack') === '1' || lsg('fs_trackv') !== '2'; // after every sign-in, and once after this update for people who already chose
+  }
+  FSX.askTrack = function () { lss('fs_asktrack', '1'); T.asked = false; };
   function checkTrack() {
     if (T.asked || !FSX.h || !P.synced) return;
-    var S = H().S; if (!S.user || S.user.track || S.session || $('#modal-root .overlay')) return;
+    var S = H().S; if (!S.user || S.session || $('#modal-root .overlay') || !trackWanted()) return;
     var h = location.hash || ''; if (/^#\/(focus|lesson)/.test(h)) return;
     if (/^#\/account/.test(h) && !(P.st && (P.st.signedIn || P.st.skip))) return; // the sign-in screen comes first
-    T.asked = true; H().modal(chooserHtml('', true), false);
+    T.asked = true; H().modal(chooserHtml(S.user.track || '', true), false);
   }
   setInterval(checkTrack, 2500);
 
@@ -339,8 +352,22 @@
 
   FSX.actions = Object.assign(FSX.actions || {}, {
     trkopen: function () { H().modal(chooserHtml((H().S.user || {}).track || '', false), false); },
-    trkset: function (el) { var id = el.dataset.id; FSX.setTrack(id).then(function () { H().closeModal(); H().toast('Saved', 'Showing subjects for ' + FSX.trackLabel(id) + '.'); if (location.hash.replace(/^#\/?/, '').split('/')[0] === 'learn' || !location.hash || location.hash === '#/' || /account/.test(location.hash)) H().go(); }).catch(function (e) { H().toast('Could not save', e.message, true); }); },
-    trkskip: function () { H().closeModal(); },
+    trkmain: function (el) {
+      document.querySelectorAll('#trkmains .chip').forEach(function (c) { var on = c === el; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      var x = document.querySelector('#trkexs .chip[data-id="' + el.dataset.id + '"]'); if (x) { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); }
+    },
+    trkextra: function (el) {
+      var m = document.querySelector('#trkmains .chip.on'); if (m && m.dataset.id === el.dataset.id) return; // already your main one
+      var on = !el.classList.contains('on'); el.classList.toggle('on', on); el.setAttribute('aria-pressed', on ? 'true' : 'false');
+    },
+    trksave: function () {
+      var m = document.querySelector('#trkmains .chip.on'), ids = m ? [m.dataset.id] : [];
+      document.querySelectorAll('#trkexs .chip.on').forEach(function (c) { if (ids.indexOf(c.dataset.id) < 0) ids.push(c.dataset.id); });
+      if (!ids.length) { var er = $('#trkerr'); if (er) er.textContent = 'Pick at least your class or year.'; return; }
+      var csv = ids.join(',');
+      FSX.setTrack(csv).then(function () { lss('fs_trackv', '2'); lss('fs_asktrack', null); H().closeModal(); H().toast('Saved', 'Showing subjects for ' + FSX.trackLabel(csv) + '.'); H().go(); }).catch(function (e) { H().toast('Could not save', e.message, true); });
+    },
+    trkskip: function () { lss('fs_trackv', '2'); lss('fs_asktrack', null); H().closeModal(); },
     pfsave: function () {
       var n = ($('#pfname').value || '').trim(), er = $('#pferr'); if (er) er.textContent = '';
       if (n.length < 2) { if (er) er.textContent = 'Your name needs at least 2 letters.'; return; }

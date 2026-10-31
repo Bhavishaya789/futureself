@@ -72,7 +72,7 @@
   function redraw() { A.busy = false; var v = $('#view'); if (v) viewAccount(v); }
   function err(m) { A.err = m; var e = $('#acerr'); if (e) e.textContent = m; }
   function busy(on, label) { A.busy = on; document.querySelectorAll('#acbox .btn').forEach(function (b) { b.disabled = on; }); if (on && label) err(label); }
-  function done() { A.busy = false; A.err = ''; A.step = 'form'; acct('status').then(function (s) { A.st = s; H().toast('Signed in', s.email); if (FSX.profileSync) FSX.profileSync(); location.hash = '#/'; setTimeout(function () { H().go(); }, 50); }); }
+  function done() { A.busy = false; A.err = ''; A.step = 'form'; acct('status').then(function (s) { A.st = s; H().toast('Signed in', s.email); if (FSX.askTrack) FSX.askTrack(); if (FSX.profileSync) FSX.profileSync(); location.hash = '#/'; setTimeout(function () { H().go(); }, 50); }); }
 
   FSX.actions = Object.assign(FSX.actions || {}, {
     acmode: function () { A.mode = A.mode === 'signup' ? 'login' : 'signup'; A.err = ''; redraw(); },

@@ -24,6 +24,7 @@ let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, c ? 
   await new Promise((r) => srv.listen(0, r)); const base = 'http://localhost:' + srv.address().port;
   const br = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] });
   const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    await ctx.addInitScript(() => { try { localStorage.setItem('fs_trackv', '2'); } catch (e) {} });
   await ctx.addInitScript(() => { window.__granted = 1; }); await ctx.addInitScript({ path: path.join('/home/claude/fsw/mobile/test', 'fakebridge.js') });
   const page = await ctx.newPage(); const errs = []; page.on('pageerror', (e) => errs.push(e.message));
   await page.goto(base + '/index.html'); await page.waitForSelector('#acbox', { timeout: 20000 });

@@ -15,7 +15,10 @@ const TRACKS = [
 ];
 const IDS = TRACKS.map((t) => t.id);
 /* the content tags a student of this track should see in "My subjects" */
-const mine = (id) => /^btech\d$/.test(id) ? [id, 'btech-extra'] : IDS.indexOf(id) > -1 ? [id] : [];
+/* a student may follow several tracks, saved as "class12,neet" (first = main). parse() keeps only known ids, no repeats, at most 6 */
+const parse = (s) => { const out = []; String(s || '').split(',').forEach((x) => { x = x.trim(); if (IDS.indexOf(x) > -1 && out.indexOf(x) < 0 && out.length < 6) out.push(x); }); return out; };
+const norm = (s) => parse(s).join(',');
+const mine = (s) => { const out = []; parse(s).forEach((id) => { out.push(id); if (/^btech\d$/.test(id)) out.push('btech-extra'); }); return out; };
 /* a content folder name -> its tag, label and sort order */
 function fromFolder(g) {
   let m;
@@ -29,4 +32,4 @@ function fromFolder(g) {
   if (/^government-?exams?/i.test(g)) return { tags: ['govt'], group: 'Government Exams', order: 150 };
   return { tags: [], group: g.replace(/[-_]+/g, ' '), order: 200 };
 }
-module.exports = { TRACKS, IDS, mine, fromFolder };
+module.exports = { TRACKS, IDS, parse, norm, mine, fromFolder };

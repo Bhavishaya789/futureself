@@ -165,8 +165,8 @@ function createApi(opts) {
     }
     let edited = patch.name !== undefined && patch.name !== u.name;
     if (body.track !== undefined) {
-      const tk = String(body.track || '');
-      if (tk && TRACKS.IDS.indexOf(tk) < 0) throw bad('Unknown choice. Pick one from the list.');
+      const raw = String(body.track || ''), tk = TRACKS.norm(raw);
+      if (raw && !tk) throw bad('Unknown choice. Pick one from the list.');
       if (tk !== (u.track || '')) edited = true;
       patch.track = tk;
     }

@@ -8,6 +8,7 @@ const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const normEmail = (e) => String(e || '').trim().toLowerCase();
 const CODE_MIN = 15, RESEND_GAP = 45000;
 const TRACKS = ['class9', 'class10', 'class11', 'class12', 'jee', 'neet', 'govt', 'btech1', 'btech2', 'btech3', 'btech4'];
+const normTrack = (s) => { const o = []; String(s || '').split(',').forEach((x) => { x = x.trim(); if (TRACKS.indexOf(x) > -1 && o.indexOf(x) < 0 && o.length < 6) o.push(x); }); return o.join(','); };
 const PHOTO_MAX = 90000; // a 256 px jpeg is about 20 KB
 const AV_KEYS = ['skin', 'hair', 'hc', 'eyes', 'mouth', 'top', 'tc', 'acc', 'bg'];
 
@@ -34,7 +35,7 @@ const actions = {
     if (old && old.verified) fail(409, 'This email already has an account. Use Sign in (or Continue with Google).');
     if (old && old.codeSentAt && Date.now() - old.codeSentAt < RESEND_GAP) fail(429, 'A code was just sent. Wait a few seconds and press Resend.', { needsVerify: true });
     const h = L.hashPw(pw);
-    const track = TRACKS.indexOf(String(b.track || '')) > -1 ? String(b.track) : '';
+    const track = normTrack(b.track);
     await d.users.updateOne({ email }, { $set: Object.assign({ name, salt: h.salt, passHash: h.passHash, verified: false }, track ? { track } : {}), $setOnInsert: { email, createdAt: Date.now() } }, { upsert: true });
     const user = await d.users.findOne({ email });
     await mailCode(user, await issueCode(d, email));
@@ -148,7 +149,7 @@ const actions = {
       if (n.length < 2) fail(400, 'Your name needs at least 2 letters.');
       set.name = n;
     }
-    if (b.track !== undefined && TRACKS.indexOf(String(b.track)) > -1) set.track = String(b.track); // an empty or unknown value never wipes a saved choice
+    if (b.track !== undefined && normTrack(b.track)) set.track = normTrack(b.track); // an empty or unknown value never wipes a saved choice
     if (b.photo !== undefined) {
       const p = String(b.photo || '');
       if (p && (p.length > PHOTO_MAX || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(p))) fail(400, 'That photo is too big or not a picture. Choose another one.');

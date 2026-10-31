@@ -281,7 +281,7 @@
   /* ---------- learn ---------- */
   /* ---------- learn: semesters, search, subjects ---------- */
   function semLabel(n) { return n ? 'Semester ' + n : 'Electives'; }
-  function myTags() { var t = (S.user && S.user.track) || ''; return /^btech\d$/.test(t) ? [t, 'btech-extra'] : t ? [t] : []; }
+  function myTags() { var o = []; String((S.user && S.user.track) || '').split(',').forEach(function (t) { t = t.trim(); if (!t) return; if (o.indexOf(t) < 0) o.push(t); if (/^btech\d$/.test(t) && o.indexOf('btech-extra') < 0) o.push('btech-extra'); }); return o; }
   function isMine(x) { var m = myTags(); return (x.tracks || []).some(function (g) { return m.indexOf(g) > -1; }); }
   function trackName() { return window.FSX && FSX.trackLabel ? FSX.trackLabel(S.user && S.user.track) : ''; }
   function learnFilter() { var f = ls('fs_grp'); if (!f || (f === 'mine' && !myTags().length)) f = myTags().length ? 'mine' : 'all'; return f; }

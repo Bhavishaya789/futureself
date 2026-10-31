@@ -26,6 +26,7 @@ srv.listen(0, '127.0.0.1', async () => {
   const token = JSON.parse(fs.readFileSync(path.join(ud, 'account.json'))).token;
   const phone = () => fetch(site + '/api/session', { headers: { Authorization: 'Bearer ' + token } }).then((r) => r.json());
   ok('idle before session', !(await phone()).active);
+  await win.waitForSelector('[data-act=trksave]', { timeout: 15000 }).then(() => { ok('class chooser appears after sign-in, B.Tech year 2 ticked', true); return win.evaluate(() => !!document.querySelector('#trkmains .chip.on[data-id=btech2]')).then((v) => ok('signup choice prefilled', v)); }).then(() => win.click('[data-act=trksave]')).catch(() => ok('class chooser appears after sign-in', false)); await win.waitForTimeout(600);
   await win.evaluate(() => { location.hash = '#/start?topic=operating-systems&min=25'; }); await win.waitForSelector('[data-act=sbegin]'); await win.click('[data-act=sbegin]'); await win.waitForSelector('.focus'); await win.waitForTimeout(1500);
   const st = await phone(); ok('session on PC reaches the phone side (src=pc)', st.active && st.restrict && st.src === 'pc' && /Operating/i.test(st.subject), st);
   await win.click('[data-act=fend]'); await win.waitForTimeout(300); await win.click('.modal [data-act=fgo], #xgo, [data-act=fgo]', { force: true }).catch(() => { }); await win.waitForTimeout(1500);
