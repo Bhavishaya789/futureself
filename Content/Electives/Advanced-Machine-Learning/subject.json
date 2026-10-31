@@ -1,0 +1,14 @@
+{
+ "title": "Advanced Machine Learning",
+ "semester": 0,
+ "credits": 3,
+ "icon": "brain",
+ "color": "#3DDC97",
+ "tagline": "SVM, ensembles, PCA, clustering, sequence models, attention and model evaluation.",
+ "channels": [
+  "StatQuest with Josh Starmer",
+  "Andrew Ng",
+  "NPTEL",
+  "Krish Naik"
+ ]
+}

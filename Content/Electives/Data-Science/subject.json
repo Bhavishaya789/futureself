@@ -1,0 +1,14 @@
+{
+ "title": "Data Science: Basics to Advanced",
+ "semester": 0,
+ "credits": 3,
+ "icon": "chart",
+ "color": "#2DE2E6",
+ "tagline": "Data analysis, statistics, pandas, hypothesis tests, features and forecasting.",
+ "channels": [
+  "freeCodeCamp.org",
+  "StatQuest with Josh Starmer",
+  "Krish Naik",
+  "NPTEL"
+ ]
+}

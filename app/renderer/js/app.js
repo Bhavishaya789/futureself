@@ -193,6 +193,11 @@
     return { xp: xp, lv: lv, name: LEVELS[lv][0], next: nx ? nx[0] : null, pct: nx ? Math.round(100 * (xp - cur) / (nx[1] - cur)) : 100, need: nx ? nx[1] - xp : 0 };
   }
   function weekLit(st) { return (st.last7 || []).map(function (d) { return d.minutes >= 10; }); }
+  function dailyCard() {
+    if (!window.FSDaily) return '';
+    var f = FSDaily.today();
+    return '<div class="card dgk"><div class="row spread"><h2>Today\'s GK <small class="muted">| \u0906\u091c \u0915\u093e \u0938\u093e\u092e\u093e\u0928\u094d\u092f \u091c\u094d\u091e\u093e\u0928</small></h2><span class="badge">' + esc(f.c) + '</span></div><p style="margin:10px 0 6px">' + esc(f.en) + '</p><p class="muted" lang="hi" style="margin:0">' + esc(f.hi) + '</p></div>';
+  }
   function futureCard(st) {
     var li = levelInfo(st), wk = (st.last7 || []).map(function (d, i, a) { var dt = parseISO(d.date); return '<span class="' + (d.minutes >= 10 ? 'on ' : '') + (i === a.length - 1 ? 'today' : '') + '"><i></i>' + DAYS[wd(dt)].charAt(0) + '</span>'; }).join('');
     return '<div class="card fself tilt"><div class="lvrow"><div class="lvbadge">LV<b>' + (li.lv + 1) + '</b></div><div class="grow"><b>Your Future Self: ' + li.name + '</b><small>' + li.xp + ' XP &middot; ' + (li.next ? li.need + ' XP to ' + li.next : 'Maximum level reached') + '</small></div></div>' +
@@ -253,7 +258,7 @@
         '<div class="card stat tilt"><div class="lbl">' + ic('clock') + ' Today</div><div class="big"><span data-count="' + st.today_minutes + '">' + st.today_minutes + '</span><small>/ ' + st.daily_goal + ' min</small></div><div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
         '<div class="card stat tilt"><div class="lbl" style="color:var(--gold)">' + ic('flame') + ' Streak</div><div class="big"><span data-count="' + st.streak + '">' + st.streak + '</span><small>' + (st.streak === 1 ? 'day' : 'days') + '</small></div><div class="muted" style="font-size:13px;margin-top:14px">Best: ' + st.best_streak + '</div></div>' +
         '<div class="card stat tilt"><div class="lbl">' + ic('check') + ' Lessons</div><div class="big"><span data-count="' + st.lessons_done + '">' + st.lessons_done + '</span><small>done</small></div><div class="muted" style="font-size:13px;margin-top:14px">' + dur(st.total_minutes) + ' studied</div></div></div>' +
-        '<div class="stack">' + futureCard(st) + '<div class="card"><div class="row spread"><h2>Today\'s plan</h2><button class="btn sm" data-act="addblock">' + ic('plus') + ' Add</button></div><div class="list">' + plan + '</div></div>' +
+        '<div class="stack">' + futureCard(st) + dailyCard() + '<div class="card"><div class="row spread"><h2>Today\'s plan</h2><button class="btn sm" data-act="addblock">' + ic('plus') + ' Add</button></div><div class="list">' + plan + '</div></div>' +
         '<div class="card tilt"><div class="row spread wrap"><div><h2 style="margin-bottom:6px">Start a focus session</h2><p class="muted">Pick a topic and lock in.</p></div><a class="btn pri" href="#/start">' + ic('focus') + ' Focus now</a></div></div>' +
         '<div class="card"><h2>Continue learning</h2><div class="list">' + cont + '</div></div></div></div>';
     });

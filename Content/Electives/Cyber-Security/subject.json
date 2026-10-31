@@ -1,0 +1,14 @@
+{
+ "title": "Cyber Security: Basics to Advanced",
+ "semester": 0,
+ "credits": 3,
+ "icon": "shield",
+ "color": "#FF5C7A",
+ "tagline": "Defence first: threats, safe coding, authentication, network defence and incident response.",
+ "channels": [
+  "NetworkChuck",
+  "Professor Messer",
+  "NPTEL",
+  "freeCodeCamp.org"
+ ]
+}

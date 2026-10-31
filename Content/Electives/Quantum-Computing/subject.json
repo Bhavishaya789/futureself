@@ -1,0 +1,14 @@
+{
+ "title": "Quantum Computing: Basics to Advanced",
+ "semester": 0,
+ "credits": 3,
+ "icon": "atom",
+ "color": "#7C5CFF",
+ "tagline": "Qubits, gates, entanglement, Grover, Shor, error correction and hardware.",
+ "channels": [
+  "Qiskit",
+  "Veritasium",
+  "NPTEL",
+  "Microsoft Quantum"
+ ]
+}

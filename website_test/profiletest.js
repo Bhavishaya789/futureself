@@ -45,6 +45,8 @@ const jpeg = 'data:image/jpeg;base64,' + Buffer.alloc(3000, 7).toString('base64'
   r = await P(A.t, { avatar: null }); T('avatar can be cleared', r.j.user.avatar === null, r.j.user);
   r = await call(auth, 'POST', { a: 'me' }, A.t); T('track empty at first', r.j.user.track === '' || r.j.user.track === undefined, r.j.user);
   r = await P(A.t, { track: 'btech4' }); T('track saved', r.s === 200 && r.j.user.track === 'btech4', r.j);
+  r = await P(A.t, { track: 'govt' }); T('govt track accepted', r.j.user.track === 'govt', r.j.user);
+  r = await P(A.t, { track: 'btech4' });
   r = await P(A.t, { track: 'nonsense' }); T('invalid track ignored', r.j.user.track === 'btech4', r.j.user);
   r = await P(A.t, { track: '' }); T('empty track never wipes', r.j.user.track === 'btech4', r.j.user);
   r = await P(A.t, { name: 'Asha R' }); T('name save keeps track', r.j.user.track === 'btech4', r.j.user);

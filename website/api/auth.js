@@ -7,7 +7,7 @@ const { fail } = L;
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 const normEmail = (e) => String(e || '').trim().toLowerCase();
 const CODE_MIN = 15, RESEND_GAP = 45000;
-const TRACKS = ['class9', 'class10', 'class11', 'class12', 'jee', 'neet', 'btech1', 'btech2', 'btech3', 'btech4'];
+const TRACKS = ['class9', 'class10', 'class11', 'class12', 'jee', 'neet', 'govt', 'btech1', 'btech2', 'btech3', 'btech4'];
 const PHOTO_MAX = 90000; // a 256 px jpeg is about 20 KB
 const AV_KEYS = ['skin', 'hair', 'hc', 'eyes', 'mouth', 'top', 'tc', 'acc', 'bg'];
 

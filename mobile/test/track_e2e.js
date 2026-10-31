@@ -70,6 +70,18 @@ const OUT = '/home/claude/fsw/mobile/test/';
   const t2 = await d2.page.$eval('#lgrid', (e) => e.textContent);
   ok('class 11 subjects shown', /Physics/i.test(t2) && !/Operating System/i.test(t2), t2.slice(0, 200));
   await d2.page.screenshot({ path: OUT + 'pc_learn_tracks.png' });
+  /* government exams and GK track */
+  await d2.go('#/account', '.pcard, #acct, .side');
+  await d2.page.evaluate(() => { const b = document.querySelector('[data-act="trkopen"]'); if (b) b.click(); });
+  await d2.page.waitForSelector('[data-act="trkset"][data-id="govt"]', { timeout: 8000 });
+  await d2.page.click('[data-act="trkset"][data-id="govt"]'); await d2.page.waitForTimeout(1500);
+  ok('track changed to govt', row().track === 'govt', row());
+  await d2.go('#/learn', '#semchips');
+  const t3 = await d2.page.$eval('#lgrid', (e) => e.textContent);
+  ok('govt subjects shown', /Polity/i.test(t3) && /Quantitative/i.test(t3) && !/Operating System/i.test(t3), t3.slice(0, 300));
+  await d2.go('#/', '.hero-col');
+  const dg = await d2.page.$eval('.dgk', (e) => e.textContent).catch(() => '');
+  ok("Today's GK card shows English and Hindi", /Today's GK/.test(dg) && /[\u0900-\u097F]/.test(dg), dg.slice(0, 200));
   const e = [...d1.errs, ...d2.errs].filter((x) => !/503|Failed to load resource/.test(x)); ok('no page errors', e.length === 0, e);
   await br.close(); srv.close(); console.log(fail ? fail + ' FAILED' : 'ALL PASS'); process.exit(fail ? 1 : 0);
 })();
