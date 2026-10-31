@@ -19,7 +19,7 @@ const srv = http.createServer((q, r) => {
   if (!f.startsWith(WWW) || !fs.existsSync(f)) { r.writeHead(404); return r.end('no'); }
   r.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(r);
 });
-const mk = (name, email) => { const u = { _id: crypto.randomBytes(6).toString('hex'), email, name, verified: true, tv: 0 }; global.__FS_FAKE_DB.users.rows.push(u); return { u, t: L.newToken(u) }; };
+const mk = (name, email) => { const u = { _id: crypto.randomBytes(6).toString('hex'), email, name, verified: true, tv: 0, track: 'btech2' }; global.__FS_FAKE_DB.users.rows.push(u); return { u, t: L.newToken(u) }; };
 let fail = 0; const ok = (n, c, x) => { console.log(c ? 'PASS' : 'FAIL', n, c ? '' : (x === undefined ? '' : JSON.stringify(x))); if (!c) fail++; };
 (async () => {
   await new Promise((r) => srv.listen(0, r)); const base = 'http://localhost:' + srv.address().port;

@@ -1,0 +1,27 @@
+{
+ "title": "NEET Biology (Botany and Zoology)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "brain",
+ "color": "#26C281",
+ "tagline": "NEET biology by unit, based on NCERT, with MCQ practice.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Diversity in the Living World",
+  "Structural Organisation in Animals and Plants",
+  "Cell Structure and Function",
+  "Plant Physiology",
+  "Human Physiology",
+  "Reproduction",
+  "Genetics and Evolution",
+  "Biology and Human Welfare",
+  "Biotechnology and its Applications",
+  "Ecology and Environment"
+ ],
+ "id": "neet-biology"
+}

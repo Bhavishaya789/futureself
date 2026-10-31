@@ -34,7 +34,7 @@
       setSite: function (s) { load(); st.site = cleanSite(s); save(); return status(); },
       skip: function (on) { load(); st.skip = !!on; save(); return status(); },
       token: function () { load(); return st.token; },
-      register: function (p) { return auth('register', { name: p.name, email: p.email, password: p.password }); },
+      register: function (p) { return auth('register', { name: p.name, email: p.email, password: p.password, track: p.track || '' }); },
       verify: function (p) { return auth('verify', { email: p.email, code: p.code }).then(adopt); },
       resend: function (p) { return auth('resend', { email: p.email }); },
       login: function (p) { return auth('login', { email: p.email, password: p.password }).then(adopt); },
@@ -62,9 +62,9 @@
       /* the shared profile: with p = { name?, photo?, avatar? } it saves, with nothing it just reads. Returns the user. */
       profile: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to sync your profile.'));
-        var save_ = p && (p.name !== undefined || p.photo !== undefined || p.avatar !== undefined);
+        var save_ = p && (p.name !== undefined || p.photo !== undefined || p.avatar !== undefined || p.track !== undefined);
         var body = { a: save_ ? 'profile' : 'me' };
-        if (save_) { ['name', 'photo', 'avatar'].forEach(function (k) { if (p[k] !== undefined) body[k] = p[k]; }); }
+        if (save_) { ['name', 'photo', 'avatar', 'track'].forEach(function (k) { if (p[k] !== undefined) body[k] = p[k]; }); }
         return req('/api/auth', 'POST', body, true).then(function (j) { if (j.user && j.user.name && j.user.name !== st.name) { st.name = j.user.name; save(); } return j.user; }, function (e) { if (e && e.status === 401) { st.token = ''; save(); } throw e; });
       },
       /* the SERVER looks at a picture and suggests 3D avatar options (nothing is stored) */

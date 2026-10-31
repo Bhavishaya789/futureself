@@ -40,6 +40,7 @@
         '<button class="btn gbtn" data-act="acgoogle"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.4z"/><path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.6 14.7a7.2 7.2 0 0 1 0-4.6v-3H1.8a12 12 0 0 0 0 10.6l3.8-3z"/><path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3A12 12 0 0 0 1.8 7.1l3.8 3C6.5 6.8 9 4.8 12 4.8z"/></svg> Continue with Google</button>' +
         '<div class="acor"><span>or use your email</span></div>' +
         (su ? field('acn', 'Your name', 'text', 'Bhavishya Kumar', 'maxlength="60" autocomplete="name"') : '') +
+        (su && FSX.trackOptions ? '<label class="acl" for="actrack">What are you studying?</label><select class="in" id="actrack">' + FSX.trackOptions(A.track || '') + '</select>' : '') +
         field('ace', 'Email', 'email', 'you@example.com', 'autocomplete="email"') +
         field('acp', 'Password' + (su ? ' (8 or more characters)' : ''), 'password', '', 'autocomplete="' + (su ? 'new-password' : 'current-password') + '"') +
         '<div class="acerr" id="acerr">' + esc(A.err) + '</div>' +
@@ -84,8 +85,8 @@
       if (A.mode === 'signup' && !name) return err('Please enter your name.');
       if (!email) return err('Please enter your email.');
       if (!pw) return err('Please enter a password.');
-      A.email = email; A.name = name; busy(true, A.mode === 'signup' ? 'Sending your code...' : 'Signing in...');
-      (A.mode === 'signup' ? acct('register', { name: name, email: email, password: pw }).then(function () { A.step = 'verify'; A.err = ''; redraw(); })
+      A.email = email; A.name = name; A.track = ($('#actrack') || {}).value || ''; busy(true, A.mode === 'signup' ? 'Sending your code...' : 'Signing in...');
+      (A.mode === 'signup' ? acct('register', { name: name, email: email, password: pw, track: ($('#actrack') || {}).value || '' }).then(function () { A.step = 'verify'; A.err = ''; redraw(); })
         : acct('login', { email: email, password: pw }).then(done)
       ).catch(function (e) { busy(false); if (e.needsVerify) { A.step = 'verify'; A.err = e.message; redraw(); } else err(e.message); });
     },

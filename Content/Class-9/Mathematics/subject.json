@@ -1,0 +1,29 @@
+{
+ "title": "Mathematics (Class 9)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "math",
+ "color": "#7C5CFF",
+ "tagline": "NCERT Mathematics for Class 9 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Number Systems",
+  "Polynomials",
+  "Coordinate Geometry",
+  "Linear Equations in Two Variables",
+  "Introduction to Euclid's Geometry",
+  "Lines and Angles",
+  "Triangles",
+  "Quadrilaterals",
+  "Circles",
+  "Heron's Formula",
+  "Surface Areas and Volumes",
+  "Statistics"
+ ],
+ "id": "class-9-mathematics"
+}

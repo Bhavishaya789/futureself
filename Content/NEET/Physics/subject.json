@@ -1,0 +1,36 @@
+{
+ "title": "NEET Physics",
+ "semester": 0,
+ "credits": 0,
+ "icon": "atom",
+ "color": "#2DE2E6",
+ "tagline": "NEET physics, chapter by chapter, with NCERT-based practice.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Units and Measurements",
+  "Kinematics",
+  "Laws of Motion",
+  "Work, Energy and Power",
+  "Rotational Motion",
+  "Gravitation",
+  "Properties of Solids and Liquids",
+  "Thermodynamics",
+  "Kinetic Theory of Gases",
+  "Oscillations and Waves",
+  "Electrostatics",
+  "Current Electricity",
+  "Magnetic Effects of Current and Magnetism",
+  "Electromagnetic Induction and Alternating Currents",
+  "Electromagnetic Waves",
+  "Optics",
+  "Dual Nature of Matter and Radiation",
+  "Atoms and Nuclei",
+  "Electronic Devices"
+ ],
+ "id": "neet-physics"
+}

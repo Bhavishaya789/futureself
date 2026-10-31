@@ -79,7 +79,8 @@ function createApi(opts) {
     u.settings = Object.assign(DEFAULTS(systemTz), u.settings || {});
     return u;
   }
-  const publicUser = (u) => ({ id: u._id, name: u.name, email: '', settings: u.settings, photo: u.photo || '', avatar: u.avatar || null, profile_at: u.profile_at || 0, profile_dirty: !!u.profile_dirty });
+  const TRACKS = require('./tracks');
+  const publicUser = (u) => ({ id: u._id, name: u.name, track: u.track || '', email: '', settings: u.settings, photo: u.photo || '', avatar: u.avatar || null, profile_at: u.profile_at || 0, profile_dirty: !!u.profile_dirty });
 
   function cleanBlock(d) {
     const subject = String(d.subject || '').trim();
@@ -162,8 +163,14 @@ function createApi(opts) {
       if (n.length < 2) throw bad('Name is too short');
       patch.name = n.slice(0, 60);
     }
-    /* photo and 3D avatar. A change made on this device is marked "dirty" until it has been sent to the account; a change that came FROM the account (body.sync) is not. */
     let edited = patch.name !== undefined && patch.name !== u.name;
+    if (body.track !== undefined) {
+      const tk = String(body.track || '');
+      if (tk && TRACKS.IDS.indexOf(tk) < 0) throw bad('Unknown choice. Pick one from the list.');
+      if (tk !== (u.track || '')) edited = true;
+      patch.track = tk;
+    }
+    /* photo and 3D avatar. A change made on this device is marked "dirty" until it has been sent to the account; a change that came FROM the account (body.sync) is not. */
     if (body.photo !== undefined) {
       const p = String(body.photo || '');
       if (p && (p.length > 90000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(p))) throw bad('That photo is too big or not a picture');
@@ -200,7 +207,7 @@ function createApi(opts) {
     return Object.values(topics).map((t) => {
       const ls = lessonsOf(t);
       const done = ls.filter((l) => prog.some((p) => p.topic_id === t.id && p.lesson_id === l.id && p.done)).length;
-      return { id: t.id, title: t.title, tagline: t.tagline, icon: t.icon || 'book', color: t.color || '#7C5CFF', semester: t.semester, credits: t.credits, planned: !!t.planned, kind: t.kind, units: t.units.length, lessons: ls.length, done, minutes: ls.reduce((a, l) => a + (l.minutes || 20), 0) };
+      return { id: t.id, title: t.title, tagline: t.tagline, icon: t.icon || 'book', color: t.color || '#7C5CFF', semester: t.semester, tracks: t.tracks || [], group: t.group || '', gorder: t.gorder || 0, credits: t.credits, planned: !!t.planned, kind: t.kind, units: t.units.length, lessons: ls.length, done, minutes: ls.reduce((a, l) => a + (l.minutes || 20), 0) };
     });
   });
   add('GET', /^\/search$/, async (m, d, q) => contentLib.search(searchIndex, (q && q.q) || '', 40));

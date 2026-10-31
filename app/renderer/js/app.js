@@ -245,8 +245,7 @@
         return '<div class="item"><div class="ico-box" style="background:' + esc(b.color) + '33;color:' + esc(b.color) + '">' + ic((topicById(b.topic_id) || {}).icon || 'book') + '</div><div class="grow"><b>' + esc(b.subject) + '</b><small>' + esc(b.start) + ' to ' + hhmm(e) + ' &middot; ' + b.minutes + ' min &middot; ' + LOCKS[b.lock_mode][0] + ' lock</small></div>' + badge +
           (state === 'now' || state === 'soon' ? '<button class="btn sm pri" data-act="startblock" data-id="' + b._id + '">' + ic('play') + '</button>' : '') + '</div>';
       }).join('') : '<div class="empty">Nothing planned for today.<br><button class="btn sm" style="margin-top:12px" data-act="addblock">' + ic('plus') + ' Add a study block</button></div>';
-      var prefSem = +(ls('fs_sem') || 0) || 3;
-      var cont = S.topics.filter(function (t) { return !t.planned; }).sort(function (a, b) { return (b.done > 0) - (a.done > 0) || (b.done - a.done) || ((a.semester === prefSem ? 0 : 1) - (b.semester === prefSem ? 0 : 1)); }).slice(0, 4).map(function (t) {
+      var cont = S.topics.filter(function (t) { return !t.planned; }).sort(function (a, b) { return (b.done > 0) - (a.done > 0) || (b.done - a.done) || ((isMine(a) ? 0 : 1) - (isMine(b) ? 0 : 1)); }).slice(0, 4).map(function (t) {
         return '<a class="item" href="#/topic/' + t.id + '"><div class="ico-box" style="background:' + t.color + '26;color:' + t.color + '">' + ic(t.icon) + '</div><div class="grow"><b>' + esc(t.title) + '</b><small>' + t.done + ' of ' + t.lessons + ' lessons</small><div class="bar" style="margin-top:8px;height:5px"><i style="width:' + Math.round(100 * t.done / t.lessons) + '%"></i></div></div></a>';
       }).join('');
       v.innerHTML = '<div class="hero-col"><div class="top"><div class="hello"><a class="hav" href="#/account" aria-label="Your profile">' + avHome() + '</a><div class="hellotx"><div class="eyebrow">' + now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + '</div><h1>' + greeting() + ', <span class="grad-text">' + esc(firstName()) + '</span></h1><p class="muted">' + (st.streak ? 'You are on a ' + st.streak + '-day streak. Keep it going.' : 'Study 10 minutes today to start a streak.') + '</p></div></div></div><div class="orbstage" id="orbstage"></div>' +
@@ -269,6 +268,10 @@
   /* ---------- learn ---------- */
   /* ---------- learn: semesters, search, subjects ---------- */
   function semLabel(n) { return n ? 'Semester ' + n : 'Electives'; }
+  function myTags() { var t = (S.user && S.user.track) || ''; return /^btech\d$/.test(t) ? [t, 'btech-extra'] : t ? [t] : []; }
+  function isMine(x) { var m = myTags(); return (x.tracks || []).some(function (g) { return m.indexOf(g) > -1; }); }
+  function trackName() { return window.FSX && FSX.trackLabel ? FSX.trackLabel(S.user && S.user.track) : ''; }
+  function learnFilter() { var f = ls('fs_grp'); if (!f || (f === 'mine' && !myTags().length)) f = myTags().length ? 'mine' : 'all'; return f; }
   function resultsHTML(list, q) {
     if (!list.length) return '<div class="empty">No subject or topic matches "' + esc(q) + '". Try a shorter word, like "tree", "deadlock" or "sql".</div>';
     return list.map(function (r) {
@@ -293,18 +296,18 @@
       (x.planned ? '<div class="muted" style="font-size:13px"><span class="badge warn">Content coming</span></div>' : '<div class="row muted" style="font-size:13px;gap:16px"><span>' + x.units + ' units</span><span>' + x.lessons + ' topics</span><span>~' + dur(x.minutes) + '</span></div><div><div class="row spread muted" style="font-size:13px"><span>Progress</span><span>' + p + '%</span></div><div class="bar" style="margin-top:8px"><i style="width:' + p + '%"></i></div></div>') + '</a>';
   }
   function drawSubjects() {
-    var f = ls('fs_sem') || 'all', box = $('#lgrid'); if (!box) return;
-    var groups = {}, order = [];
-    S.topics.forEach(function (t) { var k = t.semester || 0; if (f !== 'all' && String(k) !== f) return; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(t); });
-    order.sort(function (a, b) { return (a || 99) - (b || 99); });
+    var f = learnFilter(), box = $('#lgrid'); if (!box) return;
+    var groups = {}, order = [], gor = {};
+    S.topics.forEach(function (t) { var k = t.group || semLabel(t.semester); if (f === 'mine' ? !isMine(t) : (f !== 'all' && k !== f)) return; if (!groups[k]) { groups[k] = []; order.push(k); gor[k] = t.gorder || 0; } groups[k].push(t); });
+    order.sort(function (a, b) { return gor[a] - gor[b]; });
     box.innerHTML = order.map(function (k) {
       var g = groups[k], cr = g.reduce(function (a, t) { return a + (t.credits || 0); }, 0), ready = g.filter(function (t) { return !t.planned; }).length;
-      return '<div class="semblock"><div class="semhead"><h2>' + semLabel(k) + '</h2><span class="muted">' + g.length + ' subjects' + (cr ? ' &middot; ' + cr + ' credits' : '') + ' &middot; ' + ready + ' with study content</span></div><div class="grid gauto">' + g.map(subjectCard).join('') + '</div></div>';
+      return '<div class="semblock"><div class="semhead"><h2>' + esc(k) + '</h2><span class="muted">' + g.length + ' subjects' + (cr ? ' &middot; ' + cr + ' credits' : '') + ' &middot; ' + ready + ' with study content</span></div><div class="grid gauto">' + g.map(subjectCard).join('') + '</div></div>';
     }).join('') || '<div class="empty">No subjects here yet.</div>';
     $$('#semchips .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.id === f); });
     polish($('#view'));
   }
-  actions.semf = function (el) { ls('fs_sem', el.dataset.id); drawSubjects(); };
+  actions.semf = function (el) { ls('fs_grp', el.dataset.id); drawSubjects(); };
   actions.gclose = function () { closeModal(); };
   actions.gsearch = function () {
     if (S.session && !S.session.ended) return;
@@ -315,13 +318,14 @@
   function viewLearn(v) {
     return api('/topics').then(function (t) {
       S.topics = t;
-      var f = ls('fs_sem') || 'all', sems = [];
-      t.forEach(function (x) { if (sems.indexOf(x.semester || 0) < 0) sems.push(x.semester || 0); });
-      sems.sort(function (a, b) { return (a || 99) - (b || 99); });
-      var total = t.length, ready = t.filter(function (x) { return !x.planned; }).length;
-      v.innerHTML = '<div class="top"><div><div class="eyebrow">Learn</div><h1>Your subjects</h1><p class="muted">' + total + ' subjects across 8 semesters. ' + ready + ' have full study notes, Q&amp;A, quizzes and video links. Search any topic by typing.</p></div></div>' +
+      var grp = {}, sems = [];
+      t.forEach(function (x) { var g = x.group || semLabel(x.semester); if (!grp[g]) { grp[g] = x.gorder || 0; sems.push(g); } });
+      sems.sort(function (a, b) { return grp[a] - grp[b]; });
+      var total = t.length, ready = t.filter(function (x) { return !x.planned; }).length, mineN = t.filter(isMine).length, hasT = myTags().length;
+      v.innerHTML = '<div class="top"><div><div class="eyebrow">Learn</div><h1>Your subjects</h1><p class="muted">' + total + ' subjects in total. ' + ready + ' have full study notes, Q&amp;A, quizzes and video links. Search any topic by typing.</p></div></div>' +
+        (hasT ? '' : '<div class="card" style="margin-bottom:18px"><div class="row spread wrap"><div><b>What are you studying?</b><p class="muted" style="margin-top:4px">Choose your class, JEE, NEET or B.Tech year and Learn will show the right subjects first.</p></div><button class="btn pri" data-act="trkopen">Choose</button></div></div>') +
         '<div class="card" style="margin-bottom:18px"><div class="searchbar">' + ic('search') + '<input class="in" id="lq" placeholder="Search subjects and topics: try &quot;deadlock&quot;, &quot;normalization&quot;, &quot;MQTT&quot;" autocomplete="off"></div>' +
-        '<div class="chips" id="semchips" style="margin-top:14px"><button class="chip" data-act="semf" data-id="all">All</button>' + sems.map(function (k) { return '<button class="chip" data-act="semf" data-id="' + k + '">' + (k ? 'Sem ' + k : 'Electives') + '</button>'; }).join('') + '</div><div id="lres" style="margin-top:14px"></div></div><div id="lgrid"></div>';
+        '<div class="chips scrollx" id="semchips" style="margin-top:14px">' + (hasT ? '<button class="chip" data-act="semf" data-id="mine">My subjects: ' + esc(trackName()) + ' (' + mineN + ')</button>' : '') + '<button class="chip" data-act="semf" data-id="all">All</button>' + sems.map(function (k) { return '<button class="chip" data-act="semf" data-id="' + esc(k) + '">' + esc(k.replace(/^Semester /, 'Sem ').replace('B.Tech extras and electives', 'B.Tech extras')) + '</button>'; }).join('') + '</div><div id="lres" style="margin-top:14px"></div></div><div id="lgrid"></div>';
       wireSearch($('#lq'), $('#lres'), function (on) { $('#lgrid').hidden = on; $('#semchips').hidden = on; });
       drawSubjects();
     });
@@ -331,9 +335,10 @@
       var t = d.topic, pr = d.progress, all = [];
       t.units.forEach(function (u) { u.lessons.forEach(function (l) { all.push(l); }); });
       var done = all.filter(function (l) { return pr[l.id] && pr[l.id].done; }).length, nxt = all.filter(function (l) { return !(pr[l.id] && pr[l.id].done); })[0];
-      var meta = semLabel(t.semester) + (t.credits ? ' &middot; ' + t.credits + ' credits' : '') + (all.length ? ' &middot; ' + all.length + ' topics' : '');
+      var meta = esc(t.group || semLabel(t.semester)) + (t.credits ? ' &middot; ' + t.credits + ' credits' : '') + (all.length ? ' &middot; ' + all.length + ' topics' : '');
       v.innerHTML = '<div class="top"><div><a class="eyebrow" href="#/learn">&larr; All subjects</a><h1 style="margin-top:10px">' + esc(t.title) + '</h1><p class="muted">' + esc(t.tagline) + '</p><p class="muted" style="margin-top:6px;font-size:14px">' + meta + '</p></div><div class="row wrap">' +
         '<button class="btn" data-act="addblock" data-topic="' + t.id + '">' + ic('cal') + ' Plan study blocks</button>' + (nxt ? '<a class="btn pri" href="#/lesson/' + t.id + '/' + nxt.id + '">' + (done ? 'Continue' : 'Start') + ' ' + ic('arrow') + '</a>' : (all.length ? '<span class="badge ok">Course complete</span>' : '')) + '</div></div>' +
+        (t.planned && t.syllabus && t.syllabus.length ? '<div class="card"><h2>What this subject covers</h2><p class="muted" style="margin-bottom:12px">The chapter list, following the official syllabus. Study notes for these are added in batches.</p><ol class="syl">' + t.syllabus.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ol></div>' : '') +
         (t.planned ? '<div class="card"><h2>Content coming</h2><p class="muted">The study notes for this subject are still being prepared. Everything else (timetable, focus sessions) already works for it. You can also add your own: drop topic files into the Content folder next to FutureSelf.exe, under <b>' + esc(t.folder) + '</b>, and restart the app.</p></div>' : '') +
         '<div class="stack">' + t.units.map(function (u, i) {
           return '<div class="card"><div class="eyebrow">Unit ' + (i + 1) + '</div><h2 style="margin-top:6px">' + esc(u.title) + '</h2><div class="list">' + u.lessons.map(function (l) {

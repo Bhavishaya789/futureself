@@ -1,0 +1,31 @@
+{
+ "title": "JEE Main Mathematics",
+ "semester": 0,
+ "credits": 0,
+ "icon": "math",
+ "color": "#7C5CFF",
+ "tagline": "The full NTA JEE Main mathematics syllabus with practice problems.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Sets, Relations and Functions",
+  "Complex Numbers and Quadratic Equations",
+  "Matrices and Determinants",
+  "Permutations and Combinations",
+  "Binomial Theorem",
+  "Sequences and Series",
+  "Limits, Continuity and Differentiability",
+  "Integral Calculus",
+  "Differential Equations",
+  "Coordinate Geometry",
+  "Three Dimensional Geometry",
+  "Vector Algebra",
+  "Statistics and Probability",
+  "Trigonometry"
+ ],
+ "id": "jee-main-mathematics"
+}

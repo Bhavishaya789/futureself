@@ -18,6 +18,12 @@
   var DEFAULT = { v: 1, skin: 1, hair: 1, hc: 1, eyes: 0, mouth: 0, top: 0, tc: 0, acc: 0, bg: 0 };
   function clean(c) { var o = { v: 1 }; KEYS.forEach(function (k) { var n = Math.round(Number(c && c[k])); o[k] = n >= 0 && n <= 15 ? n : DEFAULT[k]; }); o.skin %= SKIN.length; o.hc %= HAIRC.length; o.tc %= TOPC.length; o.bg %= BG.length; o.hair %= N_HAIR.length; o.eyes %= N_EYES.length; o.mouth %= N_MOUTH.length; o.top %= N_TOP.length; o.acc %= N_ACC.length; return o; }
 
+  /* what the student is studying */
+  var TRACKS = [['class9', 'Class 9', 'School (CBSE)'], ['class10', 'Class 10', 'School (CBSE)'], ['class11', 'Class 11', 'School (CBSE)'], ['class12', 'Class 12', 'School (CBSE)'], ['jee', 'JEE Main', 'Entrance exams'], ['neet', 'NEET', 'Entrance exams'], ['btech1', 'B.Tech, Year 1', 'B.Tech'], ['btech2', 'B.Tech, Year 2', 'B.Tech'], ['btech3', 'B.Tech, Year 3', 'B.Tech'], ['btech4', 'B.Tech, Year 4', 'B.Tech']];
+  FSX.tracks = TRACKS;
+  FSX.trackLabel = function (id) { for (var i = 0; i < TRACKS.length; i++) if (TRACKS[i][0] === id) return TRACKS[i][1]; return ''; };
+  FSX.trackOptions = function (sel) { var groups = [], by = {}; TRACKS.forEach(function (t) { if (!by[t[2]]) { by[t[2]] = []; groups.push(t[2]); } by[t[2]].push(t); }); return '<option value="">Choose...</option>' + groups.map(function (g) { return '<optgroup label="' + g + '">' + by[g].map(function (t) { return '<option value="' + t[0] + '"' + (t[0] === sel ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</optgroup>'; }).join(''); };
+
   var A3 = (function () {
     var api = { ok: false }, T = window.THREE, R, scene, cam, holder, built = '', cache = {}, lastS = 0;
     function init() {
@@ -200,7 +206,7 @@
   var P = { st: null, busy: false, last: '' };
   function api(path, opt) { return H().api(path, opt); }
   function patch(body) { return api('/me', { method: 'PATCH', body: body }); }
-  function same(me, sv) { return (me.name || '') === (sv.name || '') && (me.photo || '') === (sv.photo || '') && JSON.stringify(me.avatar || null) === JSON.stringify(sv.avatar ? clean(sv.avatar) : null); }
+  function same(me, sv) { return (me.name || '') === (sv.name || '') && (me.track || '') === (sv.track || '') && (me.photo || '') === (sv.photo || '') && JSON.stringify(me.avatar || null) === JSON.stringify(sv.avatar ? clean(sv.avatar) : null); }
   function applyLocal(u) { var S = H().S; S.user = u; FSX.updateChrome(); }
   function refreshView(force) {
     var r = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0] || 'home';
@@ -209,18 +215,20 @@
     H().go();
   }
   function push(me) {
-    var sent = { name: me.name || '', photo: me.photo || '', avatar: me.avatar || null };
+    var sent = { name: me.name || '', photo: me.photo || '', avatar: me.avatar || null, track: me.track || undefined };
     return acct('profile', sent).then(function (sv) {
       return api('/me').then(function (now) {
-        if (now.name !== sent.name || (now.photo || '') !== sent.photo || JSON.stringify(now.avatar || null) !== JSON.stringify(sent.avatar)) return now; // edited again while sending: the next round sends it
+        if (now.name !== sent.name || (now.track || undefined) !== sent.track || (now.photo || '') !== sent.photo || JSON.stringify(now.avatar || null) !== JSON.stringify(sent.avatar)) return now; // edited again while sending: the next round sends it
         return patch({ sync: { at: sv.profileAt || Date.now() } });
       });
     });
   }
+  function me0track() { var u = H().S.user || {}; return u.track || ''; }
   function pull(sv) {
-    return patch({ name: sv.name, photo: sv.photo || '', avatar: sv.avatar || null, sync: { at: sv.profileAt || 0 } }).then(function (u) { applyLocal(u); refreshView(); return u; });
+    return patch({ name: sv.name, photo: sv.photo || '', avatar: sv.avatar || null, track: sv.track || me0track(), sync: { at: sv.profileAt || 0 } }).then(function (u) { applyLocal(u); refreshView(); return u; });
   }
   function sync() {
+    if (!window.fsApi || !window.fsApi.acct) P.synced = true;
     if (P.busy || !FSX.h || !window.fsApi || !window.fsApi.acct) return Promise.resolve();
     P.busy = true;
     return acct('status').then(function (st) {
@@ -228,14 +236,17 @@
       return Promise.all([api('/me'), acct('profile')]).then(function (r) {
         var me = r[0], sv = r[1] || {}, svAt = sv.profileAt || 0, lAt = me.profile_at || 0;
         if (me.profile_dirty) return push(me);
-        if (svAt > lAt) return pull(sv);
-        if (svAt === 0 && lAt === 0 && !same(me, sv)) {
-          if (!me.name || me.name === 'Student') return pull(sv); // first sign-in: take the name from the account
-          return push(me);
-        }
-        if (!me.profile_dirty && same(me, sv) && lAt !== svAt) return patch({ sync: { at: svAt } });
+        var adopt = (!me.track && sv.track) ? patch({ track: sv.track, sync: { at: lAt } }).then(function (u) { applyLocal(u); me = u || me; }) : Promise.resolve();
+        return adopt.then(function () {
+          if (svAt > lAt) return pull(sv);
+          if (svAt === 0 && lAt === 0 && !same(me, sv)) {
+            if (!me.name || me.name === 'Student') return pull(sv); // first sign-in: take the name from the account
+            return push(me);
+          }
+          if (!me.profile_dirty && same(me, sv) && lAt !== svAt) return patch({ sync: { at: svAt } });
+        }).then(function () { if (adopt && !(svAt > lAt)) refreshView(); });
       });
-    }).catch(function () { /* offline or server busy: try again next round */ }).then(function () { P.busy = false; FSX.updateChrome(); });
+    }).catch(function () { /* offline or server busy: try again next round */ }).then(function () { P.busy = false; P.synced = true; FSX.updateChrome(); });
   }
   FSX.profileSync = sync;
   setTimeout(sync, 1500);
@@ -262,11 +273,29 @@
     })(t0);
   }
 
+  /* ------------------------------------------------------------ "what are you studying?" ------------------------------------------------------------ */
+  var T = { asked: false };
+  function chooserHtml(sel, first) {
+    var groups = [], by = {}; TRACKS.forEach(function (t) { if (!by[t[2]]) { by[t[2]] = []; groups.push(t[2]); } by[t[2]].push(t); });
+    return '<h2 style="margin-bottom:6px">' + (first ? 'What are you studying?' : 'Change what you are studying') + '</h2><p class="muted" style="margin:0 0 14px">' + (first ? 'FutureSelf shows the right subjects first. You can change this any time in Profile.' : 'Your Learn page will show the subjects for this.') + '</p>' +
+      groups.map(function (g) { return '<div class="avrow" style="margin-bottom:14px"><b>' + g + '</b><div class="chips">' + by[g].map(function (t) { return '<button class="chip' + (t[0] === sel ? ' on' : '') + '" data-act="trkset" data-id="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div></div>'; }).join('') +
+      '<div class="acts"><button class="btn ghost" data-act="trkskip">' + (first ? 'Not now' : 'Cancel') + '</button></div>';
+  }
+  function checkTrack() {
+    if (T.asked || !FSX.h || !P.synced) return;
+    var S = H().S; if (!S.user || S.user.track || S.session || $('#modal-root .overlay')) return;
+    var h = location.hash || ''; if (/^#\/(focus|lesson)/.test(h)) return;
+    if (/^#\/account/.test(h) && !(P.st && (P.st.signedIn || P.st.skip))) return; // the sign-in screen comes first
+    T.asked = true; H().modal(chooserHtml('', true), false);
+  }
+  setInterval(checkTrack, 2500);
+
   FSX.profileCard = function (st) {
     var u = H().S.user || {}, signed = !!(st && st.signedIn);
     var big = u.photo ? '<img alt="Your photo" src="' + u.photo + '">' : u.avatar ? '<canvas id="pavlive" width="320" height="320"></canvas>' : '<span class="pletter">' + esc((u.name || '?').charAt(0).toUpperCase()) + '</span>';
     return '<div class="card profcard"><div class="prof-top"><div class="pbig">' + big + '</div><div class="grow"><h2>Your profile</h2>' +
       '<p class="muted" id="pfsync">' + (signed ? 'Saved on your account. It shows the same on your PC and your phone.' : 'Saved on this device. Sign in to show it on your other devices too.') + '</p></div></div>' +
+      '<div class="kv" style="margin-bottom:12px"><span>Studying<br><small class="muted">Decides which subjects Learn shows first</small></span><span class="row" style="gap:10px"><b>' + esc(FSX.trackLabel(u.track) || 'Not chosen') + '</b><button class="btn sm" data-act="trkopen">' + (u.track ? 'Change' : 'Choose') + '</button></span></div>' +
       '<div class="fld"><label class="f" for="pfname">Your name</label><input class="in" id="pfname" maxlength="60" autocomplete="name" value="' + esc(u.name || '') + '"></div>' +
       '<div class="pfbtns"><label class="btn"><input type="file" id="pfphoto" accept="image/*" hidden> ' + H().ic('plus') + ' ' + (u.photo ? 'Change photo' : 'Upload photo') + '</label>' +
       (u.photo ? '<button class="btn" data-act="pfnophoto">Remove photo</button>' : '') +
@@ -286,6 +315,7 @@
 
   /* ------------------------------------------------------------ the 3D avatar builder ------------------------------------------------------------ */
   var E = { cfg: null };
+  FSX.setTrack = function (id) { return patch({ track: id }).then(function (nu) { applyLocal(nu); sync(); return nu; }); };
   function sw(k, list, label) {
     return '<div class="avrow"><b>' + label + '</b><div class="avsw">' + list.map(function (c, i) {
       var col = Array.isArray(c) ? 'linear-gradient(135deg,' + c[0] + ',' + c[1] + ')' : c;
@@ -308,6 +338,9 @@
   function redrawOpts() { var o = $('#avopts'); if (o) o.innerHTML = optsHtml(); }
 
   FSX.actions = Object.assign(FSX.actions || {}, {
+    trkopen: function () { H().modal(chooserHtml((H().S.user || {}).track || '', false), false); },
+    trkset: function (el) { var id = el.dataset.id; FSX.setTrack(id).then(function () { H().closeModal(); H().toast('Saved', 'Showing subjects for ' + FSX.trackLabel(id) + '.'); if (location.hash.replace(/^#\/?/, '').split('/')[0] === 'learn' || !location.hash || location.hash === '#/' || /account/.test(location.hash)) H().go(); }).catch(function (e) { H().toast('Could not save', e.message, true); }); },
+    trkskip: function () { H().closeModal(); },
     pfsave: function () {
       var n = ($('#pfname').value || '').trim(), er = $('#pferr'); if (er) er.textContent = '';
       if (n.length < 2) { if (er) er.textContent = 'Your name needs at least 2 letters.'; return; }

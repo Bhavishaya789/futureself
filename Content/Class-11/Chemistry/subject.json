@@ -1,0 +1,31 @@
+{
+ "title": "Chemistry (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "spark",
+ "color": "#FF5C7A",
+ "tagline": "NCERT Chemistry Part 1 and 2 for Class 11. Also the base for JEE and NEET.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Some Basic Concepts of Chemistry",
+  "Structure of Atom",
+  "Classification of Elements and Periodicity in Properties",
+  "Chemical Bonding and Molecular Structure",
+  "Thermodynamics",
+  "Equilibrium",
+  "Redox Reactions",
+  "Organic Chemistry: Some Basic Principles and Techniques",
+  "Hydrocarbons"
+ ],
+ "tracks": [
+  "class11",
+  "jee",
+  "neet"
+ ],
+ "id": "class-11-chemistry"
+}

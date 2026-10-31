@@ -112,6 +112,6 @@ async function authed(req) {
   if (!user || !user.verified || (p.tv || 0) !== (user.tv || 0)) fail(401, 'Please sign in again.');
   return { d, user };
 }
-const pub = (u) => ({ email: u.email, name: u.name || '', photo: u.photo || '', avatar: u.avatar || null, profileAt: u.profileAt || 0 });
+const pub = (u) => ({ email: u.email, name: u.name || '', track: u.track || '', photo: u.photo || '', avatar: u.avatar || null, profileAt: u.profileAt || 0 });
 
 module.exports = { limit, HttpErr, fail, db, sign, verifyToken, newToken, hashPw, checkPw, codeHash, newCode, same, sha256, sendMail, wrap, authed, pub };

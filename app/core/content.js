@@ -3,6 +3,7 @@
 //   Content/.../<Subject>/<Unit-N-Title>/<NN-Topic>.md
 // Each topic file:  # Title / minutes: N / yt: search words   then   @study  @qa  @quiz  sections.
 const fs = require('fs');
+const Tracks = require('./tracks');
 const path = require('path');
 
 const slug = (s) => String(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -146,13 +147,15 @@ function loadContent(root, opts) {
   groups.forEach((g) => {
     const gp = path.join(root, g);
     const semester = /^semester/i.test(g) ? numOf(g) : 0;
+    const gi = Tracks.fromFolder(g);
     listDirs(gp).sort().forEach((sd) => {
       const sp = path.join(gp, sd);
       let meta = {};
       try { meta = JSON.parse(fs.readFileSync(path.join(sp, 'subject.json'), 'utf8')); } catch (e) { if (fs.existsSync(path.join(sp, 'subject.json'))) problems.push(sp + ': bad subject.json'); }
       const sub = {
         id: meta.id || slug(prettify(sd)), title: meta.title || prettify(sd), semester: meta.semester !== undefined ? meta.semester : semester, credits: meta.credits || 0,
-        icon: meta.icon || 'book', color: meta.color || '#7C5CFF', tagline: meta.tagline || '', channels: meta.channels || [], kind: meta.kind || 'theory', folder: g + '/' + sd, units: []
+        icon: meta.icon || 'book', color: meta.color || '#7C5CFF', tagline: meta.tagline || '', channels: meta.channels || [], syllabus: Array.isArray(meta.syllabus) ? meta.syllabus.map(String).slice(0, 80) : [], kind: meta.kind || 'theory', folder: g + '/' + sd, units: [],
+        tracks: Array.isArray(meta.tracks) ? meta.tracks.map(String) : gi.tags, group: meta.group || gi.group, gorder: meta.gorder !== undefined ? +meta.gorder : gi.order
       };
       const units = listDirs(sp).sort((a, b) => numOf(a) - numOf(b) || a.localeCompare(b));
       units.forEach((ud) => {
@@ -181,8 +184,8 @@ function loadContent(root, opts) {
 function buildIndex(topics) {
   const items = [];
   Object.values(topics).forEach((s) => {
-    const sem = s.semester ? 'semester ' + s.semester + ' sem ' + s.semester + ' sem' + s.semester : 'elective add-on';
-    items.push({ type: 'subject', topic_id: s.id, title: s.title, sub: (s.semester ? 'Semester ' + s.semester : 'Elective') + (s.credits ? ' · ' + s.credits + ' credits' : ''), hay: (s.title + ' ' + sem + ' ' + s.tagline).toLowerCase(), tl: s.title.toLowerCase(), planned: s.planned });
+    const sem = s.semester ? 'semester ' + s.semester + ' sem ' + s.semester + ' sem' + s.semester : (s.group || 'elective add-on').toLowerCase();
+    items.push({ type: 'subject', topic_id: s.id, title: s.title, sub: (s.semester ? 'Semester ' + s.semester : (s.group || 'Elective')) + (s.credits ? ' · ' + s.credits + ' credits' : ''), hay: (s.title + ' ' + sem + ' ' + s.tagline).toLowerCase(), tl: s.title.toLowerCase(), planned: s.planned });
     s.units.forEach((u) => u.lessons.forEach((l) => {
       const body = textOf(l.blocks);
       items.push({

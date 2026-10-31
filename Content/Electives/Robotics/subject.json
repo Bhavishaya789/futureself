@@ -1,0 +1,9 @@
+{
+ "title": "Robotics",
+ "semester": 0,
+ "credits": 3,
+ "icon": "chip",
+ "color": "#3DDC97",
+ "tagline": "Kinematics, sensors, control, planning and ROS.",
+ "channels": ["Modern Robotics (Northwestern)", "NPTEL", "Articulated Robotics", "MATLAB"]
+}

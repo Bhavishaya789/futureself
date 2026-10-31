@@ -1,0 +1,9 @@
+{
+ "title": "Computer Vision",
+ "semester": 0,
+ "credits": 3,
+ "icon": "cube",
+ "color": "#FF8A3D",
+ "tagline": "Pixels, filters, edges, features, CNN detection and camera geometry.",
+ "channels": ["First Principles of Computer Vision", "Stanford Online", "NPTEL", "freeCodeCamp.org"]
+}
