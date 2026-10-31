@@ -58,7 +58,7 @@ function create(opts) {
       Promise.resolve(client.state()).then((j) => { try { onState(j); } catch (e) { log('[account] follow ' + e.message); } }, () => { }).then(() => { busy = false; });
     }, 4000);
   }
-  const OPS = new Set(['status', 'setSite', 'skip', 'register', 'verify', 'resend', 'login', 'google', 'signout', 'videos', 'check', 'update']);
+  const OPS = new Set(['status', 'setSite', 'skip', 'register', 'verify', 'resend', 'login', 'google', 'signout', 'videos', 'check', 'update', 'social']);
   return {
     client, push, follow,
     async invoke(op, payload) {

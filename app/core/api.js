@@ -342,6 +342,31 @@ function createApi(opts) {
     };
   });
 
+  /* weekly report: this week (Monday to Sunday) against last week, and what the numbers are made of */
+  add('GET', /^\/report$/, async () => {
+    const u = await user();
+    const today = zoned(new Date(), u.settings.timezone).date, tn = dayNum(today), ws = tn - wdOfIso(today), lastWs = ws - 7;
+    const sess = await store.find('sessions', {}), goal = u.settings.daily_goal || 60;
+    const mk = (from) => ({ min: 0, sessions: 0, completed: 0, distractions: 0, days: {}, subjects: {} });
+    const cur = mk(), prev = mk();
+    sess.forEach((s) => {
+      const n = dayNum(s.local_date), w = n >= ws && n < ws + 7 ? cur : n >= lastWs && n < ws ? prev : null; if (!w) return;
+      const m = s.actual_sec / 60; w.min += m; w.sessions++; if (s.completed) w.completed++; w.distractions += s.distractions || 0;
+      w.days[s.local_date] = (w.days[s.local_date] || 0) + m;
+      const k = topics[s.topic_id] ? topics[s.topic_id].title : (s.subject || 'Study'); w.subjects[k] = (w.subjects[k] || 0) + m;
+    });
+    const days = []; for (let i = 0; i < 7; i++) { const d = isoFromNum(ws + i); days.push({ date: d, minutes: Math.round(cur.days[d] || 0), future: ws + i > tn }); }
+    const best = days.reduce((a, d) => (d.minutes > (a ? a.minutes : 0) ? d : a), null);
+    const sub = Object.keys(cur.subjects).sort((a, b) => cur.subjects[b] - cur.subjects[a]).slice(0, 6).map((k) => ({ title: k, minutes: Math.round(cur.subjects[k]) }));
+    const st = await (async () => { const byDay = {}; sess.forEach((s) => { byDay[s.local_date] = (byDay[s.local_date] || 0) + s.actual_sec / 60; }); return streaks(byDay, today); })();
+    return {
+      week_start: isoFromNum(ws), week_key: isoFromNum(ws), today, goal, streak: st[0], best_streak: st[1],
+      minutes: Math.round(cur.min), last_minutes: Math.round(prev.min), sessions: cur.sessions, completed: cur.completed, distractions: cur.distractions,
+      days_studied: Object.keys(cur.days).filter((k) => cur.days[k] >= 10).length, goal_days: Object.keys(cur.days).filter((k) => cur.days[k] >= goal).length,
+      today_minutes: Math.round(cur.days[today] || 0), days, best_day: best && best.minutes ? best : null, subjects: sub
+    };
+  });
+
   add('GET', /^\/notifications$/, async () => store.find('notifications', {}, { sort: { created_at: -1 }, limit: 30 }));
   add('POST', /^\/notifications\/read$/, async () => {
     for (const n of await store.find('notifications', { read: false })) await store.update('notifications', n._id, { read: true });

@@ -119,7 +119,7 @@
   }
   /* the phone's background lock service needs the sign-in too, so it can follow the PC */
   function syncAccount(c) { var s = c.status(); jcall('accountSave', JSON.stringify({ site: s.site, token: s.signedIn ? c.token() : '' })); }
-  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, update: 1 };
+  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, update: 1, social: 1 };
   function acct(op, payload) {
     if (!ACCT_OPS[op]) return Promise.resolve({ ok: false, error: 'Unknown account action' });
     return getClient().then(function (c) {

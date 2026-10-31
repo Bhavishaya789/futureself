@@ -65,8 +65,9 @@
   }
 
   function optionsCard() {
-    var auto = FSPhone.getSetting('autoLockBlocks') === 'true';
+    var auto = FSPhone.getSetting('autoLockBlocks') === 'true', shorts = FSPhone.getSetting('blockShorts') === 'true';
     return '<div class="card"><h2>Phone only</h2>' +
+      '<div class="kv"><span>Block Shorts, Reels and Spotlight<br><small class="muted">YouTube lectures still work. Works any time, not only in a session (needs the Accessibility permission). Beta: apps change their screens, so tell me if one slips through.</small></span><label class="switch"><input type="checkbox" id="phshorts" data-phset="blockShorts" ' + (shorts ? 'checked' : '') + '><span></span></label></div>' +
       '<div class="kv"><span>Lock automatically when a timetable block starts<br><small class="muted">Uses the lock mode chosen for that block</small></span><label class="switch"><input type="checkbox" id="phauto" data-phset="autoLockBlocks" ' + (auto ? 'checked' : '') + '><span></span></label></div>' +
       '<div class="row wrap" style="margin-top:12px"><button class="btn" data-act="phtest">Test the lock for 1 minute</button></div>' +
       '<p class="muted" style="margin-top:12px;font-size:13px">Android lets you turn a permission off in Settings. FutureSelf blocks the Settings app while a lock is running, so it cannot be switched off in the middle of a session.</p></div>';

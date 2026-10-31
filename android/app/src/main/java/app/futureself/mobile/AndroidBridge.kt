@@ -159,7 +159,7 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
 
     @JavascriptInterface
     fun setSetting(k: String, v: String): String {
-        if (k != "autoLockBlocks" && k != "restrictOnPc" && !k.startsWith("oem_")) return errJson("Unknown setting").toString()
+        if (k != "autoLockBlocks" && k != "restrictOnPc" && k != "blockShorts" && !k.startsWith("oem_")) return errJson("Unknown setting").toString()
         Store.putString(act, k, if (v == "true") "true" else "false")
         if (k == "restrictOnPc" && v == "true" && Link.paired(act)) Poller.begin(act)
         return okJson().toString()

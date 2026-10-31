@@ -133,7 +133,7 @@
     var fn = map[r.name] || viewHome;
     FS3D.ok && FS3D.setMode(r.name === 'home' && innerWidth >= 1100 ? 'dash' : 'dim');
     if (r.name === 'topic' || r.name === 'lesson') SubjectFX.set(r.a); else SubjectFX.clear();
-    Promise.resolve(fn(v, r)).then(function () { polish(v); }).catch(function (e) { v.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+    Promise.resolve(fn(v, r)).then(function () { polish(v); if (window.FSX && FSX.after) try { FSX.after(r, v); } catch (e) { } }).catch(function (e) { v.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
   window.addEventListener('hashchange', go);
 
@@ -835,6 +835,7 @@
       (s.remote ? '<button class="btn ghost sm" data-act="fend">Emergency release</button>' : s.lock === 'strict' ? '<button class="btn ghost sm" data-act="fend">Emergency exit</button>' : '<button class="btn danger" data-act="fend">End early</button>') + '</div>' + (s.remote ? '<p class="muted" style="margin-top:18px">Started on your phone. This PC unlocks when that session ends.</p>' : '') + '</div>';
     if (s.topic_id && s.lesson_id) api('/topics/' + s.topic_id).then(function (d) { s.topicData = d.topic; d.topic.units.forEach(function (u) { u.lessons.forEach(function (l) { if (l.id === s.lesson_id) { s.lessonData = l; var f = $('#flesson'); if (f) f.textContent = l.title; } }); }); });
     clearInterval(tickTimer); tick(); tickTimer = setInterval(tick, 250);
+    if (window.FSX && FSX.onFocus) try { FSX.onFocus(); } catch (e) { }
   }
   function tick() {
     var s = S.session; if (!s || s.ended) return clearInterval(tickTimer);

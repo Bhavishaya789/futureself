@@ -11,6 +11,8 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.telecom.TelecomManager
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.Toast
 import android.view.inputmethod.InputMethodManager
 
 /**
@@ -31,6 +33,16 @@ class FocusAccessibilityService : AccessibilityService() {
         @Volatile private var lastLaunch = 0L
         @Volatile private var lastShadeClose = 0L
         private val main = Handler(Looper.getMainLooper())
+
+        /** short-video screens: the app's own screen-element names that only exist while the vertical video feed is open */
+        private val SHORTS = mapOf(
+            "com.google.android.youtube" to Regex("reel_player|reel_watch|reel_recycler|reel_multi|shorts_player|shorts_container", RegexOption.IGNORE_CASE),
+            "com.instagram.android" to Regex("clips_viewer|clips_video|clips_swipe|reel_viewer|reels_viewer", RegexOption.IGNORE_CASE),
+            "com.snapchat.android" to Regex("spotlight", RegexOption.IGNORE_CASE),
+            "com.facebook.katana" to Regex("reels_viewer|reel_viewer|reels_player", RegexOption.IGNORE_CASE)
+        )
+        @Volatile private var lastShortsScan = 0L
+        @Volatile private var lastShortsHit = 0L
 
         private val ALWAYS = setOf(
             "com.android.systemui", "android", "com.android.phone", "com.android.server.telecom",
@@ -69,9 +81,38 @@ class FocusAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) { shortsGuard(event); return }
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && event.eventType != AccessibilityEvent.TYPE_WINDOWS_CHANGED) return
         // window-list events carry no package name, so look at the windows themselves (this is what catches the pulled-down notification panel)
         if (event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) scan() else check(event.packageName?.toString(), event.className?.toString())
+    }
+
+    /** Optional (Phone settings): while Shorts / Reels / Spotlight are open the app is sent one step back, so lectures on YouTube still work. */
+    private fun shortsGuard(event: AccessibilityEvent) {
+        try {
+            if (!Store.getBool(this, "blockShorts", false)) return
+            val pkg = event.packageName?.toString() ?: return
+            val re = SHORTS[pkg] ?: return
+            val now = SystemClock.uptimeMillis()
+            if (now - lastShortsScan < 500 || now - lastShortsHit < 1200) return
+            lastShortsScan = now
+            val root = rootInActiveWindow ?: return
+            if (root.packageName?.toString() != pkg) return
+            if (findId(root, re, 0, IntArray(1))) {
+                lastShortsHit = now
+                performGlobalAction(GLOBAL_ACTION_BACK)
+                main.post { try { Toast.makeText(applicationContext, "Shorts and Reels are blocked by FutureSelf", Toast.LENGTH_SHORT).show() } catch (e: Exception) { /* ignore */ } }
+            }
+        } catch (e: Exception) { /* never let this break the lock */ }
+    }
+
+    private fun findId(n: AccessibilityNodeInfo?, re: Regex, depth: Int, seen: IntArray): Boolean {
+        if (n == null || depth > 16 || seen[0] > 700) return false
+        seen[0]++
+        val id = n.viewIdResourceName
+        if (id != null && re.containsMatchIn(id) && n.isVisibleToUser) return true
+        for (i in 0 until n.childCount) { if (findId(n.getChild(i), re, depth + 1, seen)) return true }
+        return false
     }
 
     /** looks at the window the student is really using right now (the one with focus), whatever its type */

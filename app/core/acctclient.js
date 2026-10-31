@@ -59,6 +59,11 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use AI checking.'));
         return req('/api/check', 'POST', { question: p.question, model: p.model, rubric: p.rubric, images: p.images }, true);
       },
+      /* friends, leaderboard and study rooms (the server keeps them; p.a is the action) */
+      social: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use friends and study rooms.'));
+        return req('/api/social', 'POST', p || {}, true);
+      },
       /* what the other device is doing (null when the server cannot be reached or nobody is signed in) */
       state: function () {
         load(); if (!st.token || !st.site) return Promise.resolve(null);
