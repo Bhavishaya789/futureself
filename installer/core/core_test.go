@@ -79,3 +79,18 @@ func TestMarkerAndRemove(t *testing.T) {
 		t.Fatal("still there")
 	}
 }
+
+func TestOursRecognisesLeftovers(t *testing.T) {
+	d := t.TempDir()
+	if !Ours(d) {
+		t.Fatal("empty folder should be ours")
+	}
+	os.WriteFile(filepath.Join(d, "notes.txt"), []byte("x"), 0o644)
+	if Ours(d) {
+		t.Fatal("a stranger's folder must not be ours")
+	}
+	os.WriteFile(filepath.Join(d, "FutureSelf.exe"), []byte("x"), 0o644)
+	if !Ours(d) {
+		t.Fatal("a folder with the app is ours even without the marker")
+	}
+}

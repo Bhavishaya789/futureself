@@ -46,7 +46,7 @@ func Install(p Platform, o Options, payload []byte, uninstallExe []byte) (string
 	if _, err := os.Stat(dir); err == nil {
 		o.say("Closing the old version...")
 		p.KillApp()
-		if !core.HasMarker(dir) {
+		if !core.Ours(dir) {
 			return "", fmt.Errorf("%s already exists and was not made by this installer; not touching it", dir)
 		}
 		var rerr error
@@ -60,6 +60,9 @@ func Install(p Platform, o Options, payload []byte, uninstallExe []byte) (string
 		if err := rerr; err != nil {
 			return "", fmt.Errorf("could not replace the old version (is FutureSelf still open?): %w", err)
 		}
+	}
+	if err := os.MkdirAll(dir, 0o755); err == nil { // mark the folder first, so a stopped install can always be repaired by running Setup again
+		core.WriteMarker(dir, o.Version)
 	}
 	o.say("Copying files...")
 	last := -1
@@ -107,7 +110,7 @@ func Install(p Platform, o Options, payload []byte, uninstallExe []byte) (string
 
 // Uninstall removes the app, shortcuts and registry entry. The student's data stays unless KeepData is false.
 func Uninstall(p Platform, o Options, dir string) error {
-	if !core.HasMarker(dir) {
+	if !core.Ours(dir) {
 		return fmt.Errorf("%s is not a FutureSelf install folder", dir)
 	}
 	o.say("Closing FutureSelf...")

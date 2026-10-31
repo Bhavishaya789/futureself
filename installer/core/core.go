@@ -102,3 +102,20 @@ func HasMarker(dir string) bool {
 	_, err := os.Stat(filepath.Join(dir, Marker))
 	return err == nil
 }
+
+// Ours says whether a folder is a FutureSelf install: it has the marker, or it is what a stopped or older install leaves behind
+// (the app program, the app resources, or the uninstaller) or it is empty. Any other folder is never touched.
+func Ours(dir string) bool {
+	if HasMarker(dir) {
+		return true
+	}
+	for _, f := range []string{"FutureSelf.exe", "Uninstall.exe", filepath.Join("resources", "app"), filepath.Join("resources", "app.asar"), "VERSION.txt"} {
+		if _, err := os.Stat(filepath.Join(dir, f)); err == nil {
+			return true
+		}
+	}
+	if es, err := os.ReadDir(dir); err == nil && len(es) == 0 {
+		return true
+	}
+	return false
+}

@@ -3,6 +3,7 @@ package flow
 import (
 	"archive/zip"
 	"bytes"
+	"futureself/installer/core"
 	"os"
 	"path/filepath"
 	"testing"
@@ -115,5 +116,18 @@ func TestMissingExe(t *testing.T) {
 	f := &fake{root: t.TempDir()}
 	if _, err := Install(f, Options{Version: "1"}, payload(false), nil); err == nil {
 		t.Fatal("accepted package without exe")
+	}
+}
+
+func TestRepairsHalfInstalledFolder(t *testing.T) {
+	f := &fake{root: t.TempDir()}
+	d := filepath.Join(f.ProgramsDir(), "FutureSelf")
+	os.MkdirAll(filepath.Join(d, "resources"), 0o755)
+	os.WriteFile(filepath.Join(d, "FutureSelf.exe"), []byte("old"), 0o644) // what a stopped install leaves: no marker
+	if _, err := Install(f, Options{Version: "2"}, payload(true), []byte("un")); err != nil {
+		t.Fatal("could not repair a half-installed folder:", err)
+	}
+	if !core.HasMarker(d) {
+		t.Fatal("marker missing after repair")
 	}
 }
