@@ -76,10 +76,18 @@
   function dayBlocks(d) { return S.blocks.filter(function (b) { return occurs(b, d); }).sort(function (a, b) { return tmin(a.start) - tmin(b.start); }); }
   function doneMap() { try { return JSON.parse(ls('fs_done') || '{}'); } catch (e) { return {}; } }
   function topicOpts(sel) {
-    var groups = {}, order = [];
-    S.topics.forEach(function (t) { var k = t.semester || 0; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(t); });
-    order.sort(function (a, b) { return (a || 99) - (b || 99); });
-    return order.map(function (k) { return '<optgroup label="' + (k ? 'Semester ' + k : 'Electives') + '">' + groups[k].map(function (t) { return '<option value="' + t.id + '"' + (t.id === sel ? ' selected' : '') + '>' + esc(t.title) + '</option>'; }).join('') + '</optgroup>'; }).join('');
+    function lab(t) { return t.semester ? 'Semester ' + t.semester : (/^btech/.test((t.tracks || [])[0] || '') ? 'Electives' : (t.group || 'Electives')); }
+    function opt(t, sub) { return '<option value="' + t.id + '" data-color="' + esc(t.color || '') + '"' + (sub ? ' data-sub="' + esc(sub) + '"' : '') + (t.id === sel ? ' selected' : '') + '>' + esc(t.title) + '</option>'; }
+    function grouped(list, folded) {
+      var groups = {}, order = [];
+      list.forEach(function (t) { var k = lab(t); if (!groups[k]) { groups[k] = { o: t.semester || 99, g: t.gorder || 0, list: [] }; order.push(k); } groups[k].list.push(t); });
+      order.sort(function (a, b) { return groups[a].g - groups[b].g || groups[a].o - groups[b].o || a.localeCompare(b); });
+      return order.map(function (k) { return '<optgroup label="' + esc(k) + '"' + (folded ? ' data-collapsed="1"' : '') + '>' + groups[k].list.map(function (t) { return opt(t, folded ? (t.group || '') : ''); }).join('') + '</optgroup>'; }).join('');
+    }
+    var mine = [], rest = [];
+    S.topics.forEach(function (t) { (isMine(t) || t.id === sel ? mine : rest).push(t); });
+    if (!myTags().length || !mine.length) return grouped(S.topics, false);
+    return grouped(mine, false) + (rest.length ? '<optgroup label="Other courses" data-collapsed="1">' + rest.map(function (t) { return opt(t, t.group || (t.semester ? 'Semester ' + t.semester : 'Electives')); }).join('') + '</optgroup>' : '');
   }
   function topicById(id) { return S.topics.filter(function (t) { return t.id === id; })[0]; }
   function avHome() { return window.FSX && FSX.avatarHtml ? FSX.avatarHtml(S.user, 46) : ''; }
