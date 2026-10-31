@@ -5,7 +5,7 @@ const TRACKS = [
   { id: 'class10', label: 'Class 10', group: 'School (CBSE)' },
   { id: 'class11', label: 'Class 11', group: 'School (CBSE)' },
   { id: 'class12', label: 'Class 12', group: 'School (CBSE)' },
-  { id: 'jee', label: 'JEE Main', group: 'Entrance exams' },
+  { id: 'jee', label: 'JEE Main and Advanced', group: 'Entrance exams' },
   { id: 'neet', label: 'NEET', group: 'Entrance exams' },
   { id: 'govt', label: 'Government exams and GK', group: 'Competitive exams' },
   { id: 'btech1', label: 'B.Tech, Year 1', group: 'B.Tech' },
@@ -22,6 +22,7 @@ function fromFolder(g) {
   if ((m = /^semester-?(\d+)/i.exec(g))) { const n = +m[1]; return { tags: n ? ['btech' + Math.ceil(n / 2)] : [], group: 'Semester ' + n, order: n }; }
   if (/^electives?$/i.test(g)) return { tags: ['btech-extra'], group: 'B.Tech extras and electives', order: 90 };
   if ((m = /^class-?(\d+)/i.exec(g))) return { tags: ['class' + m[1]], group: 'Class ' + m[1], order: 100 + (+m[1]) };
+  if (/^jee-?adv/i.test(g)) return { tags: ['jee'], group: 'JEE Advanced', order: 125 };
   if (/^jee/i.test(g)) return { tags: ['jee'], group: 'JEE Main', order: 120 };
   if (/^neet/i.test(g)) return { tags: ['neet'], group: 'NEET', order: 130 };
   if (/^general-?knowledge/i.test(g)) return { tags: ['govt'], group: 'General Knowledge', order: 140 };

@@ -649,13 +649,13 @@
       var t = d.topic, all = [];
       t.units.forEach(function (u) { u.lessons.forEach(function (l) { all.push(l); }); });
       var idx = all.map(function (l) { return l.id; }).indexOf(r.b); if (idx < 0) throw new Error('Topic not found');
-      var l = all[idx], p = d.progress[l.id] || {}, prev = all[idx - 1], next = all[idx + 1], key = t.id + '/' + l.id;
+      var l0 = all[idx], l = window.FSLang ? FSLang.apply(l0) : l0, p = d.progress[l.id] || {}, prev = all[idx - 1], next = all[idx + 1], key = t.id + '/' + l.id;
       curLesson = { t: t, l: l, p: p, ai: d.ai, enter: Date.now(), prompted: false, key: key };
       pendingLeave = curLesson; S.pr = {}; S.pimgs = {}; setTimeout(function () { loadPractice(); if (S.ltab === 'video') lessonVideoMount(); }, 30);
       if (S.ltabFor !== key) { S.ltab = 'study'; S.ltabFor = key; }
       var unit = ''; t.units.forEach(function (u) { if (u.lessons.indexOf(l) > -1 || u.lessons.some(function (x) { return x.id === l.id; })) unit = u.title; });
-      v.innerHTML = '<div class="top"><div><a class="eyebrow" href="#/topic/' + t.id + '">&larr; ' + esc(t.title) + '</a><h1 style="margin-top:10px">' + esc(l.title) + '</h1><p class="muted" style="margin-top:4px;font-size:14px">' + esc(unit) + ' &middot; about ' + l.minutes + ' min</p></div></div>' +
-        '<div class="lesson-grid"><div>' + lessonPanes(t, l, p, false) + '</div>' +
+      v.innerHTML = '<div class="top"><div><a class="eyebrow" href="#/topic/' + t.id + '">&larr; ' + esc(t.title) + '</a><h1 style="margin-top:10px">' + esc(l.title) + '</h1><p class="muted" style="margin-top:4px;font-size:14px">' + esc(unit) + ' &middot; about ' + l.minutes + ' min</p>' + (window.FSLang ? FSLang.bar(l0) : '') + '</div></div>' +
+        '<div class="lesson-grid"><div' + (l._tr ? ' lang="' + l._tr + '" dir="' + (FSLang.find(l._tr).rtl ? 'rtl' : 'ltr') + '"' : '') + '>' + lessonPanes(t, l, p, false) + '</div>' +
         '<aside class="sticky"><div class="card tilt"><h3>Study this topic</h3><p class="muted" style="margin:8px 0 16px;font-size:15px">About ' + l.minutes + ' minutes. Lock in and the timer starts.</p><a class="btn pri" style="width:100%" href="#/start?topic=' + t.id + '&lesson=' + l.id + '&min=' + l.minutes + '">' + ic('focus') + ' Study in focus</a>' +
         '<button class="btn" style="width:100%;margin-top:10px" data-act="ltab" data-id="practice">' + ic('check') + ' Practice questions</button>' +
         '<button class="btn" style="width:100%;margin-top:10px" data-act="markdone">' + ic('check') + ' <span id="donelbl">' + (p.done ? 'Completed (undo)' : 'Mark as complete') + '</span></button></div></aside></div>';

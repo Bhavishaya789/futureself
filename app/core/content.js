@@ -143,7 +143,10 @@ function loadContent(root, opts) {
   opts = opts || {};
   const topics = {}, problems = [];
   if (!fs.existsSync(root)) return { topics, problems: ['Content folder not found: ' + root] };
-  const groups = listDirs(root).sort((a, b) => numOf(a) - numOf(b) || a.localeCompare(b));
+  const LANGS = ['hi', 'bn', 'mr', 'ta', 'te', 'gu', 'kn', 'ml', 'pa', 'ur', 'fr', 'es', 'de', 'ar'];
+  const trRoot = path.join(root, '_translations');
+  const trLangs = fs.existsSync(trRoot) ? listDirs(trRoot).filter((x) => { if (LANGS.indexOf(x) < 0) { problems.push('_translations/' + x + ': unknown language code'); return false; } return true; }) : [];
+  const groups = listDirs(root).filter((x) => !/^[_.]/.test(x)).sort((a, b) => numOf(a) - numOf(b) || a.localeCompare(b));
   groups.forEach((g) => {
     const gp = path.join(root, g);
     const semester = /^semester/i.test(g) ? numOf(g) : 0;
@@ -166,6 +169,16 @@ function loadContent(root, opts) {
           try { les = parseTopic(fs.readFileSync(path.join(up, f), 'utf8'), file, problems); } catch (e) { problems.push(file + ': ' + e.message); return; }
           les.id = slug(f.replace(/\.md$/i, '').replace(/^\d+[-_ ]*/, ''));
           les.folder = g + '/' + sd + '/' + ud;
+          trLangs.forEach((lg) => {
+            const tp = path.join(trRoot, lg, g, sd, ud, f);
+            if (!fs.existsSync(tp)) return;
+            try {
+              const t = parseTopic(fs.readFileSync(tp, 'utf8'), '_translations/' + lg + '/' + file, problems);
+              const same = t.quiz.length === les.quiz.length && t.quiz.every((q, i) => q.o.length === les.quiz[i].o.length);
+              if (!same) { problems.push('_translations/' + lg + '/' + file + ': quiz must have the same number of questions and options as the English lesson'); return; }
+              (les.tr = les.tr || {})[lg] = { title: t.title, blocks: t.blocks, qa: t.qa, quiz: t.quiz };
+            } catch (e) { problems.push('_translations/' + lg + '/' + file + ': ' + e.message); }
+          });
           unit.lessons.push(les);
         });
         if (unit.lessons.length) sub.units.push(unit);

@@ -1,0 +1,83 @@
+# en | subject | meaning | hi | bn | mr | ta | te | gu | kn | ml | pa | ur | fr | es | de | ar
+force | Physics | A push or pull on an object | बल | বল | बल | விசை | బలం | બળ | ಬಲ | ബലം | ਬਲ | قوت | force | fuerza | Kraft | قوة
+mass | Physics | Amount of matter in an object | द्रव्यमान | ভর | वस्तुमान | நிறை | ద్రవ్యరాశి | દળ | ದ್ರವ್ಯರಾಶಿ | പിണ്ഡം | ਪੁੰਜ | کمیت | masse | masa | Masse | كتلة
+velocity | Physics | Speed in a given direction | वेग | বেগ | वेग | திசைவேகம் | వేగం | વેગ | ವೇಗ | പ്രവേഗം | ਵੇਗ | رفتار | vitesse | velocidad | Geschwindigkeit | سرعة متجهة
+acceleration | Physics | Rate of change of velocity | त्वरण | ত্বরণ | त्वरण | முடுக்கம் | త్వరణం | પ્રવેગ | ವೇಗೋತ್ಕರ್ಷ | ത്വരണം | ਪ੍ਰਵੇਗ | اسراع | accélération | aceleración | Beschleunigung | تسارع
+energy | Physics | Capacity to do work | ऊर्जा | শক্তি | ऊर्जा | ஆற்றல் | శక్తి | ઊર્જા | ಶಕ್ತಿ | ഊർജ്ജം | ਊਰਜਾ | توانائی | énergie | energía | Energie | طاقة
+work | Physics | Force multiplied by displacement | कार्य | কাজ | कार्य | வேலை | పని | કાર્ય | ಕೆಲಸ | പ്രവൃത്തി | ਕਾਰਜ | کام | travail | trabajo | Arbeit | شغل
+power | Physics | Rate of doing work | शक्ति | ক্ষমতা | सामर्थ्य | திறன் | సామర్థ్యం | પાવર | ಸಾಮರ್ಥ್ಯ | പവർ | ਸ਼ਕਤੀ | طاقت | puissance | potencia | Leistung | قدرة
+pressure | Physics | Force acting on a unit area | दाब | চাপ | दाब | அழுத்தம் | పీడనం | દબાણ | ಒತ್ತಡ | മർദ്ദം | ਦਬਾਅ | دباؤ | pression | presión | Druck | ضغط
+temperature | Physics | How hot or cold something is | तापमान | তাপমাত্রা | तापमान | வெப்பநிலை | ఉష్ణోగ్రత | તાપમાન | ತಾಪಮಾನ | താപനില | ਤਾਪਮਾਨ | درجہ حرارت | température | temperatura | Temperatur | درجة الحرارة
+heat | Physics | Energy transferred because of temperature difference | ऊष्मा | তাপ | उष्णता | வெப்பம் | ఉష్ణం | ઉષ્મા | ಉಷ್ಣ | താപം | ਤਾਪ | حرارت | chaleur | calor | Wärme | حرارة
+light | Physics | Radiation that makes things visible | प्रकाश | আলো | प्रकाश | ஒளி | కాంతి | પ્રકાશ | ಬೆಳಕು | പ്രകാശം | ਪ੍ਰਕਾਸ਼ | روشنی | lumière | luz | Licht | ضوء
+sound | Physics | Vibrations that travel through a medium | ध्वनि | শব্দ | ध्वनी | ஒலி | ధ్వని | ધ્વનિ | ಧ್ವನಿ | ശബ്ദം | ਧੁਨੀ | آواز | son | sonido | Schall | صوت
+electric current | Physics | Flow of electric charge | विद्युत धारा | বিদ্যুৎ প্রবাহ | विद्युतप्रवाह | மின்னோட்டம் | విద్యుత్ ప్రవాహం | વિદ્યુત પ્રવાહ | ವಿದ್ಯುತ್ ಪ್ರವಾಹ | വൈദ്യുത പ്രവാഹം | ਬਿਜਲੀ ਧਾਰਾ | برقی رو | courant électrique | corriente eléctrica | elektrischer Strom | تيار كهربائي
+voltage | Physics | Electric potential difference | विभवांतर | ভোল্টেজ | विभवांतर | மின்னழுத்தம் | విద్యుత్ పొటెన్షియల్ భేదం | વોલ્ટેજ | ವೋಲ್ಟೇಜ್ | വോൾട്ടേജ് | ਵੋਲਟੇਜ | وولٹیج | tension | voltaje | Spannung | جهد كهربائي
+resistance | Physics | Opposition to the flow of current | प्रतिरोध | রোধ | रोध | மின்தடை | నిరోధం | અવરોધ | ರೋಧ | പ്രതിരോധം | ਪ੍ਰਤੀਰੋਧ | مزاحمت | résistance | resistencia | Widerstand | مقاومة
+magnet | Physics | Object that attracts iron | चुंबक | চুম্বক | चुंबक | காந்தம் | అయస్కాంతం | ચુંબક | ಆಯಸ್ಕಾಂತ | കാന്തം | ਚੁੰਬਕ | مقناطیس | aimant | imán | Magnet | مغناطيس
+gravity | Physics | Force of attraction between masses | गुरुत्वाकर्षण | মহাকর্ষ | गुरुत्वाकर्षण | ஈர்ப்பு விசை | గురుత్వాకర్షణ | ગુરુત્વાકર્ષણ | ಗುರುತ್ವಾಕರ್ಷಣೆ | ഗുരുത്വാകർഷണം | ਗੁਰੂਤਾ ਖਿੱਚ | کشش ثقل | gravité | gravedad | Schwerkraft | جاذبية
+density | Physics | Mass per unit volume | घनत्व | ঘনত্ব | घनता | அடர்த்தி | సాంద్రత | ઘનતા | ಸಾಂದ್ರತೆ | സാന്ദ്രത | ਘਣਤਾ | کثافت | densité | densidad | Dichte | كثافة
+friction | Physics | Force that opposes sliding | घर्षण | ঘর্ষণ | घर्षण | உராய்வு | ఘర్షణ | ઘર્ષણ | ಘರ್ಷಣೆ | ഘർഷണം | ਰਗੜ | رگڑ | frottement | fricción | Reibung | احتكاك
+wave | Physics | A disturbance that carries energy | तरंग | তরঙ্গ | तरंग | அலை | తరంగం | તરંગ | ತರಂಗ | തരംഗം | ਤਰੰਗ | لہر | onde | onda | Welle | موجة
+atom | Physics | Smallest unit of an element | परमाणु | পরমাণু | अणू | அணு | పరమాణువు | પરમાણુ | ಪರಮಾಣು | ആറ്റം | ਪਰਮਾਣੂ | ایٹم | atome | átomo | Atom | ذرة
+nucleus | Physics | Central core of an atom | नाभिक | নিউক্লিয়াস | केंद्रक | அணுக்கரு | కేంద్రకం | ન્યુક્લિયસ | ಕೇಂದ್ರ | ന്യൂക്ലിയസ് | ਨਿਊਕਲੀਅਸ | مرکزہ | noyau | núcleo | Kern | نواة
+lens | Physics | Transparent piece that bends light | लेंस | লেন্স | भिंग | ஆடி | కటకం | લેન્સ | ಮಸೂರ | ലെൻസ് | ਲੈਂਸ | عدسہ | lentille | lente | Linse | عدسة
+element | Chemistry | Substance made of one kind of atom | तत्व | মৌল | मूलद्रव्य | தனிமம் | మూలకం | તત્વ | ಧಾತು | മൂലകം | ਤੱਤ | عنصر | élément | elemento | Element | عنصر
+compound | Chemistry | Substance made of different elements joined | यौगिक | যৌগ | संयुग | சேர்மம் | సమ్మేళనం | સંયોજન | ಸಂಯುಕ್ತ | സംയുക്തം | ਯੋਗਿਕ | مرکب | composé | compuesto | Verbindung | مركب
+mixture | Chemistry | Two or more substances mixed, not joined | मिश्रण | মিশ্রণ | मिश्रण | கலவை | మిశ్రమం | મિશ્રણ | ಮಿಶ್ರಣ | മിശ്രിതം | ਮਿਸ਼ਰਣ | آمیزہ | mélange | mezcla | Gemisch | خليط
+acid | Chemistry | Substance with pH below 7 | अम्ल | অ্যাসিড | आम्ल | அமிலம் | ఆమ్లం | ઍસિડ | ಆಮ್ಲ | അമ്ലം | ਤੇਜ਼ਾਬ | تیزاب | acide | ácido | Säure | حمض
+base | Chemistry | Substance with pH above 7 | क्षार | ক্ষার | आम्लारी | காரம் | క్షారం | બેઝ | ಪ್ರತ್ಯಾಮ್ಲ | ക്ഷാരം | ਖਾਰ | قلوی | base | base | Base | قاعدة
+salt | Chemistry | Compound formed from an acid and a base | लवण | লবণ | क्षार | உப்பு | లవణం | ક્ષાર | ಲವಣ | ലവണം | ਲੂਣ | نمک | sel | sal | Salz | ملح
+molecule | Chemistry | Group of atoms bonded together | अणु | অণু | रेणू | மூலக்கூறு | అణువు | અણુ | ಅಣು | തന്മാത്ര | ਅਣੂ | سالمہ | molécule | molécula | Molekül | جزيء
+solution | Chemistry | Uniform mixture of solute in solvent | विलयन | দ্রবণ | द्रावण | கரைசல் | ద్రావణం | દ્રાવણ | ದ್ರಾವಣ | ലായനി | ਘੋਲ | محلول | solution | solución | Lösung | محلول
+chemical reaction | Chemistry | Process in which substances change into new ones | रासायनिक अभिक्रिया | রাসায়নিক বিক্রিয়া | रासायनिक अभिक्रिया | வேதியியல் வினை | రసాయన చర్య | રાસાયણિક પ્રક્રિયા | ರಾಸಾಯನಿಕ ಕ್ರಿಯೆ | രാസപ്രവർത്തനം | ਰਸਾਇਣਕ ਕਿਰਿਆ | کیمیائی تعامل | réaction chimique | reacción química | chemische Reaktion | تفاعل كيميائي
+oxygen | Chemistry | Gas needed for breathing and burning | ऑक्सीजन | অক্সিজেন | ऑक्सिजन | ஆக்சிஜன் | ఆక్సిజన్ | ઑક્સિજન | ಆಮ್ಲಜನಕ | ഓക്സിജൻ | ਆਕਸੀਜਨ | آکسیجن | oxygène | oxígeno | Sauerstoff | أكسجين
+hydrogen | Chemistry | Lightest element | हाइड्रोजन | হাইড্রোজেন | हायड्रोजन | ஹைட்ரஜன் | హైడ్రోజన్ | હાઇડ્રોજન | ಜಲಜನಕ | ഹൈഡ്രജൻ | ਹਾਈਡ੍ਰੋਜਨ | ہائیڈروجن | hydrogène | hidrógeno | Wasserstoff | هيدروجين
+carbon dioxide | Chemistry | Gas CO2 released in respiration | कार्बन डाइऑक्साइड | কার্বন ডাই-অক্সাইড | कार्बन डायऑक्साइड | கரியமில வாயு | కార్బన్ డయాక్సైడ్ | કાર્બન ડાયોક્સાઇડ | ಇಂಗಾಲದ ಡೈಆಕ್ಸೈಡ್ | കാർബൺ ഡൈ ഓക്സൈഡ് | ਕਾਰਬਨ ਡਾਈਆਕਸਾਈਡ | کاربن ڈائی آکسائیڈ | dioxyde de carbone | dióxido de carbono | Kohlendioxid | ثاني أكسيد الكربون
+metal | Chemistry | Shiny element that conducts heat and electricity | धातु | ধাতু | धातू | உலோகம் | లోహం | ધાતુ | ಲೋಹ | ലോഹം | ਧਾਤ | دھات | métal | metal | Metall | فلز
+cell | Biology | Basic unit of life | कोशिका | কোষ | पेशी | செல் | కణం | કોષ | ಜೀವಕೋಶ | കോശം | ਸੈੱਲ | خلیہ | cellule | célula | Zelle | خلية
+tissue | Biology | Group of similar cells | ऊतक | কলা | ऊती | திசு | కణజాలం | પેશી | ಅಂಗಾಂಶ | കല | ਟਿਸ਼ੂ | نسیج | tissu | tejido | Gewebe | نسيج
+organ | Biology | Body part with a special job | अंग | অঙ্গ | अवयव | உறுப்பு | అవయవం | અંગ | ಅಂಗ | അവയവം | ਅੰਗ | عضو | organe | órgano | Organ | عضو
+photosynthesis | Biology | Plants make food using light | प्रकाश संश्लेषण | সালোকসংশ্লেষ | प्रकाशसंश्लेषण | ஒளிச்சேர்க்கை | కిరణజన్య సంయోగక్రియ | પ્રકાશસંશ્લેષણ | ದ್ಯುತಿಸಂಶ್ಲೇಷಣೆ | പ്രകാശസംശ്ലേഷണം | ਪ੍ਰਕਾਸ਼ ਸੰਸ਼ਲੇਸ਼ਣ | ضیائی تالیف | photosynthèse | fotosíntesis | Photosynthese | التمثيل الضوئي
+respiration | Biology | Release of energy from food | श्वसन | শ্বসন | श्वसन | சுவாசம் | శ్వాసక్రియ | શ્વસન | ಉಸಿರಾಟ | ശ്വസനം | ਸਾਹ ਕਿਰਿਆ | تنفس | respiration | respiración | Atmung | تنفس
+digestion | Biology | Breaking down food | पाचन | পরিপাক | पचन | செரிமானம் | జీర్ణక్రియ | પાચન | ಜೀರ್ಣಕ್ರಿಯೆ | ദഹനം | ਪਾਚਣ | ہاضمہ | digestion | digestión | Verdauung | هضم
+enzyme | Biology | Protein that speeds up reactions | एंजाइम | এনজাইম | विकर | நொதி | ఎంజైమ్ | ઉત્સેચક | ಕಿಣ್ವ | എൻസൈം | ਪਾਚਕ | خمیرہ | enzyme | enzima | Enzym | إنزيم
+gene | Biology | Unit of heredity | जीन | জিন | जनुक | மரபணு | జన్యువు | જનીન | ವಂಶವಾಹಿ | ജീൻ | ਜੀਨ | جین | gène | gen | Gen | جين
+DNA | Biology | Molecule carrying genetic information | डीएनए | ডিএনএ | डीएनए | டி.என்.ஏ | డీఎన్ఏ | ડીએનએ | ಡಿಎನ್ಎ | ഡിഎൻഎ | ਡੀਐਨਏ | ڈی این اے | ADN | ADN | DNA | الحمض النووي
+bacteria | Biology | Single-celled microorganisms | जीवाणु | ব্যাকটেরিয়া | जीवाणू | பாக்டீரியா | బ్యాక్టీరియా | બેક્ટેરિયા | ಬ್ಯಾಕ್ಟೀರಿಯಾ | ബാക്ടീരിയ | ਬੈਕਟੀਰੀਆ | جراثیم | bactéries | bacterias | Bakterien | بكتيريا
+virus | Biology | Tiny infectious particle | विषाणु | ভাইরাস | विषाणू | வைரஸ் | వైరస్ | વાયરસ | ವೈರಸ್ | വൈറസ് | ਵਾਇਰਸ | وائرس | virus | virus | Virus | فيروس
+ecosystem | Biology | Living things and their environment | पारिस्थितिक तंत्र | বাস্তুতন্ত্র | परिसंस्था | சூழல் மண்டலம் | జీవావరణ వ్యవస్థ | ઇકોસિસ્ટમ | ಪರಿಸರ ವ್ಯವಸ್ಥೆ | ആവാസവ്യവസ്ഥ | ਵਾਤਾਵਰਣ ਪ੍ਰਣਾਲੀ | ماحولیاتی نظام | écosystème | ecosistema | Ökosystem | نظام بيئي
+evolution | Biology | Gradual change of species over time | विकास | বিবর্তন | उत्क्रांती | பரிணாமம் | పరిణామం | ઉત્ક્રાંતિ | ವಿಕಾಸ | പരിണാമം | ਵਿਕਾਸ | ارتقاء | évolution | evolución | Evolution | تطور
+heart | Biology | Organ that pumps blood | हृदय | হৃদয় | हृदय | இதயம் | గుండె | હૃદય | ಹೃದಯ | ഹൃദയം | ਦਿਲ | دل | cœur | corazón | Herz | قلب
+blood | Biology | Fluid that carries oxygen and nutrients | रक्त | রক্ত | रक्त | இரத்தம் | రక్తం | રક્ત | ರಕ್ತ | രക്തം | ਖੂਨ | خون | sang | sangre | Blut | دم
+brain | Biology | Organ that controls the body | मस्तिष्क | মস্তিষ্ক | मेंदू | மூளை | మెదడు | મગજ | ಮೆದುಳು | തലച്ചോറ് | ਦਿਮਾਗ | دماغ | cerveau | cerebro | Gehirn | دماغ
+vitamin | Biology | Nutrient needed in small amounts | विटामिन | ভিটামিন | जीवनसत्त्व | வைட்டமின் | విటమిన్ | વિટામિન | ಜೀವಸತ್ವ | വിറ്റാമിൻ | ਵਿਟਾਮਿਨ | حیاتین | vitamine | vitamina | Vitamin | فيتامين
+protein | Biology | Nutrient that builds the body | प्रोटीन | প্রোটিন | प्रथिने | புரதம் | ప్రోటీన్ | પ્રોટીન | ಪ್ರೋಟೀನ್ | പ്രോട്ടീൻ | ਪ੍ਰੋਟੀਨ | لحمیات | protéine | proteína | Protein | بروتين
+number | Maths | Value used for counting or measuring | संख्या | সংখ্যা | संख्या | எண் | సంఖ్య | સંખ્યા | ಸಂಖ್ಯೆ | സംഖ്യ | ਸੰਖਿਆ | عدد | nombre | número | Zahl | عدد
+fraction | Maths | Part of a whole | भिन्न | ভগ্নাংশ | अपूर्णांक | பின்னம் | భిన్నం | અપૂર્ણાંક | ಭಿನ್ನರಾಶಿ | ഭിന്നസംഖ്യ | ਭਿੰਨ | کسر | fraction | fracción | Bruch | كسر
+percentage | Maths | A number out of one hundred | प्रतिशत | শতাংশ | टक्केवारी | சதவீதம் | శాతం | ટકાવારી | ಶೇಕಡಾ | ശതമാനം | ਪ੍ਰਤੀਸ਼ਤ | فیصد | pourcentage | porcentaje | Prozent | نسبة مئوية
+ratio | Maths | Comparison of two quantities | अनुपात | অনুপাত | गुणोत्तर | விகிதம் | నిష్పత్తి | ગુણોત્તર | ಅನುಪಾತ | അനുപാതം | ਅਨੁਪਾਤ | تناسب | rapport | razón | Verhältnis | نسبة
+equation | Maths | Statement that two expressions are equal | समीकरण | সমীকরণ | समीकरण | சமன்பாடு | సమీకరణం | સમીકરણ | ಸಮೀಕರಣ | സമവാക്യം | ਸਮੀਕਰਨ | مساوات | équation | ecuación | Gleichung | معادلة
+triangle | Maths | Shape with three sides | त्रिभुज | ত্রিভুজ | त्रिकोण | முக்கோணம் | త్రిభుజం | ત્રિકોણ | ತ್ರಿಭುಜ | ത്രികോണം | ਤਿਕੋਣ | تکون | triangle | triángulo | Dreieck | مثلث
+circle | Maths | Round shape, all points equal from centre | वृत्त | বৃত্ত | वर्तुळ | வட்டம் | వృత్తం | વર્તુળ | ವೃತ್ತ | വൃത്തം | ਚੱਕਰ | دائرہ | cercle | círculo | Kreis | دائرة
+angle | Maths | Space between two lines meeting at a point | कोण | কোণ | कोन | கோணம் | కోణం | ખૂણો | ಕೋನ | കോൺ | ਕੋਣ | زاویہ | angle | ángulo | Winkel | زاوية
+area | Maths | Size of a surface | क्षेत्रफल | ক্ষেত্রফল | क्षेत्रफळ | பரப்பளவு | వైశాల్యం | ક્ષેત્રફળ | ವಿಸ್ತೀರ್ಣ | വിസ്തീർണ്ണം | ਖੇਤਰਫਲ | رقبہ | aire | área | Fläche | مساحة
+perimeter | Maths | Distance around a shape | परिमाप | পরিসীমা | परिमिती | சுற்றளவு | చుట్టుకొలత | પરિમિતિ | ಪರಿಧಿ | ചുറ്റളവ് | ਘੇਰਾ | محیط | périmètre | perímetro | Umfang | محيط
+volume | Maths | Space occupied by a solid | आयतन | আয়তন | घनफळ | கனஅளவு | ఘనపరిమాణం | ઘનફળ | ಗಾತ್ರ | വ്യാപ്തം | ਆਇਤਨ | حجم | volume | volumen | Volumen | حجم
+probability | Maths | Chance of an event happening | प्रायिकता | সম্ভাবনা | संभाव्यता | நிகழ்தகவு | సంభావ్యత | સંભાવના | ಸಂಭವನೀಯತೆ | സാധ്യത | ਸੰਭਾਵਨਾ | احتمال | probabilité | probabilidad | Wahrscheinlichkeit | احتمال
+average | Maths | Sum divided by the number of items | औसत | গড় | सरासरी | சராசரி | సగటు | સરેરાશ | ಸರಾಸರಿ | ശരാശരി | ਔਸਤ | اوسط | moyenne | promedio | Durchschnitt | متوسط
+function | Maths | Rule that gives one output for each input | फलन | অপেক্ষক | फल | சார்பு | ప్రమేయం | વિધેય | ಉತ್ಪನ್ನ ಕ್ರಿಯೆ | ഫലനം | ਫੰਕਸ਼ਨ | تفاعل | fonction | función | Funktion | دالة
+derivative | Maths | Rate of change of a function | अवकलज | অন্তরকলজ | अवकलज | வகைக்கெழு | అవకలజం | વ્યુત્પન્ન | ಅವಕಲನ | അവകലജം | ਅਵਕਲਜ | تفرق | dérivée | derivada | Ableitung | مشتقة
+integral | Maths | Area under a curve; reverse of differentiation | समाकल | সমাকলন | समाकल | தொகையீடு | సమాకలనం | સમાકલ | ಸಮಾಕಲನ | സമാകലം | ਅਨੁਕਲ | تکمل | intégrale | integral | Integral | تكامل
+matrix | Maths | Rectangular array of numbers | आव्यूह | ম্যাট্রিক্স | आव्यूह | அணி | మాట్రిక్స్ | શ્રેણિક | ಮ್ಯಾಟ್ರಿಕ್ಸ್ | മാട്രിക്സ് | ਮੈਟ੍ਰਿਕਸ | میٹرکس | matrice | matriz | Matrix | مصفوفة
+prime number | Maths | Number with exactly two factors | अभाज्य संख्या | মৌলিক সংখ্যা | मूळ संख्या | பகா எண் | ప్రధాన సంఖ్య | અવિભાજ્ય સંખ્યા | ಅವಿಭಾಜ್ಯ ಸಂಖ್ಯೆ | അഭാജ്യ സംഖ്യ | ਅਭਾਜ ਸੰਖਿਆ | اول عدد | nombre premier | número primo | Primzahl | عدد أولي
+square root | Maths | Number that multiplies by itself to give the value | वर्गमूल | বর্গমূল | वर्गमूळ | வர்க்கமூலம் | వర్గమూలం | વર્ગમૂળ | ವರ್ಗಮೂಲ | വർഗ്ഗമൂലം | ਵਰਗ ਮੂਲ | جذر مربع | racine carrée | raíz cuadrada | Quadratwurzel | جذر تربيعي
+parallel lines | Maths | Lines that never meet | समांतर रेखाएँ | সমান্তরাল রেখা | समांतर रेषा | இணை கோடுகள் | సమాంతర రేఖలు | સમાંતર રેખાઓ | ಸಮಾನಾಂತರ ರೇಖೆಗಳು | സമാന്തര രേഖകൾ | ਸਮਾਂਤਰ ਰੇਖਾਵਾਂ | متوازی لکیریں | droites parallèles | rectas paralelas | parallele Geraden | خطوط متوازية
+democracy | Civics | Government by the people | लोकतंत्र | গণতন্ত্র | लोकशाही | ஜனநாயகம் | ప్రజాస్వామ్యం | લોકશાહી | ಪ್ರಜಾಪ್ರಭುತ್ವ | ജനാധിപത്യം | ਲੋਕਤੰਤਰ | جمہوریت | démocratie | democracia | Demokratie | ديمقراطية
+constitution | Civics | Fundamental law of a country | संविधान | সংবিধান | संविधान | அரசியலமைப்பு | రాజ్యాంగం | બંધારણ | ಸಂವಿಧಾನ | ഭരണഘടന | ਸੰਵਿਧਾਨ | آئین | constitution | constitución | Verfassung | دستور
+government | Civics | System that rules a country | सरकार | সরকার | सरकार | அரசு | ప్రభుత్వం | સરકાર | ಸರ್ಕಾರ | സർക്കാർ | ਸਰਕਾਰ | حکومت | gouvernement | gobierno | Regierung | حكومة
+climate | Geography | Usual weather of a place over years | जलवायु | জলবায়ু | हवामान | காலநிலை | వాతావరణం | આબોહવા | ಹವಾಮಾನ | കാലാവസ്ഥ | ਜਲਵਾਯੂ | آب و ہوا | climat | clima | Klima | مناخ
+population | Geography | Number of people living in a place | जनसंख्या | জনসংখ্যা | लोकसंख्या | மக்கள் தொகை | జనాభా | વસ્તી | ಜನಸಂಖ್ಯೆ | ജനസംഖ്യ | ਆਬਾਦੀ | آبادی | population | población | Bevölkerung | سكان
+economy | Economics | System of production and trade | अर्थव्यवस्था | অর্থনীতি | अर्थव्यवस्था | பொருளாதாரம் | ఆర్థిక వ్యవస్థ | અર્થતંત્ર | ಆರ್ಥಿಕತೆ | സമ്പദ്‌വ്യവസ്ഥ | ਅਰਥਵਿਵਸਥਾ | معیشت | économie | economía | Wirtschaft | اقتصاد
+inflation | Economics | General rise in prices | मुद्रास्फीति | মুদ্রাস্ফীতি | महागाई | பணவீக்கம் | ద్రవ్యోల్బణం | ફુગાવો | ಹಣದುಬ್ಬರ | പണപ്പെരുപ്പം | ਮਹਿੰਗਾਈ | مہنگائی | inflation | inflación | Inflation | تضخم
+history | Social science | Study of the past | इतिहास | ইতিহাস | इतिहास | வரலாறு | చరిత్ర | ઇતિહાસ | ಇತಿಹಾಸ | ചരിത്രം | ਇਤਿਹਾਸ | تاریخ | histoire | historia | Geschichte | تاريخ
