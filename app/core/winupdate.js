@@ -28,8 +28,9 @@ function create(d) {
       const head = Buffer.alloc(2), fd = fs.openSync(file, 'r'); fs.readSync(fd, head, 0, 2, 0); fs.closeSync(fd);
       if (head.toString() !== 'MZ' || got < 5e6) { busy = false; return { ok: false, error: 'The downloaded file is not a valid installer.' }; }
       if (want && h.digest('hex') !== want) { fs.rmSync(file, { force: true }); busy = false; return { ok: false, error: 'The download did not match its checksum, so it was thrown away. Try again.' }; }
-      d.spawn(file, ['/silent'], { detached: true, stdio: 'ignore' }).unref();
-      setTimeout(d.quit, 800);
+      /* start the installer through cmd "start" so it is NOT a child of this app (otherwise closing the app can kill it half-way) */
+      d.spawn('cmd.exe', ['/d', '/s', '/c', 'start "" "' + file + '" /silent'], { detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true }).unref();
+      setTimeout(d.quit, 1500);
       return { ok: true };
     } catch (e) { busy = false; return { ok: false, error: 'The update could not be installed: ' + e.message }; }
   }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"futureself/installer/core"
 )
@@ -48,7 +49,15 @@ func Install(p Platform, o Options, payload []byte, uninstallExe []byte) (string
 		if !core.HasMarker(dir) {
 			return "", fmt.Errorf("%s already exists and was not made by this installer; not touching it", dir)
 		}
-		if err := core.RemoveInstallDir(dir); err != nil {
+		var rerr error
+		for i := 0; i < 15; i++ { // the app may need a few seconds to let go of its files
+			if rerr = core.RemoveInstallDir(dir); rerr == nil {
+				break
+			}
+			p.KillApp()
+			time.Sleep(time.Second)
+		}
+		if err := rerr; err != nil {
 			return "", fmt.Errorf("could not replace the old version (is FutureSelf still open?): %w", err)
 		}
 	}

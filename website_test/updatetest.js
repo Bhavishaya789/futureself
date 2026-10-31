@@ -41,8 +41,8 @@ function call(h, method) { return new Promise((res) => { const headers = {}; con
   x = await mkW(mk(Buffer.concat([Buffer.from('<h'), Buffer.alloc(6e6)]))).install({ url }); T('not an exe -> refused', !x.ok && /not a valid/.test(x.error), x);
   x = await mkW(mk(Buffer.alloc(0), 500)).install({ url }); T('download error -> friendly message', !x.ok && /failed/.test(x.error), x);
   x = await mkW(mk(exe)).install({ url, sha256: good });
-  T('good download runs the installer quietly', x.ok && ev.spawned && /FutureSelf-Setup\.exe$/.test(ev.spawned.f) && ev.spawned.a[0] === '/silent' && ev.spawned.o.detached === true, ev);
+  T('good download runs the installer quietly', x.ok && ev.spawned && ev.spawned.f === 'cmd.exe' && /start "" ".*FutureSelf-Setup\.exe" \/silent$/.test(ev.spawned.a[3]) && ev.spawned.o.detached === true, ev);
   T('progress was reported up to 100', ev.prog.length > 2 && ev.prog[ev.prog.length - 1] === 100, ev.prog);
-  await new Promise((r) => setTimeout(r, 1000)); T('app closes so the installer can replace it', ev.quit === 1, ev.quit);
+  await new Promise((r) => setTimeout(r, 1900)); T('app closes so the installer can replace it', ev.quit === 1, ev.quit);
   console.log(bad ? 'FAIL ' + bad : 'ALL PASS'); process.exit(bad ? 1 : 0);
 })();

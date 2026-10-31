@@ -45,7 +45,7 @@ func (Win) ProgramsDir() string { return filepath.Join(os.Getenv("LOCALAPPDATA")
 func (Win) UserDataDir() string { return filepath.Join(os.Getenv("APPDATA"), "FutureSelf") }
 
 func (Win) KillApp() {
-	hidden(exec.Command("taskkill.exe", "/F", "/T", "/IM", "FutureSelf.exe")).Run()
+	hidden(exec.Command("taskkill.exe", "/F", "/IM", "FutureSelf.exe")).Run()
 }
 
 func (Win) StartMenuLnk() string {
