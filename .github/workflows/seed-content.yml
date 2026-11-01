@@ -7,11 +7,18 @@ on:
 jobs:
   seed:
     runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
     steps:
+      - name: Check secret
+        run: |
+          if [ -z "$MONGODB_URI" ]; then echo "MONGODB_URI secret is not set; skipping (seed manually or add the secret)."; echo "SKIP=1" >> "$GITHUB_ENV"; fi
       - uses: actions/checkout@v4
+        if: env.SKIP != '1'
       - uses: actions/setup-node@v4
+        if: env.SKIP != '1'
         with: { node-version: 20 }
       - run: npm install mongodb --no-save
+        if: env.SKIP != '1'
       - run: node tools/seed-content.js
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        if: env.SKIP != '1'
