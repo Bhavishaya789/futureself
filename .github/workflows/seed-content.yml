@@ -1,0 +1,17 @@
+name: Seed content to MongoDB
+on:
+  push:
+    branches: [main]
+    paths: ['Content/**', 'tools/seed-content.js']
+  workflow_dispatch:
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install mongodb --no-save
+      - run: node tools/seed-content.js
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}

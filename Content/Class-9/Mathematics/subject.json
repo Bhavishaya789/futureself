@@ -12,18 +12,12 @@
   "Unacademy"
  ],
  "syllabus": [
-  "Number Systems",
-  "Polynomials",
-  "Coordinate Geometry",
-  "Linear Equations in Two Variables",
-  "Introduction to Euclid's Geometry",
-  "Lines and Angles",
-  "Triangles",
-  "Quadrilaterals",
-  "Circles",
-  "Heron's Formula",
-  "Surface Areas and Volumes",
-  "Statistics"
+  "Unit 1 Number Systems",
+  "Unit 2 Algebra: Polynomials; Linear Equations in Two Variables",
+  "Unit 3 Coordinate Geometry",
+  "Unit 4 Geometry: Euclid's Geometry; Lines and Angles; Triangles; Quadrilaterals; Circles",
+  "Unit 5 Mensuration: Heron's Formula; Surface Areas and Volumes",
+  "Unit 6 Statistics and Probability"
  ],
  "id": "class-9-mathematics"
 }

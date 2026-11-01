@@ -530,3 +530,30 @@ select.dd-native{position:absolute;opacity:0;pointer-events:none;width:1px;heigh
 .ftable thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
 .ftable .fm{font-family:ui-monospace,Consolas,monospace;font-weight:600;white-space:pre-wrap;min-width:160px}
 .ftable .fgrp th{background:rgba(124,92,255,.14);font-size:13px;opacity:1;text-transform:none;letter-spacing:0}
+
+/* ---- visual lessons ---- */
+.vl{display:grid;gap:16px}
+.vl-hero{display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:22px;border-radius:18px;background:linear-gradient(135deg,rgba(124,92,255,.35),rgba(34,211,238,.18));border:1px solid var(--line)}
+.vl-hero h2{margin:4px 0 8px;font-size:26px}.vl-hero p{color:#dfe3ff;max-width:46ch;line-height:1.55}
+.rings{display:flex;gap:10px;flex-wrap:wrap}.ring{display:grid;justify-items:center;gap:2px;font-size:11px;color:#cfd3f1}.ring svg{width:64px;height:64px}
+.vl-map{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:14px 10px}.vl-map svg{width:100%;height:auto;display:block}
+.vl-route{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:#cfd3f1}.vl-route span{display:inline-flex;gap:6px;align-items:center;background:rgba(255,255,255,.06);border-radius:99px;padding:5px 12px 5px 6px}.vl-route b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--grad);font-size:11px;color:#fff}.vl-route i{opacity:.5;font-style:normal}
+.vl-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.vl-nums div{background:rgba(34,211,238,.09);border:1px solid rgba(34,211,238,.35);border-radius:14px;padding:12px 14px}.vl-nums small{display:block;color:#a9b0d8;font-size:12px}.vl-nums b{font-size:19px;color:#fff}
+.vl-card{border-radius:16px;padding:16px 18px;border:1px solid var(--line);background:rgba(255,255,255,.04);border-top:4px solid var(--vc,#7C5CFF)}
+.vl-card.c0{--vc:#7C5CFF}.vl-card.c1{--vc:#22D3EE}.vl-card.c2{--vc:#F59E0B}.vl-card.c3{--vc:#34D399}.vl-card.c4{--vc:#F472B6}.vl-card.c5{--vc:#60A5FA}
+.vl-card header{display:flex;gap:10px;align-items:center;margin-bottom:8px}.vl-card h3{margin:0;font-size:18px}.vl-card .ico{font-size:22px}
+.kp{list-style:none;display:grid;gap:8px;margin:0}.kp li{position:relative;padding-left:20px;color:#dfe3ff;line-height:1.55}.kp li::before{content:"";position:absolute;left:2px;top:.6em;width:8px;height:8px;border-radius:50%;background:var(--vc,#7C5CFF)}
+.vl mark{background:rgba(245,158,11,.2);color:#ffd88a;padding:0 5px;border-radius:5px}.vl b{color:#fff}
+.vl details{margin-top:10px}.vl summary{cursor:pointer;color:var(--vc,#9aa4ff);font-weight:600;font-size:14px}.vl .more{margin-top:8px;color:#cfd3f1}.vl .more p{margin:0 0 10px;line-height:1.65}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.tile{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:4px}.tile small{color:#a9b0d8;font-size:12px}.tile code{font:600 15px "Cascadia Code",Consolas,monospace;color:#b9f3f5;word-break:break-word}.tile em{font-size:11.5px;color:#8f97c4;font-style:normal}
+.vl-tip{border-left:3px solid var(--gold);background:rgba(255,200,87,.08);padding:12px 14px;border-radius:0 12px 12px 0;color:#f6e2b3}
+.vl-all{margin-top:14px}.vl-all summary{cursor:pointer;font-weight:600}
+@media (max-width:560px){.vl-hero h2{font-size:21px}.vl-hero{padding:16px}}
+
+.l3d{border-radius:18px;border:1px solid var(--line);background:radial-gradient(ellipse at 50% 30%,rgba(124,92,255,.22),rgba(8,10,28,.9));overflow:hidden}
+.l3d-bar{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap}.l3d-bar button{background:rgba(255,255,255,.07);border:1px solid var(--line);color:#cfd3f1;border-radius:99px;padding:6px 14px;font-size:13px;cursor:pointer}.l3d-bar button.on{background:var(--grad);color:#fff;border-color:transparent}
+.l3d-view{height:340px;width:100%}.l3d-view canvas{display:block;cursor:grab}.l3d-hint{font-size:12px;color:#8f97c4;padding:6px 14px 10px}
+.vl-card.flash{animation:vlflash 1.4s ease}@keyframes vlflash{0%,60%{box-shadow:0 0 0 3px var(--vc),0 0 30px var(--vc)}100%{box-shadow:none}}
+.tile{transition:transform .25s}.tile:hover{transform:perspective(500px) rotateX(6deg) rotateY(-8deg) translateZ(6px)}
+.vl-map summary{padding:4px 6px}
+@media (max-width:560px){.l3d-view{height:290px}}

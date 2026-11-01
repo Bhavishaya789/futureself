@@ -5,6 +5,7 @@
 const fs = require('fs');
 const Tracks = require('./tracks');
 const path = require('path');
+const { studyHTML } = require('./studyhtml');
 
 const slug = (s) => String(s).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const prettify = (name) => name.replace(/^(unit|module)[-_ ]*\d+[-_ ]*/i, '').replace(/^\d+[-_ ]*/, '').replace(/[-_]+/g, ' ').trim();
@@ -182,6 +183,7 @@ function loadContent(root, opts) {
           try { les = parseTopic(fs.readFileSync(path.join(up, f), 'utf8'), file, problems); } catch (e) { problems.push(file + ': ' + e.message); return; }
           les.id = slug(f.replace(/\.md$/i, '').replace(/^\d+[-_ ]*/, ''));
           les.folder = g + '/' + sd + '/' + ud;
+          les.html = studyHTML(les, sd + ' ' + g);
           trLangs.forEach((lg) => {
             const tp = path.join(trRoot, lg, g, sd, ud, f);
             if (!fs.existsSync(tp)) return;

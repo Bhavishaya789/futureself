@@ -27,7 +27,7 @@
     var id = get();
     if (id === 'en' || !l || !l.tr || !l.tr[id]) return l;
     var t = l.tr[id], o = Object.assign({}, l);
-    o.title = t.title || l.title; o._tr = id;
+    o.title = t.title || l.title; o._tr = id; o.html = '';
     /* the translated summary comes first; the full English explanation (the "Deep dive" sections) follows it, so nothing is lost in translation */
     var bl = l.blocks || [], start = -1, end = bl.length;
     for (var i = 0; i < bl.length; i++) { if (bl[i].t === 'h' && /^Deep dive/i.test(bl[i].x)) { start = i; break; } }
