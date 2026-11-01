@@ -7,180 +7,389 @@
 <meta name="description" content="FutureSelf turns your syllabus into a daily plan, locks distractions on your PC and phone while you study, and keeps emergency calls one tap away.">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-:root{color-scheme:dark;--bg:#060812;--ink:#eef0ff;--mut:#aab0d6;--a:#7c5cff;--b:#2de2e6;--card:rgba(14,18,44,.72);--line:rgba(255,255,255,.12)}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;line-height:1.55}
+:root{color-scheme:dark;--bg:#050714;--ink:#eef0ff;--mut:#a9afd6;--a:#7c5cff;--b:#2de2e6;--gold:#ffc857;--ok:#3ddc97;--card:rgba(16,20,50,.62);--line:rgba(160,170,255,.2);--head:'Sora',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.6;overflow-x:hidden}
 #bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.glow{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(520px circle at var(--mx,70%) var(--my,20%),rgba(124,92,255,.16),transparent 60%),radial-gradient(900px 600px at 10% 90%,rgba(45,226,230,.07),transparent 60%)}
 main,header,footer{position:relative;z-index:1}
-.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0}
-.logo{font-family:'Sora',sans-serif;font-weight:700;font-size:20px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 22px}
+a{color:var(--b)}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--b);outline-offset:3px;border-radius:8px}
+/* nav */
+.top{position:sticky;top:0;z-index:20;background:rgba(5,7,20,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top nav{display:flex;align-items:center;gap:18px;height:62px}
+.logo{font:700 20px var(--head);text-decoration:none;color:var(--ink)}
 .logo i{font-style:normal;background:linear-gradient(120deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
-nav a{color:var(--mut);text-decoration:none;font-size:14px}
-.hero{padding:5vh 0 2vh;max-width:640px}
+.links{margin-left:auto;display:flex;gap:4px;align-items:center}
+.links a{color:var(--mut);text-decoration:none;font-size:14.5px;padding:8px 12px;border-radius:99px;transition:.2s}
+.links a:hover{color:var(--ink);background:rgba(124,92,255,.18)}
+.links a.cta{background:linear-gradient(120deg,var(--a),var(--b));color:#06101c;font-weight:700}
+#prog{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:linear-gradient(90deg,var(--a),var(--b))}
+/* hero */
+.hero{padding:44px 0 20px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:30px;align-items:center}
 .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--b)}
-h1{font-family:'Sora',sans-serif;font-weight:700;font-size:clamp(34px,6vw,58px);line-height:1.08;margin:10px 0 16px}
-h1 span{background:linear-gradient(120deg,#fff,#a89bff 55%,var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{font-size:18px;color:var(--mut);max-width:58ch}
-h2{font-family:'Sora',sans-serif;font-size:26px;margin:0 0 6px}
-.sub{color:var(--mut);margin:0 0 20px}
-section{padding:34px 0}
-.devs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:640px;perspective:900px}
-.dev{font:inherit;color:inherit;text-align:left;cursor:pointer;position:relative;padding:20px;border-radius:22px;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(10px);transform-style:preserve-3d;transition:transform .15s ease-out,border-color .2s,box-shadow .2s;min-height:170px}
-.dev svg{width:64px;height:64px;display:block;margin-bottom:10px;transform:translateZ(30px)}
-.dev b{display:block;font-family:'Sora',sans-serif;font-size:19px;transform:translateZ(20px)}
-.dev small{color:var(--mut);font-size:13.5px;display:block;transform:translateZ(10px)}
-.dev[aria-checked=true]{border-color:transparent;background:linear-gradient(var(--card),var(--card)) padding-box,linear-gradient(120deg,var(--a),var(--b)) border-box;border:2px solid transparent;box-shadow:0 18px 50px rgba(124,92,255,.35)}
-.dev:focus-visible{outline:3px solid var(--b);outline-offset:3px}
-.tag{position:absolute;top:12px;right:12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:rgba(45,226,230,.16);color:var(--b)}
-.panel{margin-top:18px;max-width:640px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;backdrop-filter:blur(10px)}
-.panel h3{font-family:'Sora',sans-serif;margin:0 0 4px;font-size:20px}
-.btn{display:inline-flex;flex-direction:column;justify-content:center;min-height:62px;padding:12px 26px;border-radius:16px;text-decoration:none;color:#fff;font-weight:700;font-size:17px;background:linear-gradient(120deg,var(--a),#4f8cff 60%,var(--b));margin:12px 0 4px}
-.btn small{font-weight:500;font-size:12.5px;color:rgba(255,255,255,.88)}
+h1{font:700 clamp(36px,5.6vw,68px)/1.05 var(--head);margin:12px 0 18px;letter-spacing:-.02em}
+h1 span{background:linear-gradient(120deg,#fff,#b3a6ff 50%,var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:18px;color:var(--mut);max-width:50ch}
+.hbtns{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.pbtn,.gbtn{font:700 16px var(--body);padding:14px 24px;border-radius:14px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;transition:transform .15s,box-shadow .2s}
+.pbtn{background:linear-gradient(120deg,var(--a),#4f8cff 55%,var(--b));color:#fff;box-shadow:0 14px 40px rgba(90,100,255,.4)}
+.gbtn{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.pbtn:hover,.gbtn:hover{transform:translateY(-3px)}
+.stage{position:relative;aspect-ratio:1.08;min-height:340px;border-radius:28px;border:1px solid var(--line);background:radial-gradient(circle at 50% 45%,rgba(40,48,130,.55),rgba(5,7,20,.6) 72%);overflow:hidden;cursor:grab;touch-action:pan-y;box-shadow:0 30px 90px rgba(40,30,140,.35)}
+.stage:active{cursor:grabbing}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage .hint{position:absolute;left:16px;bottom:62px;font:500 12px ui-monospace,Consolas,monospace;color:var(--mut);pointer-events:none}
+.subj{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;z-index:2;padding:2px}
+.subj::-webkit-scrollbar{display:none}
+.subj button{font:600 13px var(--body);padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:rgba(10,14,40,.8);color:var(--mut);cursor:pointer;white-space:nowrap;transition:.2s}
+.subj button.on,.subj button:hover{background:linear-gradient(120deg,var(--a),var(--b));color:#06101c;border-color:transparent}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:34px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;backdrop-filter:blur(8px)}
+.stat b{display:block;font:700 32px var(--head);font-variant-numeric:tabular-nums}
+.stat span{color:var(--mut);font-size:14px}
+.fine{color:var(--mut);font-size:13px;margin-top:10px}
+/* sections */
+section{padding:56px 0}
+h2{font:700 clamp(26px,3.4vw,40px)/1.15 var(--head);letter-spacing:-.015em;margin-bottom:8px}
+.sub{color:var(--mut);margin-bottom:26px;max-width:60ch}
+.rv{opacity:0;transform:perspective(900px) rotateX(14deg) translateY(36px);transition:opacity .7s,transform .8s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+/* device chooser */
+.devs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:700px;perspective:1000px}
+.dev{font:inherit;color:inherit;text-align:left;cursor:pointer;position:relative;padding:22px;border-radius:24px;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(10px);transform-style:preserve-3d;transition:transform .15s ease-out,border-color .2s,box-shadow .2s;min-height:180px;overflow:hidden}
+.dev:before{content:"";position:absolute;inset:0;background:radial-gradient(260px circle at var(--gx,50%) var(--gy,0%),rgba(255,255,255,.14),transparent 60%);opacity:0;transition:opacity .25s;pointer-events:none}
+.dev:hover:before{opacity:1}
+.dev svg{width:68px;height:68px;display:block;margin-bottom:12px;transform:translateZ(36px)}
+.dev b{display:block;font:700 20px var(--head);transform:translateZ(24px)}
+.dev small{color:var(--mut);font-size:14px;display:block;transform:translateZ(12px)}
+.dev[aria-checked=true]{border:2px solid transparent;background:linear-gradient(var(--card),var(--card)) padding-box,linear-gradient(120deg,var(--a),var(--b)) border-box;box-shadow:0 20px 60px rgba(124,92,255,.4)}
+.tag{position:absolute;top:14px;right:14px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:99px;background:rgba(45,226,230,.16);color:var(--b)}
+.panel{margin-top:20px;max-width:700px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px;backdrop-filter:blur(10px)}
+.panel h3{font:700 22px var(--head);margin-bottom:4px}
+.btn{display:inline-flex;flex-direction:column;justify-content:center;min-height:64px;padding:12px 28px;border-radius:16px;text-decoration:none;color:#fff;font-weight:700;font-size:17px;background:linear-gradient(120deg,var(--a),#4f8cff 60%,var(--b));margin:12px 0 4px;box-shadow:0 14px 36px rgba(90,100,255,.35);transition:transform .15s}
+.btn:hover{transform:translateY(-3px)}
+.btn small{font-weight:500;font-size:12.5px;color:rgba(255,255,255,.9)}
 .btn[aria-disabled=true]{opacity:.5;pointer-events:none;filter:grayscale(.4)}
 .note{color:var(--mut);font-size:14px;min-height:20px}
-.steps{counter-reset:s;list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}
-.steps li{counter-increment:s;border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 52px;position:relative;color:var(--mut);font-size:15px}
-.steps li:before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;background:linear-gradient(120deg,var(--a),var(--b))}
+.steps{counter-reset:s;list-style:none;margin:16px 0 0;display:grid;gap:10px}
+.steps li{counter-increment:s;border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 54px;position:relative;color:var(--mut);font-size:15px}
+.steps li:before{content:counter(s);position:absolute;left:13px;top:10px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#06101c;background:linear-gradient(120deg,var(--a),var(--b))}
 .steps b{color:var(--ink)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;backdrop-filter:blur(8px)}
-.card h3{margin:0 0 6px;font-family:'Sora',sans-serif;font-size:17px}
-.card p{margin:0;color:var(--mut);font-size:15px}
+/* feature tilt cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;perspective:1100px}
+.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;backdrop-filter:blur(8px);transform-style:preserve-3d;transition:transform .15s ease-out,border-color .2s;overflow:hidden}
+.card:before{content:"";position:absolute;inset:0;background:radial-gradient(240px circle at var(--gx,50%) var(--gy,0%),rgba(255,255,255,.13),transparent 62%);opacity:0;transition:opacity .25s;pointer-events:none}
+.card:hover{border-color:rgba(124,92,255,.6)}.card:hover:before{opacity:1}
+.ico{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font:700 20px var(--head);color:#06101c;background:linear-gradient(135deg,var(--a),var(--b));margin-bottom:14px;transform:translateZ(34px);box-shadow:0 10px 24px rgba(80,90,255,.4)}
+.card h3{font:700 18px var(--head);margin-bottom:6px;transform:translateZ(22px)}
+.card p{color:var(--mut);font-size:15px;transform:translateZ(10px)}
+/* subject marquee */
+.mq{overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);perspective:800px}
+.mq div{display:flex;gap:12px;width:max-content;animation:mq 38s linear infinite}
+.mq:hover div{animation-play-state:paused}
+.mq span{padding:11px 20px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:600;white-space:nowrap;transform:rotateY(-14deg)}
+@keyframes mq{to{transform:translateX(-50%)}}
+/* guide */
+.gcard{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;background:linear-gradient(135deg,rgba(124,92,255,.22),rgba(45,226,230,.1));border:1px solid var(--line);border-radius:28px;padding:clamp(20px,4vw,38px)}
+.gstack{position:relative;height:210px;perspective:900px}
+.gstack i{position:absolute;inset:0;border-radius:18px;border:1px solid var(--line);background:linear-gradient(160deg,#1b2260,#0a0e2c);box-shadow:0 20px 50px rgba(0,0,0,.4);transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.gstack i:nth-child(1){transform:rotateY(-22deg) rotateX(8deg) translateZ(-60px) translateX(26px)}
+.gstack i:nth-child(2){transform:rotateY(-22deg) rotateX(8deg) translateZ(-30px) translateX(13px)}
+.gstack i:nth-child(3){transform:rotateY(-22deg) rotateX(8deg);display:grid;place-items:center;font:700 22px var(--head);color:var(--ink)}
+.gcard:hover .gstack i:nth-child(1){transform:rotateY(-12deg) rotateX(5deg) translateZ(-80px) translateX(60px)}
+.gcard:hover .gstack i:nth-child(2){transform:rotateY(-12deg) rotateX(5deg) translateZ(-40px) translateX(30px)}
+.gcard:hover .gstack i:nth-child(3){transform:rotateY(-12deg) rotateX(5deg)}
 .honest{border-left:3px solid var(--b);padding-left:14px;color:var(--mut);font-size:15px;margin:0 0 14px;max-width:70ch}
-footer{padding:30px 0 50px;color:var(--mut);font-size:14px;border-top:1px solid var(--line)}
-[hidden]{display:none!important}
-@media (max-width:560px){.devs{gap:10px}.dev{padding:14px;min-height:150px}.btn{width:100%}}
+footer{padding:34px 0 54px;color:var(--mut);font-size:14px;border-top:1px solid var(--line)}
+@media (max-width:860px){
+  .hero .wrap,.gcard{grid-template-columns:1fr}
+  .links a:not(.cta){display:none}
+  .gstack{height:150px}
+}
+@media (max-width:560px){.devs{gap:10px}.dev{padding:16px;min-height:160px}.btn{width:100%}.hero{padding-top:24px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
 <body>
 <canvas id="bg" aria-hidden="true"></canvas>
-<header class="wrap"><nav><div class="logo">Future<i>Self</i></div><a href="#why">What it does</a></nav></header>
-<main class="wrap">
-  <div class="hero">
+<div class="glow" id="glow" aria-hidden="true"></div>
+<header class="top"><div class="wrap"><nav aria-label="Main">
+  <a class="logo" href="#top">Future<i>Self</i></a>
+  <div class="links"><a href="#get">Download</a><a href="#why">What it does</a><a href="#subjects">Subjects</a><a href="#guide">Guide</a><a class="cta" href="#get">Get the app</a></div>
+</nav></div><div id="prog"></div></header>
+
+<main id="top">
+<section class="hero"><div class="wrap">
+  <div>
     <div class="eyebrow">Study goals · focus lock · Windows + Android</div>
     <h1>Study with a plan. <span>Lock the distractions.</span></h1>
-    <p class="lead">Choose the device you are installing on. You get the right file, and the steps for that device.</p>
+    <p class="lead">One app puts your lesson, 3D visuals, practice questions and a focus lock on your PC and phone together, so a study hour stays a study hour.</p>
+    <div class="hbtns"><a class="pbtn" href="#get">Download free</a><a class="gbtn" href="guide/FutureSelf-Interactive-Guide.html">Try the live demo</a></div>
+  </div>
+  <div class="stage" id="stagebox">
+    <canvas id="stage" aria-label="3D laptop and phone with floating subject symbols. Drag to rotate."></canvas>
+    <div class="hint">drag to rotate · pick a subject</div>
+    <div class="subj" id="subj" role="group" aria-label="Choose a subject to see its 3D graphics"></div>
+  </div>
+</div>
+<div class="wrap" style="display:block">
+  <div class="stats" id="stats">
+    <div class="stat"><b data-n="125">125</b><span>subjects, Class 9 to B.Tech</span></div>
+    <div class="stat"><b data-n="553">553</b><span>topic-wise lessons</span></div>
+    <div class="stat"><b data-n="39581">39,581</b><span>practice Q&amp;A</span></div>
+    <div class="stat"><b data-n="42642">42,642</b><span>quiz questions</span></div>
+  </div>
+  <p class="fine">Version 1.25.0. 300 of the 553 lessons already have the full 100+ Q&amp;A, 100+ quiz and formula sheet; the rest are being filled in.</p>
+</div></section>
+
+<section id="get"><div class="wrap">
+  <h2 class="rv">Get FutureSelf</h2>
+  <p class="sub rv">Choose the device you are installing on. You get the right file, and the steps for that device.</p>
+  <div class="devs rv" role="radiogroup" aria-label="Choose your device">
+    <button class="dev" role="radio" aria-checked="false" data-k="win" id="d-win">
+      <span class="tag" hidden>Your device</span>
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="10" y="12" width="44" height="30" rx="3" stroke="#2de2e6" stroke-width="3"/><path d="M4 50h56l-4 -8H8z" fill="#7c5cff"/></svg>
+      <b>Windows PC</b><small>Laptop or desktop · Windows 10 / 11</small>
+    </button>
+    <button class="dev" role="radio" aria-checked="false" data-k="and" id="d-and">
+      <span class="tag" hidden>Your device</span>
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="20" y="6" width="24" height="52" rx="5" stroke="#2de2e6" stroke-width="3"/><circle cx="32" cy="51" r="2.5" fill="#7c5cff"/></svg>
+      <b>Android phone</b><small>Android 8 or newer</small>
+    </button>
   </div>
 
-  <section style="padding-top:8px">
-    <div class="devs" role="radiogroup" aria-label="Choose your device">
-      <button class="dev" role="radio" aria-checked="false" data-k="win" id="d-win">
-        <span class="tag" hidden>Your device</span>
-        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="10" y="12" width="44" height="30" rx="3" stroke="#2de2e6" stroke-width="3"/><path d="M4 50h56l-4 -8H8z" fill="#7c5cff"/></svg>
-        <b>Windows PC</b><small>Laptop or desktop · Windows 10 / 11</small>
-      </button>
-      <button class="dev" role="radio" aria-checked="false" data-k="and" id="d-and">
-        <span class="tag" hidden>Your device</span>
-        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="20" y="6" width="24" height="52" rx="5" stroke="#2de2e6" stroke-width="3"/><circle cx="32" cy="51" r="2.5" fill="#7c5cff"/></svg>
-        <b>Android phone</b><small>Android 8 or newer</small>
-      </button>
+  <div class="panel rv" id="panel" aria-live="polite">
+    <div id="p-none"><h3>Pick a device above</h3><p class="note" id="none-note">FutureSelf runs on Windows PCs and Android phones.</p></div>
+    <div id="p-win" hidden>
+      <h3>FutureSelf for Windows</h3>
+      <a class="btn" id="b-win" href="#"><span>Download Setup</span><small>FutureSelf-Setup.exe</small></a>
+      <div class="note" id="n-win"></div>
+      <ol class="steps">
+        <li><b>Double-click</b> FutureSelf-Setup.exe after it downloads.</li>
+        <li>If Windows says <b>"protected your PC"</b> (the file is new and not code-signed yet): <b>More info</b>, then <b>Run anyway</b>.</li>
+        <li>It installs for your account (no administrator needed), adds Start menu and desktop icons and opens by itself.</li>
+        <li>To link your phone later: Settings, Link your Android phone, New code.</li>
+      </ol>
     </div>
+    <div id="p-and" hidden>
+      <h3>FutureSelf for Android</h3>
+      <a class="btn" id="b-and" href="#"><span>Download app</span><small>FutureSelf.apk</small></a>
+      <div class="note" id="n-and"></div>
+      <ol class="steps">
+        <li>Tap the downloaded file. Android asks to allow <b>Install unknown apps</b> for your browser: allow it once.</li>
+        <li>Open FutureSelf, go to <b>Phone &amp; lock</b> and turn on the switches: App lock, Display over other apps, Calls, Notifications, Battery.</li>
+        <li>Add up to <b>five emergency numbers</b>. They stay callable from the lock screen.</li>
+        <li>Link your PC: PC app Settings, Phone link, New code. On the phone press Find my PC and type the code (same Wi-Fi).</li>
+      </ol>
+    </div>
+  </div>
+</div></section>
 
-    <div class="panel" id="panel" aria-live="polite">
-      <div id="p-none"><h3>Pick a device above</h3><p class="note" id="none-note">FutureSelf runs on Windows PCs and Android phones.</p></div>
-      <div id="p-win" hidden>
-        <h3>FutureSelf for Windows</h3>
-        <a class="btn" id="b-win" href="#"><span>Download Setup</span><small>FutureSelf-Setup.exe</small></a>
-        <div class="note" id="n-win"></div>
-        <ol class="steps">
-          <li><b>Double-click</b> FutureSelf-Setup.exe after it downloads.</li>
-          <li>If Windows says <b>"protected your PC"</b> (the file is new and not code-signed yet): <b>More info</b>, then <b>Run anyway</b>.</li>
-          <li>It installs for your account (no administrator needed), adds Start menu and desktop icons and opens by itself.</li>
-          <li>To link your phone later: Settings, Link your Android phone, New code.</li>
-        </ol>
-      </div>
-      <div id="p-and" hidden>
-        <h3>FutureSelf for Android</h3>
-        <a class="btn" id="b-and" href="#"><span>Download app</span><small>FutureSelf.apk</small></a>
-        <div class="note" id="n-and"></div>
-        <ol class="steps">
-          <li>Tap the downloaded file. Android asks to allow <b>Install unknown apps</b> for your browser: allow it once.</li>
-          <li>Open FutureSelf, go to <b>Phone &amp; lock</b> and turn on the switches: App lock, Display over other apps, Calls, Notifications, Battery.</li>
-          <li>Add up to <b>five emergency numbers</b>. They stay callable from the lock screen.</li>
-          <li>Link your PC: PC app Settings, Phone link, New code. On the phone press Find my PC and type the code (same Wi-Fi).</li>
-        </ol>
-      </div>
-    </div>
-  </section>
+<section id="why"><div class="wrap">
+  <h2 class="rv">What you get</h2>
+  <p class="sub rv">The same study app on both devices. Hover the cards.</p>
+  <div class="grid">
+    <div class="card rv tilt"><div class="ico">P</div><h3>Daily plan</h3><p>Goals, a weekly timetable and reminders that fire even when the app is closed.</p></div>
+    <div class="card rv tilt"><div class="ico">3D</div><h3>3D lessons</h3><p>Visual notes and diagrams, a topic video chosen by the app, questions and a quiz for every topic, with subject-themed 3D graphics.</p></div>
+    <div class="card rv tilt"><div class="ico">L</div><h3>PC + phone locked together</h3><p>Start a session on your PC and your phone locks for the same time (same Wi-Fi).</p></div>
+    <div class="card rv tilt"><div class="ico">SOS</div><h3>Emergency calls</h3><p>Five family numbers, plus 112, one tap away on the lock screen.</p></div>
+    <div class="card rv tilt"><div class="ico">T</div><h3>One topic at a time</h3><p>Study is topic-wise. No search box, no "next topic" button, nothing to wander off to.</p></div>
+    <div class="card rv tilt"><div class="ico">हि</div><h3>Hindi and English</h3><p>Hindi summaries beside English lessons, with all lesson content bundled in the app.</p></div>
+  </div>
+</div></section>
 
-  <section id="why">
-    <h2>What you get</h2>
-    <p class="sub">The same study app on both devices.</p>
-    <div class="grid">
-      <div class="card"><h3>Daily plan</h3><p>Goals, a weekly timetable and reminders that fire even when the app is closed.</p></div>
-      <div class="card"><h3>3D lessons</h3><p>Notes, diagrams, a topic video chosen by the app, questions and a quiz for every topic.</p></div>
-      <div class="card"><h3>PC + phone locked together</h3><p>Start a session on your PC and your phone locks for the same time (same Wi-Fi).</p></div>
-      <div class="card"><h3>Emergency calls</h3><p>Five family numbers, plus 112, one tap away on the lock screen.</p></div>
+<section id="subjects"><div class="wrap">
+  <h2 class="rv">Made for your syllabus</h2>
+  <p class="sub rv">Pick your class or exam at sign-in and every list follows it.</p>
+</div>
+<div class="mq" aria-label="Classes and exams covered"><div id="mq"></div></div></section>
+
+<section id="guide"><div class="wrap">
+  <div class="gcard rv">
+    <div>
+      <h2>Interactive guide</h2>
+      <p class="sub" style="margin-bottom:18px">Run a working demo study session in 3D, see how FutureSelf differs from other study apps and follow the install steps. Download it to use offline.</p>
+      <div class="hbtns" style="margin-top:0">
+        <a class="pbtn" href="guide/FutureSelf-Interactive-Guide.html">Open the guide</a>
+        <a class="gbtn" href="guide/FutureSelf-Interactive-Guide.html" download="FutureSelf-Interactive-Guide.html">Download the guide</a>
+      </div>
     </div>
-  </section>
-  <section id="guide">
-    <h2>Interactive guide</h2>
-    <p class="sub">Try a working demo study session in 3D, see how FutureSelf differs from other study apps and follow the install steps. Works offline once downloaded.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:12px">
-      <a class="btn" href="guide/FutureSelf-Interactive-Guide.html"><span>Open the guide</span><small>Run the demo in your browser</small></a>
-      <a class="btn" href="guide/FutureSelf-Interactive-Guide.html" download="FutureSelf-Interactive-Guide.html"><span>Download the guide</span><small>FutureSelf-Interactive-Guide.html</small></a>
-    </div>
-  </section>
-  <section>
-    <p class="honest">The phone lock needs the Accessibility switch. While locked, Settings is closed so the lock cannot be switched off halfway. Calls always work.</p>
-    <p class="honest">The PC and phone talk directly over your Wi-Fi. Nothing is uploaded to a server.</p>
-  </section>
+    <div class="gstack" aria-hidden="true"><i></i><i></i><i>Live demo</i></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <p class="honest rv">The phone lock needs the Accessibility switch. While locked, Settings is closed so the lock cannot be switched off halfway. Calls always work.</p>
+  <p class="honest rv">The PC and phone talk directly over your Wi-Fi. Nothing is uploaded to a server.</p>
+</div></section>
 </main>
-<footer><div class="wrap">FutureSelf by SpinDigital. Built for B.Tech students.</div></footer>
+<footer><div class="wrap">FutureSelf by SpinDigital. Built for B.Tech students. Check lesson content against your textbooks before exams.</div></footer>
 
 <script src="assets/three.min.js"></script>
 <script>
 (function(){
+  'use strict';
   var $=function(i){return document.getElementById(i)};
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   var sel=null; /* 'win' | 'and' | null */
 
-  /* ---------- 3D scene: a laptop and a phone; the chosen one comes forward ---------- */
-  var setScene=function(){};
-  try{
-    var cv=$('bg'),r=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
-    r.setPixelRatio(Math.min(devicePixelRatio||1,2));
-    var sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,100);cam.position.set(0,.4,11);
-    sc.add(new THREE.AmbientLight(0x8890ff,.75));var dl=new THREE.DirectionalLight(0xffffff,1.15);dl.position.set(4,6,8);sc.add(dl);
-    function tex(draw,w,h){var c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);var t=new THREE.CanvasTexture(c);return t}
-    var lapTex=tex(function(g,w,h){var gr=g.createLinearGradient(0,0,w,h);gr.addColorStop(0,'#1a1450');gr.addColorStop(1,'#0b3a4a');g.fillStyle=gr;g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='700 64px Sora,sans-serif';g.textAlign='center';g.fillText('FutureSelf',w/2,h/2);g.fillStyle='#2de2e6';g.font='34px DM Sans,sans-serif';g.fillText('Focus session  25:00',w/2,h/2+60)},512,320);
-    var phTex=tex(function(g,w,h){var gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#241a66');gr.addColorStop(1,'#07131f');g.fillStyle=gr;g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='700 70px Sora,sans-serif';g.textAlign='center';g.fillText('25:00',w/2,h/2);g.fillStyle='#ff8aa0';g.font='28px DM Sans,sans-serif';g.fillText('Phone locked',w/2,h/2+50);g.fillStyle='#1f9d6b';g.fillRect(w/2-90,h-130,180,60)},256,512);
-    var body=new THREE.MeshStandardMaterial({color:0x2a2f6b,metalness:.5,roughness:.35});
-    var laptop=new THREE.Group();
-    var base=new THREE.Mesh(new THREE.BoxGeometry(3.2,.12,2.1),body);laptop.add(base);
-    var lid=new THREE.Group();lid.position.set(0,.06,-1.0);lid.rotation.x=-.28;laptop.add(lid);
-    var back=new THREE.Mesh(new THREE.BoxGeometry(3.2,2.05,.08),body);back.position.set(0,1.02,0);lid.add(back);
-    var scr=new THREE.Mesh(new THREE.PlaneGeometry(3.0,1.85),new THREE.MeshBasicMaterial({map:lapTex}));scr.position.set(0,1.02,.045);lid.add(scr);
-    var phone=new THREE.Group();
-    var pb=new THREE.Mesh(new THREE.BoxGeometry(1.15,2.3,.13),body);phone.add(pb);
-    var ps=new THREE.Mesh(new THREE.PlaneGeometry(1.0,2.1),new THREE.MeshBasicMaterial({map:phTex}));ps.position.z=.07;phone.add(ps);
-    [laptop,phone].forEach(function(g){g.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(.01,.01,.01)),new THREE.LineBasicMaterial({color:0x2de2e6})));sc.add(g)});
-    var tiles=[],cols=[0x2de2e6,0x7c5cff,0xff8aa0,0x6ee7a8];
-    for(var i=0;i<12;i++){var m=new THREE.Mesh(new THREE.BoxGeometry(.8,.55,.06),new THREE.MeshStandardMaterial({color:cols[i%4],metalness:.2,roughness:.5,transparent:true,opacity:.45}));
-      m.position.set((Math.random()-.5)*18,(Math.random()-.5)*10,-3-Math.random()*5);m.userData={s:.2+Math.random()*.4,p:Math.random()*6};sc.add(m);tiles.push(m)}
-    var mx=0,my=0,narrow=false;addEventListener('pointermove',function(e){mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
-    var T={lap:{x:3.4,y:.2,s:.8,ry:-.5},ph:{x:5.4,y:-.1,s:.8,ry:-.4}};
-    function layout(){narrow=innerWidth<760;var k=narrow?.45:1;T.base=k;
-      T.lap.x=narrow?-1.3:3.0;T.ph.x=narrow?1.6:5.6;T.lap.y=narrow?4.4:.4;T.ph.y=narrow?4.2:.1}
-    function size(){r.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();layout()}
+  /* ---------- background star field (2D, light) ---------- */
+  (function(){
+    var cv=$('bg'),g=cv.getContext('2d'),W=0,H=0,S=[],mx=0,my=0,sy=0;
+    function size(){W=cv.width=innerWidth;H=cv.height=innerHeight;S=[];for(var i=0;i<(W<700?60:120);i++)S.push({x:Math.random()*W,y:Math.random()*H,z:.2+Math.random()*.8,p:Math.random()*6})}
     size();addEventListener('resize',size);
-    setScene=function(){};
-    var still=matchMedia('(prefers-reduced-motion: reduce)').matches,t0=performance.now();
-    function lerp(a,b,k){return a+(b-a)*k}
-    function frame(){var t=(performance.now()-t0)/1000,k=T.base||1;
-      var lapOn=sel==='win',phOn=sel==='and';
-      var ls=(lapOn?1.18:(sel?.7:.9))*k*(narrow?1:1),ps2=(phOn?1.25:(sel?.7:.9))*k;
-      laptop.scale.setScalar(lerp(laptop.scale.x||ls,ls,.08));phone.scale.setScalar(lerp(phone.scale.x||ps2,ps2,.08));
-      laptop.position.x=lerp(laptop.position.x,T.lap.x+(lapOn?(narrow?0:-.4):0),.08);laptop.position.y=lerp(laptop.position.y,T.lap.y+Math.sin(t*.9)*.12,.1);
-      phone.position.x=lerp(phone.position.x,T.ph.x+(phOn?(narrow?0:-.5):0),.08);phone.position.y=lerp(phone.position.y,T.ph.y+Math.sin(t*.9+1.5)*.12,.1);
-      laptop.rotation.y=lerp(laptop.rotation.y,(lapOn?-.25:-.55)+Math.sin(t*.5)*.18+mx*.5,.06);laptop.rotation.x=.12+my*.2;
-      phone.rotation.y=lerp(phone.rotation.y,(phOn?-.2:-.5)+Math.sin(t*.5+1)*.2+mx*.5,.06);phone.rotation.x=my*.2;
-      tiles.forEach(function(m){m.rotation.y=t*m.userData.s;m.rotation.x=Math.sin(t*m.userData.s+m.userData.p)*.5});
-      r.render(sc,cam);if(!still)requestAnimationFrame(frame)}
-    frame();
-  }catch(e){}
+    addEventListener('pointermove',function(e){mx=e.clientX/W-.5;my=e.clientY/H-.5});
+    addEventListener('scroll',function(){sy=scrollY},{passive:true});
+    function draw(t){
+      g.clearRect(0,0,W,H);
+      S.forEach(function(s){
+        var x=(s.x-mx*30*s.z+W)%W,y=((s.y-sy*.08*s.z-my*30*s.z)%H+H)%H;
+        g.globalAlpha=.25+.5*Math.abs(Math.sin(t/1400+s.p))*s.z;
+        g.fillStyle=s.z>.7?'#2de2e6':'#a89bff';
+        g.beginPath();g.arc(x,y,s.z*1.5,0,6.3);g.fill();
+      });
+      if(!reduce)requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  })();
 
-  /* ---------- device choice + downloads ---------- */
+  /* ---------- scroll progress, cursor glow, reveal ---------- */
+  addEventListener('scroll',function(){var h=document.documentElement;$('prog').style.width=(scrollY/Math.max(1,h.scrollHeight-innerHeight)*100)+'%'},{passive:true});
+  addEventListener('pointermove',function(e){var s=$('glow').style;s.setProperty('--mx',e.clientX+'px');s.setProperty('--my',e.clientY+'px')});
+  var rvs=document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+    rvs.forEach(function(el,i){el.style.transitionDelay=((i%4)*70)+'ms';io.observe(el)});
+  }else rvs.forEach(function(el){el.classList.add('in')});
+
+  /* counters */
+  (function(){
+    var els=document.querySelectorAll('[data-n]');
+    function run(el){var to=+el.dataset.n,t0=performance.now();(function s(t){var p=Math.min((t-t0)/1200,1);el.textContent=Math.round(to*(1-Math.pow(1-p,3))).toLocaleString('en-IN');if(p<1)requestAnimationFrame(s)})(t0)}
+    if(reduce||!('IntersectionObserver' in window))return;
+    var o=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){run(e.target);o.unobserve(e.target)}})});
+    els.forEach(function(e){e.textContent='0';o.observe(e)});
+  })();
+
+  /* tilt + glare on cards and device buttons */
+  function tilt(el,deg,lift){
+    el.addEventListener('pointermove',function(e){
+      var b=el.getBoundingClientRect(),x=(e.clientX-b.left)/b.width,y=(e.clientY-b.top)/b.height;
+      el.style.setProperty('--gx',(x*100)+'%');el.style.setProperty('--gy',(y*100)+'%');
+      if(!reduce)el.style.transform='rotateY('+((x-.5)*deg)+'deg) rotateX('+(-(y-.5)*deg)+'deg) translateZ('+lift+'px)';
+    });
+    el.addEventListener('pointerleave',function(){el.style.transform=''});
+  }
+  document.querySelectorAll('.tilt').forEach(function(c){tilt(c,12,6)});
+  ['win','and'].forEach(function(k){tilt($('d-'+k),14,8)});
+
+  /* subject marquee */
+  var MQ=['Class 9','Class 10','Class 11','Class 12','JEE Main','JEE Advanced','NEET','B.Tech Year 1','B.Tech Year 2','B.Tech Year 3','B.Tech Year 4','Government exams','General Knowledge','Maths','Physics','Chemistry','Biology','English','Hindi','Programming'];
+  $('mq').innerHTML=MQ.concat(MQ).map(function(t){return '<span>'+t+'</span>'}).join('');
+
+  /* ---------- hero 3D scene ---------- */
+  var SYM={
+    All:['π','E=mc²','H₂O','DNA','{ }','∫','ATP','Aa','V=IR','CO₂'],
+    Maths:['π','∑','∫','√x','x²','Δ','∞','7','sin','log'],
+    Physics:['F=ma','E=mc²','V=IR','λ','ħ','Ω','v²','g','Hz','N'],
+    Chemistry:['H₂O','NaCl','CO₂','mol','pH','C₆H₆','Fe','e⁻','O₃','NH₃'],
+    Biology:['DNA','ATP','RNA','cell','O₂','CO₂','Chl','gene','glucose','enzyme'],
+    Code:['{ }','01','</>','for','if','int','def','AI','git','SQL']
+  };
+  var COLS=['#8f78ff','#2de2e6','#ffc857','#7bd8ff','#ff8aa0'];
+  var scene={ready:false,setSubject:function(){}};
+  var cvs=$('stage');
+  function buildScene(){
+    try{
+      var r=new THREE.WebGLRenderer({canvas:cvs,alpha:true,antialias:true});
+      var sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(42,1,.1,100);cam.position.set(0,.5,11);
+      sc.add(new THREE.AmbientLight(0x8890ff,.8));var dl=new THREE.DirectionalLight(0xffffff,1.2);dl.position.set(4,6,8);sc.add(dl);
+      function tex(draw,w,h){var c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);return new THREE.CanvasTexture(c)}
+      var lapTex=tex(function(g,w,h){var gr=g.createLinearGradient(0,0,w,h);gr.addColorStop(0,'#1a1450');gr.addColorStop(1,'#0b3a4a');g.fillStyle=gr;g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='700 64px Sora,sans-serif';g.textAlign='center';g.fillText('FutureSelf',w/2,h/2);g.fillStyle='#2de2e6';g.font='34px DM Sans,sans-serif';g.fillText('Focus session  25:00',w/2,h/2+60)},512,320);
+      var phTex=tex(function(g,w,h){var gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#241a66');gr.addColorStop(1,'#07131f');g.fillStyle=gr;g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='700 70px Sora,sans-serif';g.textAlign='center';g.fillText('25:00',w/2,h/2);g.fillStyle='#ff8aa0';g.font='28px DM Sans,sans-serif';g.fillText('Phone locked',w/2,h/2+50);g.fillStyle='#1f9d6b';g.fillRect(w/2-90,h-130,180,60)},256,512);
+      var body=new THREE.MeshStandardMaterial({color:0x2a2f6b,metalness:.5,roughness:.35});
+      var world=new THREE.Group();sc.add(world);
+      var laptop=new THREE.Group();
+      laptop.add(new THREE.Mesh(new THREE.BoxGeometry(3.2,.12,2.1),body));
+      var lid=new THREE.Group();lid.position.set(0,.06,-1.0);lid.rotation.x=-.28;laptop.add(lid);
+      var back=new THREE.Mesh(new THREE.BoxGeometry(3.2,2.05,.08),body);back.position.set(0,1.02,0);lid.add(back);
+      var scr=new THREE.Mesh(new THREE.PlaneGeometry(3.0,1.85),new THREE.MeshBasicMaterial({map:lapTex}));scr.position.set(0,1.02,.045);lid.add(scr);
+      laptop.position.set(-1.1,-.9,0);laptop.rotation.y=.35;
+      var phone=new THREE.Group();
+      phone.add(new THREE.Mesh(new THREE.BoxGeometry(1.15,2.3,.13),body));
+      var ps=new THREE.Mesh(new THREE.PlaneGeometry(1.0,2.1),new THREE.MeshBasicMaterial({map:phTex}));ps.position.z=.07;phone.add(ps);
+      phone.position.set(2.0,-.4,.8);phone.rotation.y=-.35;
+      world.add(laptop,phone);
+      /* orbit ring + core */
+      var ring=new THREE.Mesh(new THREE.TorusGeometry(3.9,.015,8,160),new THREE.MeshBasicMaterial({color:0xffc857,transparent:true,opacity:.7}));ring.rotation.x=1.35;world.add(ring);
+      var ring2=new THREE.Mesh(new THREE.TorusGeometry(4.4,.01,8,160),new THREE.MeshBasicMaterial({color:0x2de2e6,transparent:true,opacity:.45}));ring2.rotation.x=1.1;ring2.rotation.y=.5;world.add(ring2);
+      /* floating tiles */
+      var tiles=[],tc=[0x2de2e6,0x7c5cff,0xff8aa0,0x6ee7a8];
+      for(var i=0;i<10;i++){var m=new THREE.Mesh(new THREE.BoxGeometry(.6,.42,.05),new THREE.MeshStandardMaterial({color:tc[i%4],metalness:.2,roughness:.5,transparent:true,opacity:.4}));
+        m.position.set((Math.random()-.5)*13,(Math.random()-.5)*7,-3-Math.random()*3);m.userData={s:.2+Math.random()*.4,p:Math.random()*6};sc.add(m);tiles.push(m)}
+      /* subject symbols */
+      var orbit=new THREE.Group();world.add(orbit);var sprites=[];
+      function symTex(text,col){return tex(function(g,w,h){g.font='700 58px Sora,sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor=col;g.shadowBlur=18;g.fillStyle=col;g.fillText(text,w/2,h/2+4)},256,128)}
+      function setSubject(name){
+        sprites.forEach(function(s){orbit.remove(s);s.material.map.dispose();s.material.dispose()});sprites=[];
+        var list=SYM[name]||SYM.All;
+        list.forEach(function(t,i){
+          var s=new THREE.Sprite(new THREE.SpriteMaterial({map:symTex(t,COLS[i%COLS.length]),transparent:true,depthWrite:false}));
+          var n=list.length,phi=Math.acos(1-2*(i+.5)/n),th=Math.PI*(1+Math.sqrt(5))*i,R=3.5+(i%3)*.45;
+          s.position.set(R*Math.sin(phi)*Math.cos(th),R*Math.cos(phi)*.7,R*Math.sin(phi)*Math.sin(th));
+          s.scale.set(.01,.005,1);s.userData={b:Math.random()*6,k:0};orbit.add(s);sprites.push(s);
+        });
+      }
+      setSubject('All');
+      scene.setSubject=setSubject;
+      /* interaction */
+      var drag=false,lx=0,ly=0,rx=0,ry=0,vx=0,vy=0,mx=0,my=0,vis=true;
+      var box=$('stagebox');
+      box.addEventListener('pointerdown',function(e){if(e.target.closest('.subj'))return;drag=true;lx=e.clientX;ly=e.clientY;vx=vy=0});
+      addEventListener('pointerup',function(){drag=false});
+      box.addEventListener('pointermove',function(e){
+        if(drag){vy=(e.clientX-lx)*.008;vx=(e.clientY-ly)*.006;ry+=vy;rx+=vx;lx=e.clientX;ly=e.clientY}
+        var b=box.getBoundingClientRect();mx=(e.clientX-b.left)/b.width-.5;my=(e.clientY-b.top)/b.height-.5});
+      box.addEventListener('pointerleave',function(){mx=my=0});
+      if('IntersectionObserver' in window)new IntersectionObserver(function(e){vis=e[0].isIntersecting}).observe(box);
+      function size(){var w=box.clientWidth||400,h=box.clientHeight||360;r.setPixelRatio(Math.min(devicePixelRatio||1,2));r.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+      size();addEventListener('resize',size);
+      function lerp(a,b,k){return a+(b-a)*k}
+      var t0=performance.now();
+      function frame(){
+        requestAnimationFrame(frame);if(!vis&&!reduce)return;
+        var t=(performance.now()-t0)/1000,sy=Math.min(1,scrollY/700);
+        if(!drag){ry+=vy;rx+=vx;vy*=.94;vx*=.94;if(!reduce)ry+=.0016}
+        rx=Math.max(-.7,Math.min(.7,rx));rx*=.985;
+        world.rotation.y=lerp(world.rotation.y,ry+mx*.5+sy*.9,.12);
+        world.rotation.x=lerp(world.rotation.x,rx+my*.3,.12);
+        var lapOn=sel==='win',phOn=sel==='and';
+        var ls=lapOn?1.18:(sel?.82:1),pp=phOn?1.3:(sel?.82:1);
+        laptop.scale.setScalar(lerp(laptop.scale.x||1,ls,.08));phone.scale.setScalar(lerp(phone.scale.x||1,pp,.08));
+        laptop.position.y=-.9+Math.sin(t*.9)*.1;phone.position.y=-.4+Math.sin(t*.9+1.5)*.12;
+        ring.rotation.z=t*.25;ring2.rotation.z=-t*.18;
+        orbit.rotation.y=t*.12;
+        sprites.forEach(function(s){s.userData.k=lerp(s.userData.k,1,.06);var k=s.userData.k;s.scale.set(1.6*k,.8*k,1);s.position.y+=Math.sin(t*1.3+s.userData.b)*.002});
+        tiles.forEach(function(m){m.rotation.y=t*m.userData.s;m.rotation.x=Math.sin(t*m.userData.s+m.userData.p)*.5});
+        r.render(sc,cam);
+      }
+      frame();scene.ready=true;
+    }catch(e){
+      $('stagebox').insertAdjacentHTML('beforeend','<p style="position:absolute;inset:40% 20px auto;text-align:center;color:#a9afd6">3D view needs WebGL.</p>');
+    }
+  }
+  var sj=$('subj');
+  Object.keys(SYM).forEach(function(k,i){var b=document.createElement('button');b.textContent=k;if(i===0)b.className='on';
+    b.onclick=function(){[].forEach.call(sj.children,function(x){x.classList.remove('on')});b.classList.add('on');scene.setSubject(k)};sj.appendChild(b)});
+  (document.fonts&&document.fonts.load?Promise.all([document.fonts.load('700 48px Sora'),document.fonts.load('500 30px "DM Sans"')]).catch(function(){}):Promise.resolve()).then(buildScene);
+
+  /* ---------- device choice + downloads (unchanged behaviour) ---------- */
   var FILES={win:'downloads/FutureSelf-Setup.exe',and:'downloads/FutureSelf.apk'};
   function exists(u){
     if(location.protocol==='file:'||/^https?:\/\//i.test(u))return Promise.resolve(true); /* links to another site (GitHub Releases) cannot be checked from here */
@@ -199,13 +408,7 @@ footer{padding:30px 0 50px;color:var(--mut);font-size:14px;border-top:1px solid 
     $('p-none').hidden=!!k;
     if(k&&!quiet)$('panel').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
-  /* 3D tilt on the device cards */
-  ['win','and'].forEach(function(k){
-    var el=$('d-'+k);
-    el.addEventListener('click',function(){choose(k)});
-    el.addEventListener('pointermove',function(e){var b=el.getBoundingClientRect(),x=(e.clientX-b.left)/b.width-.5,y=(e.clientY-b.top)/b.height-.5;el.style.transform='rotateY('+(x*14)+'deg) rotateX('+(-y*14)+'deg) translateZ(8px)'});
-    el.addEventListener('pointerleave',function(){el.style.transform=''});
-  });
+  ['win','and'].forEach(function(k){$('d-'+k).addEventListener('click',function(){choose(k)})});
   function boot(cfg){
     if(cfg&&cfg.win)FILES.win=cfg.win;if(cfg&&cfg.and)FILES.and=cfg.and;
     prep('win');prep('and');
