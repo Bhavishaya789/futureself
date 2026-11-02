@@ -50,7 +50,7 @@
   var raf = 0, t0 = performance.now();
   function loop() {
     raf = requestAnimationFrame(loop);
-    var t = (performance.now() - t0) / 1000 * (reduce ? .35 : 1), n = 0;
+    var t = (performance.now() - t0) / 1000 * (reduce ? .6 : 1), n = 0;
     for (var i = 0; i < live.length; i++) { var L = live[i]; if (L.visible) { L.frame(t); n++; } }
   }
   function ensureLoop() { if (!raf) loop(); }
@@ -74,6 +74,13 @@
     var mesh = new THREE.Mesh(G.g, mat);
     var edge = new THREE.LineSegments(G.edges, new THREE.LineBasicMaterial({ color: 0xdff6ff, transparent: true, opacity: .22 }));
     var rig = new THREE.Group(); rig.add(mesh, edge); rig.position.y = -.05; scene.add(rig);
+    var big = (el.clientWidth || o.size || 64) >= 100, ring = null, dot = null, ring2 = null;
+    if (big) {
+      ring = new THREE.Mesh(new THREE.TorusGeometry(2.75, .02, 10, 160), new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: .6 }));
+      ring2 = new THREE.Mesh(new THREE.TorusGeometry(2.3, .014, 10, 160), new THREE.MeshBasicMaterial({ color: 0x8b7bff, transparent: true, opacity: .5 }));
+      dot = new THREE.Mesh(new THREE.SphereGeometry(.13, 16, 16), new THREE.MeshBasicMaterial({ color: 0xe8fbff }));
+      ring.add(dot); ring.rotation.x = 1.2; ring2.rotation.x = 1.2; ring2.rotation.y = .9; scene.add(ring, ring2);
+    }
     scene.add(new THREE.AmbientLight(0x8a94ff, .25));
     var key = new THREE.DirectionalLight(0xffffff, .25); key.position.set(3, 5, 8); scene.add(key);
     var rim = new THREE.PointLight(0x22d3ee, 40, 40); rim.position.set(-6, 2, -3); scene.add(rim);
@@ -82,10 +89,13 @@
     function size() { var w = el.clientWidth || o.size || 64, h = el.clientHeight || o.size || 64; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
     size();
     var ro = window.ResizeObserver ? new ResizeObserver(size) : null; if (ro) ro.observe(el);
+    function ease(x) { return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
     var L = { visible: true, frame: function (t) {
-      rig.rotation.y = Math.sin(t * .7) * .6; rig.rotation.x = Math.sin(t * .5) * .09 + .03;
-      rig.position.y = -.05 + Math.sin(t * 1.1) * .1;
-      rim.position.x = -6 * Math.cos(t * .6); key.position.x = 3 + 2 * Math.sin(t * .6);
+      var cyc = (t % 5) / 5, spin = cyc < .3 ? ease(cyc / .3) * Math.PI * 2 : 0;
+      rig.rotation.y = Math.sin(t * 1.5) * .85 + spin; rig.rotation.x = Math.sin(t * 1.1) * .16 + .03; rig.rotation.z = Math.sin(t * .9) * .05;
+      rig.position.y = -.05 + Math.sin(t * 2) * .2; rig.scale.setScalar(1 + Math.sin(t * 2.4) * .035);
+      rim.position.x = -6 * Math.cos(t * 1.4); rim.position.y = 2 + Math.sin(t * 1.1) * 2; key.position.x = 3 + 3 * Math.sin(t * 1.3);
+      if (ring) { ring.rotation.z = t * 1.1; ring2.rotation.z = -t * .8; ring.rotation.y = Math.sin(t * .6) * .4; dot.position.set(2.75, 0, 0); }
       renderer.render(scene, cam);
     } };
     var io = window.IntersectionObserver ? new IntersectionObserver(function (e) { L.visible = e[0].isIntersecting; }) : null; if (io) io.observe(el);
