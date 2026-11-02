@@ -5,12 +5,14 @@
   document.getElementById('subj').textContent = info.subject || 'Focus time';
   if (info.source === 'pc') document.getElementById('why').textContent = 'A study session is running on your PC, so this phone is locked too. It opens again when the session ends.';
   try { Float3D.set(info.topicId || 'generic', '#7C5CFF', '#2DE2E6'); } catch (e) { }
+  if (info.guard === false) { var gw = document.getElementById('guardwarn'); gw.hidden = false; document.getElementById('gwfix').onclick = function () { try { L.openApp(); } catch (e) { } }; }
+  if (info.version) document.getElementById('stat').textContent = 'FutureSelf v' + info.version + ' · calls: ' + (info.guard === false ? 'NOT screened' : 'screened') + ' · notifications: ' + (info.hidden === false ? 'NOT hidden' : 'hidden');
   var tEl = document.getElementById('time');
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function tick() {
     var cur = (L && j(L.info())) || info;
     if (L && cur && cur.active === false) { try { L.finish(); } catch (e) { } return; }
-    var ms = Math.max(0, (cur.endsAt || 0) - Date.now()), s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    var ms = Math.max(0, (cur.endsAt || 0) - (cur.pausedAt || Date.now())), s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
     tEl.textContent = (h ? h + ':' + pad(m) : pad(m)) + ':' + pad(x);
   }
   tick(); setInterval(tick, 1000);

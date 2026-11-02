@@ -15,6 +15,8 @@
   window.__fsEvent = function (json) {
     var e; try { e = JSON.parse(json); } catch (x) { return; }
     if (e.type === 'distraction') listeners.distraction.forEach(function (f) { try { f({ kind: 'app', name: e.name || 'another app' }); } catch (x) { } });
+    if (e.type === 'call' && window.FSX && FSX.onCall) FSX.onCall(!!e.on, e.ms || 0);
+    if (e.type === 'update' && window.FSX && FSX.onUpdateProgress) FSX.onUpdateProgress(e.pct || 0);
     if (e.type === 'refresh' && window.FSX && FSX.onRefresh) FSX.onRefresh();
     if (e.type === 'auth' && authWaiter) { var w = authWaiter; authWaiter = null; if (/^[a-f0-9]{48}$/.test(e.ticket || '')) w.res(e.ticket); else w.rej(new Error('Sign-in did not finish.')); }
   };
@@ -92,7 +94,7 @@
     if (client) return Promise.resolve(client);
     return siteP.then(function () {
       client = FSMobile.acctclient.create({
-        defaultSite: siteDefault,
+        defaultSite: siteDefault, device: 'phone',
         load: function () { return JSON.parse(localStorage.getItem('fs_acct') || '{}'); },
         save: function (o) { localStorage.setItem('fs_acct', JSON.stringify(o)); },
         rand: function (n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return hex(a); },
@@ -117,7 +119,7 @@
   }
   /* the phone's background lock service needs the sign-in too, so it can follow the PC */
   function syncAccount(c) { var s = c.status(); jcall('accountSave', JSON.stringify({ site: s.site, token: s.signedIn ? c.token() : '' })); }
-  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1 };
+  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, update: 1, social: 1, profile: 1, avatarFromPhoto: 1 };
   function acct(op, payload) {
     if (!ACCT_OPS[op]) return Promise.resolve({ ok: false, error: 'Unknown account action' });
     return getClient().then(function (c) {
@@ -135,6 +137,7 @@
       });
     },
     info: function () { var v = jcall('version'); return Promise.resolve({ platform: 'android', version: (v && v.version) || 'dev', native: true, contentDir: 'inside the app' }); },
+    updateInstall: function (p) { return acall('updateInstall', String(p.url || ''), String(p.sha256 || '')); },
     onNotify: function (cb) { listeners.notify.push(cb); },
     onDistraction: function (cb) { listeners.distraction.push(cb); },
     onVideoClosed: function () { },
@@ -144,7 +147,8 @@
     allowVideo: function (id) { return Promise.resolve(jcall('allowVideo', String(id || ''))); },
     openVideo: function () { return Promise.resolve({ ok: false, error: 'Use Another video or Next channel' }); },
     closeVideo: function () { return Promise.resolve({ ok: true }); },
-    sessionState: function () { return Promise.resolve({ ok: true }); }
+    /* a study session started on this phone: tell the server so the PC locks too (it clears when the session ends) */
+    sessionState: function (st) { return getClient().then(function (c) { return c.push(st || { active: false }); }).then(function () { return { ok: true }; }, function () { return { ok: true }; }); }
   };
 
   /* the phone-only screen (permissions, emergency contacts, PC link) talks to these */
@@ -152,6 +156,7 @@
     status: function () { return jcall('status'); },
     openSettings: function (kind) { return jcall('openSettings', kind); },
     requestPermission: function (kind) { return jcall('requestPermission', kind); },
+    requestCallGuard: function () { return jcall('requestCallGuard'); },
     contacts: function () { var r = jcall('getContacts'); return Array.isArray(r) ? r : (r && r.contacts) || []; },
     saveContacts: function (list) { return jcall('saveContacts', JSON.stringify(list)); },
     call: function (number) { return jcall('callNumber', String(number)); },

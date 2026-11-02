@@ -76,12 +76,22 @@
   function dayBlocks(d) { return S.blocks.filter(function (b) { return occurs(b, d); }).sort(function (a, b) { return tmin(a.start) - tmin(b.start); }); }
   function doneMap() { try { return JSON.parse(ls('fs_done') || '{}'); } catch (e) { return {}; } }
   function topicOpts(sel) {
-    var groups = {}, order = [];
-    S.topics.forEach(function (t) { var k = t.semester || 0; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(t); });
-    order.sort(function (a, b) { return (a || 99) - (b || 99); });
-    return order.map(function (k) { return '<optgroup label="' + (k ? 'Semester ' + k : 'Electives') + '">' + groups[k].map(function (t) { return '<option value="' + t.id + '"' + (t.id === sel ? ' selected' : '') + '>' + esc(t.title) + '</option>'; }).join('') + '</optgroup>'; }).join('');
+    function lab(t) { return t.semester ? 'Semester ' + t.semester : (/^btech/.test((t.tracks || [])[0] || '') ? 'Electives' : (t.group || 'Electives')); }
+    function opt(t, sub) { return '<option value="' + t.id + '" data-color="' + esc(t.color || '') + '"' + (sub ? ' data-sub="' + esc(sub) + '"' : '') + (t.id === sel ? ' selected' : '') + '>' + esc(t.title) + '</option>'; }
+    function grouped(list, folded) {
+      var groups = {}, order = [];
+      list.forEach(function (t) { var k = lab(t); if (!groups[k]) { groups[k] = { o: t.semester || 99, g: t.gorder || 0, list: [] }; order.push(k); } groups[k].list.push(t); });
+      order.sort(function (a, b) { return groups[a].g - groups[b].g || groups[a].o - groups[b].o || a.localeCompare(b); });
+      return order.map(function (k) { return '<optgroup label="' + esc(k) + '"' + (folded ? ' data-collapsed="1"' : '') + '>' + groups[k].list.map(function (t) { return opt(t, folded ? (t.group || '') : ''); }).join('') + '</optgroup>'; }).join('');
+    }
+    var mine = [], rest = [];
+    S.topics.forEach(function (t) { (isMine(t) || t.id === sel ? mine : rest).push(t); });
+    if (!myTags().length || !mine.length) return grouped(S.topics, false);
+    return grouped(mine, false) + (rest.length ? '<optgroup label="Other courses" data-collapsed="1">' + rest.map(function (t) { return opt(t, t.group || (t.semester ? 'Semester ' + t.semester : 'Electives')); }).join('') + '</optgroup>' : '');
   }
   function topicById(id) { return S.topics.filter(function (t) { return t.id === id; })[0]; }
+  function avHome() { return window.FSX && FSX.avatarHtml ? FSX.avatarHtml(S.user, 46) : ''; }
+  function meHtml() { return window.FSX && FSX.meHtml ? FSX.meHtml(S.user) : '<div class="avatar">' + esc((S.user.name || '?').charAt(0).toUpperCase()) + '</div><div><b>' + esc(S.user.name) + '</b><span>Local profile</span></div>'; }
   function firstName() { return (S.user && S.user.name || '').split(' ')[0]; }
   var LOCKS = (window.fsApi && fsApi.platform === 'android') ? { gentle: ['Gentle', 'Reminder only. Other apps stay usable.'], focus: ['Focus', 'Other apps are blocked until the time ends. Emergency calls still work.'], strict: ['Strict', 'Like Focus, and the session cannot be ended early.'] } : { gentle: ['Gentle', 'Warns and counts every time you leave. Pause allowed.'], focus: ['Focus', 'Fullscreen lock. Leaving is logged and ending early needs confirmation.'], strict: ['Strict', 'Fullscreen lock with no pause. Early exit needs a 10 second emergency code.'] };
 
@@ -131,9 +141,9 @@
     var v = $('#view');
     var map = Object.assign({ home: viewHome, learn: viewLearn, topic: viewTopic, lesson: viewLesson, timetable: viewTimetable, start: viewStart, progress: viewProgress, settings: viewSettings }, (window.FSX && FSX.routes) || {});
     var fn = map[r.name] || viewHome;
-    FS3D.ok && FS3D.setMode(r.name === 'home' && innerWidth >= 1100 ? 'dash' : 'dim');
+    FS3D.ok && FS3D.setMode(r.name === 'home' ? (innerWidth >= 1100 ? 'dash' : innerWidth < 860 ? 'stage' : 'dim') : 'dim');
     if (r.name === 'topic' || r.name === 'lesson') SubjectFX.set(r.a); else SubjectFX.clear();
-    Promise.resolve(fn(v, r)).then(function () { polish(v); }).catch(function (e) { v.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+    Promise.resolve(fn(v, r)).then(function () { polish(v); if (window.FSX && FSX.after) try { FSX.after(r, v); } catch (e) { } }).catch(function (e) { v.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
   window.addEventListener('hashchange', go);
 
@@ -143,11 +153,23 @@
     if (!S.shell || !$('#view')) {
       $('#app').innerHTML =
         '<aside class="side"><div class="brand"><div class="mark"><i></i></div><div>FutureSelf<small>Study lock-in</small></div></div><nav class="nav" id="nav"></nav><button class="btn sm sidesearch" data-act="gsearch">' + ic('search') + ' Search topics <kbd>Ctrl K</kbd></button>' +
-        '<div class="me"><div class="avatar">' + esc((S.user.name || '?').charAt(0).toUpperCase()) + '</div><div><b>' + esc(S.user.name) + '</b><span>Local profile</span></div></div></aside>' +
+        '<a class="me" href="#/account" aria-label="Your profile">' + meHtml() + '</a></aside>' +
         '<main class="main"><div id="bellwrap" style="position:fixed;top:18px;right:22px;z-index:25"></div><div id="view" class="view"></div></main>';
       S.shell = true; drawBell();
     }
-    $('#nav').innerHTML = nav.map(function (n) { return '<a href="#/' + (n[0] === 'home' ? '' : n[0]) + '" class="' + (key === n[0] ? 'on' : '') + '">' + ic(n[1]) + '<span class="l">' + n[2] + '</span></a>'; }).join('');
+    var link = function (n, inSheet) { return '<a href="#/' + (n[0] === 'home' ? '' : n[0]) + '" class="' + (key === n[0] ? 'on' : '') + '">' + ic(n[1]) + '<span class="l">' + n[2] + '</span></a>'; };
+    var sheet = $('#msheet'); if (sheet) sheet.remove(); document.body.classList.remove('msheet-open');
+    if (innerWidth < 860) {
+      /* on a phone: four main tabs and a More button, so the labels are never cut off */
+      var main = ['home', 'learn', 'start', 'progress'], rest = nav.filter(function (n) { return main.indexOf(n[0]) < 0; });
+      $('#nav').innerHTML = nav.filter(function (n) { return main.indexOf(n[0]) > -1; }).map(link).join('') +
+        '<a href="#" class="moreb' + (rest.some(function (n) { return n[0] === key; }) ? ' on' : '') + '" data-act="more">' + ic('more') + '<span class="l">More</span></a>';
+      var d = document.createElement('div'); d.id = 'msheet'; d.className = 'msheet';
+      d.innerHTML = '<div class="msback" data-act="more"></div><div class="msbox"><div class="msgrip"></div><div class="msgrid">' + rest.map(link).join('') + '</div></div>';
+      document.body.appendChild(d);
+    } else {
+      $('#nav').innerHTML = nav.map(link).join('');
+    }
   }
 
   /* ---------- notifications ---------- */
@@ -179,6 +201,11 @@
     return { xp: xp, lv: lv, name: LEVELS[lv][0], next: nx ? nx[0] : null, pct: nx ? Math.round(100 * (xp - cur) / (nx[1] - cur)) : 100, need: nx ? nx[1] - xp : 0 };
   }
   function weekLit(st) { return (st.last7 || []).map(function (d) { return d.minutes >= 10; }); }
+  function dailyCard() {
+    if (!window.FSDaily) return '';
+    var f = FSDaily.today();
+    return '<div class="card dgk"><div class="row spread"><h2>Today\'s GK <small class="muted">| \u0906\u091c \u0915\u093e \u0938\u093e\u092e\u093e\u0928\u094d\u092f \u091c\u094d\u091e\u093e\u0928</small></h2><span class="badge">' + esc(f.c) + '</span></div><p style="margin:10px 0 6px">' + esc(f.en) + '</p><p class="muted" lang="hi" style="margin:0">' + esc(f.hi) + '</p></div>';
+  }
   function futureCard(st) {
     var li = levelInfo(st), wk = (st.last7 || []).map(function (d, i, a) { var dt = parseISO(d.date); return '<span class="' + (d.minutes >= 10 ? 'on ' : '') + (i === a.length - 1 ? 'today' : '') + '"><i></i>' + DAYS[wd(dt)].charAt(0) + '</span>'; }).join('');
     return '<div class="card fself tilt"><div class="lvrow"><div class="lvbadge">LV<b>' + (li.lv + 1) + '</b></div><div class="grow"><b>Your Future Self: ' + li.name + '</b><small>' + li.xp + ' XP &middot; ' + (li.next ? li.need + ' XP to ' + li.next : 'Maximum level reached') + '</small></div></div>' +
@@ -231,20 +258,22 @@
         return '<div class="item"><div class="ico-box" style="background:' + esc(b.color) + '33;color:' + esc(b.color) + '">' + ic((topicById(b.topic_id) || {}).icon || 'book') + '</div><div class="grow"><b>' + esc(b.subject) + '</b><small>' + esc(b.start) + ' to ' + hhmm(e) + ' &middot; ' + b.minutes + ' min &middot; ' + LOCKS[b.lock_mode][0] + ' lock</small></div>' + badge +
           (state === 'now' || state === 'soon' ? '<button class="btn sm pri" data-act="startblock" data-id="' + b._id + '">' + ic('play') + '</button>' : '') + '</div>';
       }).join('') : '<div class="empty">Nothing planned for today.<br><button class="btn sm" style="margin-top:12px" data-act="addblock">' + ic('plus') + ' Add a study block</button></div>';
-      var prefSem = +(ls('fs_sem') || 0) || 3;
-      var cont = S.topics.filter(function (t) { return !t.planned; }).sort(function (a, b) { return (b.done > 0) - (a.done > 0) || (b.done - a.done) || ((a.semester === prefSem ? 0 : 1) - (b.semester === prefSem ? 0 : 1)); }).slice(0, 4).map(function (t) {
+      var cont = S.topics.filter(function (t) { return !t.planned; }).sort(function (a, b) { return (b.done > 0) - (a.done > 0) || (b.done - a.done) || ((isMine(a) ? 0 : 1) - (isMine(b) ? 0 : 1)); }).slice(0, 4).map(function (t) {
         return '<a class="item" href="#/topic/' + t.id + '"><div class="ico-box" style="background:' + t.color + '26;color:' + t.color + '">' + ic(t.icon) + '</div><div class="grow"><b>' + esc(t.title) + '</b><small>' + t.done + ' of ' + t.lessons + ' lessons</small><div class="bar" style="margin-top:8px;height:5px"><i style="width:' + Math.round(100 * t.done / t.lessons) + '%"></i></div></div></a>';
       }).join('');
-      v.innerHTML = '<div class="hero-col"><div class="top"><div><div class="eyebrow">' + now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + '</div><h1>' + greeting() + ', <span class="grad-text">' + esc(firstName()) + '</span></h1><p class="muted">' + (st.streak ? 'You are on a ' + st.streak + '-day streak. Keep it going.' : 'Study 10 minutes today to start a streak.') + '</p></div></div>' +
+      v.innerHTML = '<div class="hero-col"><div class="top"><div class="hello"><a class="hav" href="#/account" aria-label="Your profile">' + avHome() + '</a><div class="hellotx"><div class="eyebrow">' + now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) + '</div><h1>' + greeting() + ', <span class="grad-text">' + esc(firstName()) + '</span></h1><p class="muted">' + (st.streak ? 'You are on a ' + st.streak + '-day streak. Keep it going.' : 'Study 10 minutes today to start a streak.') + '</p></div></div></div><div class="orbstage" id="orbstage"></div>' +
         '<div class="grid g3 compact" style="margin-bottom:18px">' +
         '<div class="card stat tilt"><div class="lbl">' + ic('clock') + ' Today</div><div class="big"><span data-count="' + st.today_minutes + '">' + st.today_minutes + '</span><small>/ ' + st.daily_goal + ' min</small></div><div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
         '<div class="card stat tilt"><div class="lbl" style="color:var(--gold)">' + ic('flame') + ' Streak</div><div class="big"><span data-count="' + st.streak + '">' + st.streak + '</span><small>' + (st.streak === 1 ? 'day' : 'days') + '</small></div><div class="muted" style="font-size:13px;margin-top:14px">Best: ' + st.best_streak + '</div></div>' +
         '<div class="card stat tilt"><div class="lbl">' + ic('check') + ' Lessons</div><div class="big"><span data-count="' + st.lessons_done + '">' + st.lessons_done + '</span><small>done</small></div><div class="muted" style="font-size:13px;margin-top:14px">' + dur(st.total_minutes) + ' studied</div></div></div>' +
-        '<div class="stack">' + futureCard(st) + '<div class="card"><div class="row spread"><h2>Today\'s plan</h2><button class="btn sm" data-act="addblock">' + ic('plus') + ' Add</button></div><div class="list">' + plan + '</div></div>' +
+        '<div class="stack">' + futureCard(st) + dailyCard() + '<div class="card"><div class="row spread"><h2>Today\'s plan</h2><button class="btn sm" data-act="addblock">' + ic('plus') + ' Add</button></div><div class="list">' + plan + '</div></div>' +
         '<div class="card tilt"><div class="row spread wrap"><div><h2 style="margin-bottom:6px">Start a focus session</h2><p class="muted">Pick a topic and lock in.</p></div><a class="btn pri" href="#/start">' + ic('focus') + ' Focus now</a></div></div>' +
         '<div class="card"><h2>Continue learning</h2><div class="list">' + cont + '</div></div></div></div>';
     });
   }
+  actions.more = function () { document.body.classList.toggle('msheet-open'); };
+  var rzT = 0, rzW = innerWidth < 860;
+  window.addEventListener('resize', function () { clearTimeout(rzT); rzT = setTimeout(function () { var nw = innerWidth < 860; if (nw !== rzW && S.shell) { rzW = nw; ensureShell(parseHash().name); go(); } }, 200); });
   actions.bell = function () { S.bellOpen = !S.bellOpen; drawBell(); };
   actions.readall = function () { api('/notifications/read', { method: 'POST' }).then(function () { S.notifs.forEach(function (n) { n.read = true; }); drawBell(); }); };
   document.addEventListener('click', function (e) { if (S.bellOpen && !e.target.closest('#bellwrap')) { S.bellOpen = false; drawBell(); } });
@@ -252,6 +281,10 @@
   /* ---------- learn ---------- */
   /* ---------- learn: semesters, search, subjects ---------- */
   function semLabel(n) { return n ? 'Semester ' + n : 'Electives'; }
+  function myTags() { var o = []; String((S.user && S.user.track) || '').split(',').forEach(function (t) { t = t.trim(); if (!t) return; if (o.indexOf(t) < 0) o.push(t); if (/^btech\d$/.test(t) && o.indexOf('btech-extra') < 0) o.push('btech-extra'); }); return o; }
+  function isMine(x) { var m = myTags(); return (x.tracks || []).some(function (g) { return m.indexOf(g) > -1; }); }
+  function trackName() { return window.FSX && FSX.trackLabel ? FSX.trackLabel(S.user && S.user.track) : ''; }
+  function learnFilter() { var f = ls('fs_grp'); if (!f || (f === 'mine' && !myTags().length)) f = myTags().length ? 'mine' : 'all'; return f; }
   function resultsHTML(list, q) {
     if (!list.length) return '<div class="empty">No subject or topic matches "' + esc(q) + '". Try a shorter word, like "tree", "deadlock" or "sql".</div>';
     return list.map(function (r) {
@@ -276,18 +309,18 @@
       (x.planned ? '<div class="muted" style="font-size:13px"><span class="badge warn">Content coming</span></div>' : '<div class="row muted" style="font-size:13px;gap:16px"><span>' + x.units + ' units</span><span>' + x.lessons + ' topics</span><span>~' + dur(x.minutes) + '</span></div><div><div class="row spread muted" style="font-size:13px"><span>Progress</span><span>' + p + '%</span></div><div class="bar" style="margin-top:8px"><i style="width:' + p + '%"></i></div></div>') + '</a>';
   }
   function drawSubjects() {
-    var f = ls('fs_sem') || 'all', box = $('#lgrid'); if (!box) return;
-    var groups = {}, order = [];
-    S.topics.forEach(function (t) { var k = t.semester || 0; if (f !== 'all' && String(k) !== f) return; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(t); });
-    order.sort(function (a, b) { return (a || 99) - (b || 99); });
+    var f = learnFilter(), box = $('#lgrid'); if (!box) return;
+    var groups = {}, order = [], gor = {};
+    S.topics.forEach(function (t) { var k = t.group || semLabel(t.semester); if (f === 'mine' ? !isMine(t) : (f !== 'all' && k !== f)) return; if (!groups[k]) { groups[k] = []; order.push(k); gor[k] = t.gorder || 0; } groups[k].push(t); });
+    order.sort(function (a, b) { return gor[a] - gor[b]; });
     box.innerHTML = order.map(function (k) {
       var g = groups[k], cr = g.reduce(function (a, t) { return a + (t.credits || 0); }, 0), ready = g.filter(function (t) { return !t.planned; }).length;
-      return '<div class="semblock"><div class="semhead"><h2>' + semLabel(k) + '</h2><span class="muted">' + g.length + ' subjects' + (cr ? ' &middot; ' + cr + ' credits' : '') + ' &middot; ' + ready + ' with study content</span></div><div class="grid gauto">' + g.map(subjectCard).join('') + '</div></div>';
+      return '<div class="semblock"><div class="semhead"><h2>' + esc(k) + '</h2><span class="muted">' + g.length + ' subjects' + (cr ? ' &middot; ' + cr + ' credits' : '') + ' &middot; ' + ready + ' with study content</span></div><div class="grid gauto">' + g.map(subjectCard).join('') + '</div></div>';
     }).join('') || '<div class="empty">No subjects here yet.</div>';
     $$('#semchips .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.id === f); });
     polish($('#view'));
   }
-  actions.semf = function (el) { ls('fs_sem', el.dataset.id); drawSubjects(); };
+  actions.semf = function (el) { ls('fs_grp', el.dataset.id); drawSubjects(); };
   actions.gclose = function () { closeModal(); };
   actions.gsearch = function () {
     if (S.session && !S.session.ended) return;
@@ -298,13 +331,14 @@
   function viewLearn(v) {
     return api('/topics').then(function (t) {
       S.topics = t;
-      var f = ls('fs_sem') || 'all', sems = [];
-      t.forEach(function (x) { if (sems.indexOf(x.semester || 0) < 0) sems.push(x.semester || 0); });
-      sems.sort(function (a, b) { return (a || 99) - (b || 99); });
-      var total = t.length, ready = t.filter(function (x) { return !x.planned; }).length;
-      v.innerHTML = '<div class="top"><div><div class="eyebrow">Learn</div><h1>Your subjects</h1><p class="muted">' + total + ' subjects across 8 semesters. ' + ready + ' have full study notes, Q&amp;A, quizzes and video links. Search any topic by typing.</p></div></div>' +
+      var grp = {}, sems = [];
+      t.forEach(function (x) { var g = x.group || semLabel(x.semester); if (!grp[g]) { grp[g] = x.gorder || 0; sems.push(g); } });
+      sems.sort(function (a, b) { return grp[a] - grp[b]; });
+      var total = t.length, ready = t.filter(function (x) { return !x.planned; }).length, mineN = t.filter(isMine).length, hasT = myTags().length;
+      v.innerHTML = '<div class="top"><div><div class="eyebrow">Learn</div><h1>Your subjects</h1><p class="muted">' + total + ' subjects in total. ' + ready + ' have full study notes, Q&amp;A, quizzes and video links. Search any topic by typing.</p></div></div>' +
+        (hasT ? '' : '<div class="card" style="margin-bottom:18px"><div class="row spread wrap"><div><b>What are you studying?</b><p class="muted" style="margin-top:4px">Choose your class, JEE, NEET or B.Tech year and Learn will show the right subjects first.</p></div><button class="btn pri" data-act="trkopen">Choose</button></div></div>') +
         '<div class="card" style="margin-bottom:18px"><div class="searchbar">' + ic('search') + '<input class="in" id="lq" placeholder="Search subjects and topics: try &quot;deadlock&quot;, &quot;normalization&quot;, &quot;MQTT&quot;" autocomplete="off"></div>' +
-        '<div class="chips" id="semchips" style="margin-top:14px"><button class="chip" data-act="semf" data-id="all">All</button>' + sems.map(function (k) { return '<button class="chip" data-act="semf" data-id="' + k + '">' + (k ? 'Sem ' + k : 'Electives') + '</button>'; }).join('') + '</div><div id="lres" style="margin-top:14px"></div></div><div id="lgrid"></div>';
+        '<div class="chips scrollx" id="semchips" style="margin-top:14px">' + (hasT ? '<button class="chip" data-act="semf" data-id="mine">My subjects: ' + esc(trackName()) + ' (' + mineN + ')</button>' : '') + '<button class="chip" data-act="semf" data-id="all">All</button>' + sems.map(function (k) { return '<button class="chip" data-act="semf" data-id="' + esc(k) + '">' + esc(k.replace(/^Semester /, 'Sem ').replace('B.Tech extras and electives', 'B.Tech extras')) + '</button>'; }).join('') + '</div><div id="lres" style="margin-top:14px"></div></div><div id="lgrid"></div>';
       wireSearch($('#lq'), $('#lres'), function (on) { $('#lgrid').hidden = on; $('#semchips').hidden = on; });
       drawSubjects();
     });
@@ -314,9 +348,10 @@
       var t = d.topic, pr = d.progress, all = [];
       t.units.forEach(function (u) { u.lessons.forEach(function (l) { all.push(l); }); });
       var done = all.filter(function (l) { return pr[l.id] && pr[l.id].done; }).length, nxt = all.filter(function (l) { return !(pr[l.id] && pr[l.id].done); })[0];
-      var meta = semLabel(t.semester) + (t.credits ? ' &middot; ' + t.credits + ' credits' : '') + (all.length ? ' &middot; ' + all.length + ' topics' : '');
+      var meta = esc(t.group || semLabel(t.semester)) + (t.credits ? ' &middot; ' + t.credits + ' credits' : '') + (all.length ? ' &middot; ' + all.length + ' topics' : '');
       v.innerHTML = '<div class="top"><div><a class="eyebrow" href="#/learn">&larr; All subjects</a><h1 style="margin-top:10px">' + esc(t.title) + '</h1><p class="muted">' + esc(t.tagline) + '</p><p class="muted" style="margin-top:6px;font-size:14px">' + meta + '</p></div><div class="row wrap">' +
         '<button class="btn" data-act="addblock" data-topic="' + t.id + '">' + ic('cal') + ' Plan study blocks</button>' + (nxt ? '<a class="btn pri" href="#/lesson/' + t.id + '/' + nxt.id + '">' + (done ? 'Continue' : 'Start') + ' ' + ic('arrow') + '</a>' : (all.length ? '<span class="badge ok">Course complete</span>' : '')) + '</div></div>' +
+        (t.planned && t.syllabus && t.syllabus.length ? '<div class="card"><h2>What this subject covers</h2><p class="muted" style="margin-bottom:12px">The chapter list, following the official syllabus. Study notes for these are added in batches.</p><ol class="syl">' + t.syllabus.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ol></div>' : '') +
         (t.planned ? '<div class="card"><h2>Content coming</h2><p class="muted">The study notes for this subject are still being prepared. Everything else (timetable, focus sessions) already works for it. You can also add your own: drop topic files into the Content folder next to FutureSelf.exe, under <b>' + esc(t.folder) + '</b>, and restart the app.</p></div>' : '') +
         '<div class="stack">' + t.units.map(function (u, i) {
           return '<div class="card"><div class="eyebrow">Unit ' + (i + 1) + '</div><h2 style="margin-top:6px">' + esc(u.title) + '</h2><div class="list">' + u.lessons.map(function (l) {
@@ -358,7 +393,9 @@
   }
   function videoPane(inSess) {
     return (inSess ? '' : '<div class="card vsess"><div class="row spread wrap"><div><h2 style="margin:0">Video lesson</h2><p class="muted" style="margin-top:6px">We picked the video for this topic, so you can stay on it. It plays right here. A video session adds a timer and questions to answer while you watch, and the time counts as study time.</p></div><button class="btn pri" data-act="vsstart">' + ic('play') + ' Start video session</button></div><div id="vsbox"></div></div>') +
-      '<div class="card" style="margin-top:18px"><div id="vhost" class="vhost"></div></div>';
+      '<div class="card" style="margin-top:18px"><div id="vhost" class="vhost"></div></div>' +
+      '<div class="card vsearch" style="margin-top:18px"><h3 style="margin:0 0 4px">Want a different video?</h3><p class="muted" style="margin:0 0 12px">Tell us what you need and, if you like, which channel. FutureSelf finds it for you. You cannot browse YouTube from here, only the videos we return.</p>' +
+      '<div class="row wrap" style="gap:10px"><input class="in" id="vq" maxlength="120" autocomplete="off" placeholder="What do you want to watch? e.g. deadlock examples" style="flex:2;min-width:200px"><input class="in" id="vch" maxlength="60" autocomplete="off" placeholder="Channel (optional)" style="flex:1;min-width:140px"><button class="btn pri" data-act="vsearch">Search</button></div><div id="vres" style="margin-top:14px"></div></div>';
   }
   function mountVideo(host, t, l, lang) {
     if (!host) return;
@@ -403,6 +440,29 @@
     }
   });
   actions.vreplay = function () { renderVideo(); };
+  /* the student asks FutureSelf's server for a video (topic + optional channel); only the returned list can be played */
+  actions.vsearch = function () {
+    var box = $('#vres'); if (!box) return;
+    var q = (($('#vq') || {}).value || '').trim(), ch = (($('#vch') || {}).value || '').trim();
+    if (q.length < 2) { box.innerHTML = '<div class="tipbox">Type what you want to watch.</div>'; return; }
+    if (!(window.fsApi && window.fsApi.acct)) { box.innerHTML = '<div class="tipbox">Video search needs the FutureSelf app and your account.</div>'; return; }
+    box.innerHTML = '<div class="vload"><span class="spin"></span> Searching...</div>';
+    var btn = $('[data-act=vsearch]'); if (btn) btn.disabled = true;
+    window.fsApi.acct('videos', { q: q, channel: ch }).then(function (r) {
+      if (btn) btn.disabled = false; if (!$('#vres')) return;
+      if (!r || !r.ok) { box.innerHTML = '<div class="tipbox">' + esc((r && r.error) || 'Search failed. Try again.') + '</div>'; return; }
+      var items = (r.data && r.data.items) || [];
+      if (!items.length) { box.innerHTML = '<div class="tipbox">' + esc((r.data && r.data.note) || 'No study video matched that search. Try different words.') + '</div>'; return; }
+      S.vres = items;
+      box.innerHTML = '<div class="vlist">' + items.map(function (it, i) { return '<div class="vitem"><div><b>' + esc(it.title) + '</b><small>' + esc(it.channel) + (it.sec ? ' &middot; ' + Math.max(1, Math.round(it.sec / 60)) + ' min' : '') + '</small></div><button class="btn sm pri" data-act="vplay" data-id="' + i + '">Play</button></div>'; }).join('') + '</div>';
+    }).catch(function () { if (btn) btn.disabled = false; if ($('#vres')) $('#vres').innerHTML = '<div class="tipbox">Search failed. Check your internet connection.</div>'; });
+  };
+  actions.vplay = function (el) {
+    var i = +el.dataset.id, list = S.vres || []; if (!(i >= 0 && i < list.length) || !V) return;
+    V.groups = [{ name: 'Your search', items: list.slice() }].concat((V.groups || []).filter(function (g) { return g.name !== 'Your search'; })); V.gi = 0; V.i = i; renderVideo();
+    try { V.host.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { }
+  };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target && (e.target.id === 'vq' || e.target.id === 'vch')) { e.preventDefault(); actions.vsearch(); } });
   function unmountVideo() { if (V && V.host) V.host.innerHTML = ''; V = null; }
   actions.vnext = function () { if (!V || !V.groups.length) return; V.gi = (V.gi + 1) % V.groups.length; V.i = 0; renderVideo(); };
   actions.vchan = function (el) { if (!V) return; var g = +el.dataset.id; if (!(g >= 0 && g < V.groups.length)) return; V.gi = g; V.i = 0; renderVideo(); };
@@ -500,7 +560,7 @@
       (a.feedback ? '<p class="fb">' + esc(a.feedback) + '</p>' : '') +
       '<details class="qa" ' + (scored ? '' : 'open') + '><summary>Model answer</summary><div class="ma">' + fmt(a.model_answer).replace(/\n/g, '<br>') + '</div></details>' +
       '<h4 style="margin:14px 0 6px">Marking points ' + (scored ? '' : '<small class="muted">(tick what your answer covered)</small>') + '</h4>' + rubricHTML(a, pi, !scored) +
-      (scored ? '' : '<div class="row wrap" style="margin-top:12px"><button class="btn pri" data-act="pself" data-id="' + a._id + '" data-pi="' + pi + '">Save my score</button>' + (curLesson.ai ? '<button class="btn" data-act="pai" data-id="' + a._id + '" data-pi="' + pi + '">' + ic('spark') + ' Check with AI</button>' : '<span class="muted" style="font-size:13px">AI checking is optional: add your key to .env to turn it on.</span>') + '</div>') + '</div>';
+      (scored ? '' : '<div class="row wrap" style="margin-top:12px"><button class="btn pri" data-act="pself" data-id="' + a._id + '" data-pi="' + pi + '">Save my score</button>' + ((curLesson.ai || (window.fsApi && window.fsApi.acct)) ? '<button class="btn" data-act="pai" data-id="' + a._id + '" data-pi="' + pi + '">' + ic('spark') + ' Check with AI</button>' : '<span class="muted" style="font-size:13px">Sign in to your FutureSelf account to get AI checking.</span>') + '</div>') + '</div>';
   }
   actions.psubmit = function (el) {
     var c = curLesson, pi = +el.dataset.pi, imgs = S.pimgs[pi] || []; if (!imgs.length) return;
@@ -521,9 +581,29 @@
     api('/practice/' + el.dataset.id + '/score', { method: 'POST', body: { ticks: ticks } }).then(function (r) { scored(r, pi); }).catch(function (e) { toast('Could not save', e.message, true); });
   };
   actions.pai = function (el) {
-    var pi = el.dataset.pi; el.disabled = true; el.textContent = 'Reading your answer...';
-    api('/practice/' + el.dataset.id + '/ai', { method: 'POST', body: {} }).then(function (r) { scored(r, pi); }).catch(function (e) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', e.message, true); });
+    var pi = el.dataset.pi, id = el.dataset.id, a = S.pr.filter(function (x) { return x._id === id; })[0];
+    function fail(msg) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', msg, true); }
+    el.disabled = true; el.textContent = 'Reading your answer...';
+    function local() { api('/practice/' + id + '/ai', { method: 'POST', body: {} }).then(function (r) { scored(r, pi); }).catch(function (e) { fail(e.message); }); }
+    if (!(window.fsApi && window.fsApi.acct) || !a) return local();
+    window.fsApi.acct('status', {}).then(function (st) {
+      if (!(st && st.ok && st.data && st.data.signedIn)) { if (curLesson.ai) return local(); return fail('Sign in to your FutureSelf account (Account page) to use AI checking.'); }   // not signed in: the old private-key way, if it is set up
+      var p = (curLesson.l.problems || [])[+pi] || {};
+      return Promise.all(a.files.map(function (f, i) { return api('/practice/' + id + '/image/' + i).then(function (r) { return r.data; }); })).then(function (images) {
+        return window.fsApi.acct('check', { question: p.q || '', model: a.model_answer || '', rubric: a.rubric || [], images: images });
+      }).then(function (r) {
+        if (!r || !r.ok) throw new Error((r && r.error) || 'The server could not check it.');
+        return api('/practice/' + id + '/aiapply', { method: 'POST', body: { awarded: r.data.awarded, feedback: r.data.feedback } });
+      }).then(function (r) { scored(r, pi); });
+    }).catch(function (e) { fail(e.message || 'Try again.'); });
   };
+  if (window.fsApi && window.fsApi.acct) window.fsApi.acct('status', {}).then(function (st) { S.signedIn = !!(st && st.ok && st.data && st.data.signedIn); }).catch(function () { });
+  /* tap any answer photo to read it full screen inside the app (scroll or pinch to look closer) */
+  document.addEventListener('click', function (e) {
+    var im = e.target && e.target.closest && e.target.closest('.thumbs .th img'); if (!im) return;
+    var srcs = $$('.thumbs .th img', im.closest('.thumbs')).map(function (x) { return x.src; });
+    modal('<div class="pzoom"><div class="row spread"><b>Your answer photo</b><button class="btn sm" data-act="close">Close</button></div><div class="pzs">' + srcs.map(function (u) { return '<img src="' + u + '" alt="Answer photo">'; }).join('') + '</div></div>');
+  });
   function loadPractice() {
     var c = curLesson; if (!c || !$('#phist0') && !(c.l.problems || []).length) return;
     api('/practice/' + c.t.id + '/' + c.l.id).then(function (d) {
@@ -557,17 +637,34 @@
   }
   actions.fclose2 = function () { closeModal(); };
   actions.gopractice = function (el) { S.ltab = 'practice'; S.ltabFor = el.dataset.key; closeModal(); };
+  /* a big question bank shows a fresh set of 10 each time (not the ones just seen) */
+  function quizSet(l, key) {
+    var n = l.quiz.length, all = []; for (var i = 0; i < n; i++) all.push(i);
+    if (n <= 15) return all;
+    S.qseen = S.qseen || {}; var seen = S.qseen[key] || [];
+    var pool = all.filter(function (i) { return seen.indexOf(i) < 0; }); if (pool.length < 10) { seen = []; pool = all; }
+    for (var j = pool.length - 1; j > 0; j--) { var k = Math.floor(Math.random() * (j + 1)), t = pool[j]; pool[j] = pool[k]; pool[k] = t; }
+    var pick = pool.slice(0, 10); S.qseen[key] = seen.concat(pick); return pick;
+  }
+  function formulaPane(l) {
+    var f = l.formulas || []; if (!f.length) return '';
+    var rows = '', g = null;
+    f.forEach(function (x) { if (x.g !== g) { g = x.g; if (g) rows += '<tr class="fgrp"><th colspan="3">' + esc(g) + '</th></tr>'; } rows += '<tr><td><b>' + fmt(x.n) + '</b></td><td class="fm">' + esc(x.f) + '</td><td class="muted">' + fmt(x.x || '') + '</td></tr>'; });
+    return '<div class="pane" data-pane="formulas"' + (S.ltab === 'formulas' ? '' : ' hidden') + '><div class="card"><div class="eyebrow">Formula sheet</div><h2>All formulas for this chapter</h2><div class="fscroll"><table class="ftable"><thead><tr><th>What</th><th>Formula</th><th>Use it when</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div>';
+  }
   /* the lesson dashboard (tabs + content), used on the lesson page and inside a running session */
   function lessonPanes(t, l, p, inSess) {
-      var tabs = [['study', 'Study'], ['qa', 'Q&amp;A (' + l.qa.length + ')'], ['quiz', 'Quiz (' + l.quiz.length + ')'], ['practice', 'Practice (' + (l.problems || []).length + ')'], ['video', 'Videos']];
-      var qaHTML = l.qa.length ? l.qa.map(function (x) { return '<details class="qa"><summary>' + fmt(x.q) + '</summary><div>' + fmt(x.a) + '</div></details>'; }).join('') : '<div class="empty">No Q&amp;A for this topic yet.</div>';
-      var quizHTML = l.quiz.length ? l.quiz.map(function (q, qi) {
-        return '<div class="q" data-q="' + qi + '"><p>' + (qi + 1) + '. ' + fmt(q.q) + '</p>' + q.o.map(function (o, oi) { return '<div class="opt" data-act="pick" data-q="' + qi + '" data-o="' + oi + '">' + fmt(o) + '</div>'; }).join('') + '<div class="why" hidden></div></div>';
-      }).join('') + '<div class="row spread wrap"><button class="btn pri" data-act="grade">Check answers</button><span id="score" class="muted">' + (p.quiz ? 'Best score: ' + p.quiz.score + '/' + p.quiz.total : '') + '</span></div>' : '<div class="empty">No quiz for this topic yet.</div>';
+      var tabs = [['study', 'Study']].concat((l.formulas || []).length ? [['formulas', 'Formulas (' + l.formulas.length + ')']] : []).concat([['qa', 'Q&amp;A (' + l.qa.length + ')'], ['quiz', 'Quiz (' + l.quiz.length + ')'], ['practice', 'Practice (' + (l.problems || []).length + ')'], ['video', 'Videos']]);
+      var QA_SHOW = 25;
+      var qaHTML = l.qa.length ? (l.qa.length > QA_SHOW ? '<input class="in" id="qasearch" type="search" placeholder="Search these ' + l.qa.length + ' questions" aria-label="Search questions" style="margin-bottom:12px">' : '') + l.qa.map(function (x, xi) { return '<details class="qa"' + (xi >= QA_SHOW ? ' data-more="1" hidden' : '') + '><summary>' + (xi + 1) + '. ' + fmt(x.q) + '</summary><div>' + fmt(x.a) + '</div></details>'; }).join('') + (l.qa.length > QA_SHOW ? '<div class="row" style="margin-top:10px"><button class="btn sm" data-act="qamore">Show the other ' + (l.qa.length - QA_SHOW) + ' questions</button></div>' : '') : '<div class="empty">No Q&amp;A for this topic yet.</div>';
+      var qset = quizSet(l, t.id + '/' + l.id);
+      var quizHTML = l.quiz.length ? qset.map(function (qi, pos) { var q = l.quiz[qi];
+        return '<div class="q" data-q="' + qi + '"><p>' + (pos + 1) + '. ' + fmt(q.q) + '</p>' + q.o.map(function (o, oi) { return '<div class="opt" data-act="pick" data-q="' + qi + '" data-o="' + oi + '">' + fmt(o) + '</div>'; }).join('') + '<div class="why" hidden></div></div>';
+      }).join('') + '<div class="row spread wrap"><button class="btn pri" data-act="grade">Check answers</button><span id="score" class="muted">' + (l.quiz.length > qset.length ? 'A fresh set of ' + qset.length + ' from ' + l.quiz.length + ' questions. ' : '') + (p.quiz ? 'Best score: ' + p.quiz.score + '/' + p.quiz.total : '') + '</span></div>' : '<div class="empty">No quiz for this topic yet.</div>';
       if (inSess) tabs = tabs.filter(function (x) { return x[0] !== 'practice'; });
       return '<div class="tabs" id="ltabs">' + tabs.map(function (x) { return '<button class="tab' + (S.ltab === x[0] ? ' on' : '') + '" data-act="ltab" data-id="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
-        '<div class="pane" data-pane="study"' + (S.ltab === 'study' ? '' : ' hidden') + '>' + (l.visuals && l.visuals.length ? '<div class="card visbox"><div class="eyebrow">See it</div>' + Visuals.render(l.visuals) + '</div>' : '') + '<div class="card prose">' + blocksHTML(l.blocks) + '</div><div class="row spread wrap" style="margin-top:14px"><button class="btn" data-act="ltab" data-id="video">' + ic('play') + ' Watch videos</button><button class="btn pri" data-act="ltab" data-id="qa">Next: Q&amp;A ' + ic('arrow') + '</button></div></div>' +
-        '<div class="pane" data-pane="qa"' + (S.ltab === 'qa' ? '' : ' hidden') + '><div class="card"><div class="row spread wrap" style="margin-bottom:6px"><h2 style="margin:0">Questions and answers</h2><button class="btn sm" data-act="qaall">Show all answers</button></div><p class="muted" style="margin-bottom:16px">Try to answer each question in your own words first, then click it to check.</p>' + qaHTML + '</div></div>' +
+        '<div class="pane" data-pane="study"' + (S.ltab === 'study' ? '' : ' hidden') + '>' + (l.visuals && l.visuals.length ? '<div class="card visbox"><div class="eyebrow">See it</div>' + Visuals.render(l.visuals) + '</div>' : '') + (l.html ? l.html + '<details class="card vl-all"><summary>Read the whole lesson as text</summary><div class="prose">' + blocksHTML(l.blocks) + '</div></details>' : '<div class="card prose">' + blocksHTML(l.blocks) + '</div>') + '<div class="row spread wrap" style="margin-top:14px"><button class="btn" data-act="ltab" data-id="video">' + ic('play') + ' Watch videos</button><button class="btn pri" data-act="ltab" data-id="qa">Next: Q&amp;A ' + ic('arrow') + '</button></div></div>' +
+        '' + formulaPane(l) + '<div class="pane" data-pane="qa"' + (S.ltab === 'qa' ? '' : ' hidden') + '><div class="card"><div class="row spread wrap" style="margin-bottom:6px"><h2 style="margin:0">Questions and answers</h2><button class="btn sm" data-act="qaall">Show all answers</button></div><p class="muted" style="margin-bottom:16px">Try to answer each question in your own words first, then click it to check.</p>' + qaHTML + '</div></div>' +
         '<div class="pane" data-pane="quiz"' + (S.ltab === 'quiz' ? '' : ' hidden') + '><div class="card"><h2>Check yourself</h2><div id="quiz">' + quizHTML + '</div></div></div>' +
         '<div class="pane" data-pane="practice"' + (S.ltab === 'practice' ? '' : ' hidden') + '>' + (inSess ? '' : practicePane(l)) + '</div>' +
         '<div class="pane" data-pane="video"' + (S.ltab === 'video' ? '' : ' hidden') + '>' + videoPane(inSess) + '</div>';
@@ -577,13 +674,13 @@
       var t = d.topic, all = [];
       t.units.forEach(function (u) { u.lessons.forEach(function (l) { all.push(l); }); });
       var idx = all.map(function (l) { return l.id; }).indexOf(r.b); if (idx < 0) throw new Error('Topic not found');
-      var l = all[idx], p = d.progress[l.id] || {}, prev = all[idx - 1], next = all[idx + 1], key = t.id + '/' + l.id;
+      var l0 = all[idx], l = window.FSLang ? FSLang.apply(l0) : l0, p = d.progress[l.id] || {}, prev = all[idx - 1], next = all[idx + 1], key = t.id + '/' + l.id;
       curLesson = { t: t, l: l, p: p, ai: d.ai, enter: Date.now(), prompted: false, key: key };
       pendingLeave = curLesson; S.pr = {}; S.pimgs = {}; setTimeout(function () { loadPractice(); if (S.ltab === 'video') lessonVideoMount(); }, 30);
       if (S.ltabFor !== key) { S.ltab = 'study'; S.ltabFor = key; }
       var unit = ''; t.units.forEach(function (u) { if (u.lessons.indexOf(l) > -1 || u.lessons.some(function (x) { return x.id === l.id; })) unit = u.title; });
-      v.innerHTML = '<div class="top"><div><a class="eyebrow" href="#/topic/' + t.id + '">&larr; ' + esc(t.title) + '</a><h1 style="margin-top:10px">' + esc(l.title) + '</h1><p class="muted" style="margin-top:4px;font-size:14px">' + esc(unit) + ' &middot; about ' + l.minutes + ' min</p></div></div>' +
-        '<div class="lesson-grid"><div>' + lessonPanes(t, l, p, false) + '</div>' +
+      v.innerHTML = '<div class="top"><div><a class="eyebrow" href="#/topic/' + t.id + '">&larr; ' + esc(t.title) + '</a><h1 style="margin-top:10px">' + esc(l.title) + '</h1><p class="muted" style="margin-top:4px;font-size:14px">' + esc(unit) + ' &middot; about ' + l.minutes + ' min</p>' + (window.FSLang ? FSLang.bar(l0) : '') + '</div></div>' +
+        '<div class="lesson-grid"><div' + (l._tr ? ' lang="' + l._tr + '" dir="' + (FSLang.find(l._tr).rtl ? 'rtl' : 'ltr') + '"' : '') + '>' + lessonPanes(t, l, p, false) + '</div>' +
         '<aside class="sticky"><div class="card tilt"><h3>Study this topic</h3><p class="muted" style="margin:8px 0 16px;font-size:15px">About ' + l.minutes + ' minutes. Lock in and the timer starts.</p><a class="btn pri" style="width:100%" href="#/start?topic=' + t.id + '&lesson=' + l.id + '&min=' + l.minutes + '">' + ic('focus') + ' Study in focus</a>' +
         '<button class="btn" style="width:100%;margin-top:10px" data-act="ltab" data-id="practice">' + ic('check') + ' Practice questions</button>' +
         '<button class="btn" style="width:100%;margin-top:10px" data-act="markdone">' + ic('check') + ' <span id="donelbl">' + (p.done ? 'Completed (undo)' : 'Mark as complete') + '</span></button></div></aside></div>';
@@ -596,6 +693,12 @@
     if (S.ltab === 'video') lessonVideoMount(); else if (!S.vs) unmountVideo();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  actions.qamore = function (el) { $$('details.qa[data-more]').forEach(function (d) { d.hidden = false; }); el.parentNode.remove(); };
+  document.addEventListener('input', function (e) {
+    if (!e.target || e.target.id !== 'qasearch') return; var q = e.target.value.trim().toLowerCase(), more = $('[data-act=qamore]');
+    $$('details.qa').forEach(function (d) { d.hidden = q ? (d.textContent.toLowerCase().indexOf(q) < 0) : !!d.dataset.more; });
+    if (more) more.parentNode.hidden = !!q;
+  });
   actions.qaall = function (el) { var ds = $$('details.qa'), open = ds.some(function (d) { return !d.open; }); ds.forEach(function (d) { d.open = open; }); el.textContent = open ? 'Hide all answers' : 'Show all answers'; };
   actions.markdone = function () {
     var c = curLesson, nv = !c.p.done;
@@ -607,20 +710,21 @@
   };
   actions.grade = function () {
     var c = curLesson, score = 0, box = $('#quiz');
-    var unanswered = c.l.quiz.some(function (q, i) { return !$('.opt.sel[data-q="' + i + '"]', box); });
+    var ids = $$('.q', box).map(function (e) { return +e.dataset.q; });
+    var unanswered = ids.some(function (i) { return !$('.opt.sel[data-q="' + i + '"]', box); });
     if (unanswered) return toast('Answer every question first', '', true);
     box.dataset.graded = 1;
-    c.l.quiz.forEach(function (q, i) {
-      var sel = $('.opt.sel[data-q="' + i + '"]', box), si = +sel.dataset.o, ok = si === q.a;
+    ids.forEach(function (i) {
+      var q = c.l.quiz[i], sel = $('.opt.sel[data-q="' + i + '"]', box), si = +sel.dataset.o, ok = si === q.a;
       if (ok) score++;
       $$('.opt[data-q="' + i + '"]', box).forEach(function (o) { var oi = +o.dataset.o; o.classList.remove('sel'); if (oi === q.a) o.classList.add('right'); else if (oi === si) o.classList.add('wrong'); });
       var w = $('.q[data-q="' + i + '"] .why', box); w.hidden = false; w.textContent = (ok ? 'Correct. ' : 'Not quite. ') + q.why;
     });
-    $('#score').textContent = 'You scored ' + score + '/' + c.l.quiz.length;
+    $('#score').textContent = 'You scored ' + score + '/' + ids.length;
     $('[data-act=grade]').textContent = 'Try again'; $('[data-act=grade]').dataset.act = 'retry';
-    $$('.q', box).forEach(function (q, i) { var sel = c.l.quiz[i] && $('.opt[data-q="' + i + '"].right', box); var chosen = $('.opt[data-q="' + i + '"].wrong', box); if (sel && !chosen) { var r = sel.getBoundingClientRect(); FX.burst(r.left + 30, r.top + r.height / 2, 14, { speed: 240, gravity: 120 }); } });
-    if (score === c.l.quiz.length) { chime(); FS3D.ok && FS3D.burst(); FX.confetti(innerWidth / 2, innerHeight * 0.6, 90); setTimeout(function () { FX.fireworks(3); }, 300); }
-    api('/progress', { method: 'POST', body: { topic_id: c.t.id, lesson_id: c.l.id, quiz: { score: score, total: c.l.quiz.length } } }).catch(function () { });
+    $$('.q', box).forEach(function (qe) { var i = +qe.dataset.q; var sel = $('.opt[data-q="' + i + '"].right', box); var chosen = $('.opt[data-q="' + i + '"].wrong', box); if (sel && !chosen) { var r = sel.getBoundingClientRect(); FX.burst(r.left + 30, r.top + r.height / 2, 14, { speed: 240, gravity: 120 }); } });
+    if (score === ids.length) { chime(); FS3D.ok && FS3D.burst(); FX.confetti(innerWidth / 2, innerHeight * 0.6, 90); setTimeout(function () { FX.fireworks(3); }, 300); }
+    api('/progress', { method: 'POST', body: { topic_id: c.t.id, lesson_id: c.l.id, quiz: { score: score, total: ids.length } } }).catch(function () { });
   };
   actions.retry = function () { S.ltab = 'quiz'; go(); };
 
@@ -727,11 +831,12 @@
   /* ---------- focus session ---------- */
   var wake = null, tickTimer = null;
   function beginSession(c) {
+    if (window.FSX && FSX.canStart && FSX.canStart(c.lock) === false) return; // on the phone: the permissions the lock needs must be on first
     S.session = { topic_id: c.topic_id, lesson_id: c.lesson_id, subject: c.subject, minutes: c.minutes, lock: c.lock, block_id: c.block_id || null, startedAt: Date.now(), startedISO: new Date().toISOString(), plannedMs: c.minutes * 60000, pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false };
     S.session.blocked = 0;
     if (window.fsApi && window.fsApi.isApp) {
       S.session.native = true;
-      window.fsApi.lockStart({ mode: c.lock, apps: S.user.settings.blocklist_apps, sites: S.user.settings.blocklist_sites, subject: c.subject, topicId: c.topic_id || '', endsAt: Date.now() + c.minutes * 60000 }).catch(function () { });
+      window.fsApi.lockStart({ mode: c.lock, apps: S.user.settings.blocklist_apps, sites: S.user.settings.blocklist_sites, subject: c.subject, topicId: c.topic_id || '', endsAt: Date.now() + c.minutes * 60000 }).then(function (r) { if (r && r.locked === false && r.reason && c.lock !== 'gentle') toast('The phone lock is not active', r.reason, true); }).catch(function () { });
     } else {
       if (c.lock !== 'gentle') { var el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen || function () { return Promise.resolve(); }).call(el).catch(function () { }); }
       try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }).catch(function () { }); } catch (e) { }
@@ -744,6 +849,7 @@
   /* tell the phone link (and so the Android app) what this session is doing */
   function pushState() {
     if (!(window.fsApi && window.fsApi.sessionState)) return; var s = S.session;
+    if (s && s.remote) return; // a session that started on the other device is only followed, never announced again
     if (!s || s.ended) { window.fsApi.sessionState({ active: false }).catch(function () { }); return; }
     window.fsApi.sessionState({ active: true, subject: s.subject, topicId: s.topic_id || '', lock: s.lock, startedAt: s.startedAt, endsAt: s.startedAt + s.plannedMs + s.pausedMs + (s.pausedAt ? Date.now() - s.pausedAt : 0), paused: !!s.pausedAt }).catch(function () { });
   }
@@ -785,16 +891,17 @@
     $('#app').innerHTML = '<div class="focus"><div class="meta"><span class="badge">' + ic('lock').replace('class="i"', 'class="i" style="width:14px;height:14px"') + ' ' + LOCKS[s.lock][0] + ' lock</span><span class="badge" id="fdist">' + s.distractions + ' distractions</span></div>' +
       '<div class="eyebrow" style="margin-bottom:10px">Now studying</div><div class="time" id="ftime">' + mmss(s.plannedMs - elapsed()) + '</div><div class="what"><b>' + esc(s.subject) + '</b>' + (topic && s.lesson_id ? ' &middot; <span id="flesson"></span>' : '') + '</div>' +
       '<div class="ctrl">' + (s.topic_id && s.lesson_id ? '<button class="btn" data-act="fdrawer">' + ic('book') + ' Open lesson</button><button class="btn" data-act="fvideo">' + ic('play') + ' Watch video</button>' : '') + (s.lock === 'gentle' ? '<button class="btn" data-act="fpause" id="fpause">Pause</button>' : '') +
-      (s.lock === 'strict' ? '<button class="btn ghost sm" data-act="fend">Emergency exit</button>' : '<button class="btn danger" data-act="fend">End early</button>') + '</div></div>';
+      (s.remote ? '<button class="btn ghost sm" data-act="fend">Emergency release</button>' : s.lock === 'strict' ? '<button class="btn ghost sm" data-act="fend">Emergency exit</button>' : '<button class="btn danger" data-act="fend">End early</button>') + '</div>' + (s.remote ? '<p class="muted" style="margin-top:18px">Started on your phone. This PC unlocks when that session ends.</p>' : '') + '</div>';
     if (s.topic_id && s.lesson_id) api('/topics/' + s.topic_id).then(function (d) { s.topicData = d.topic; d.topic.units.forEach(function (u) { u.lessons.forEach(function (l) { if (l.id === s.lesson_id) { s.lessonData = l; var f = $('#flesson'); if (f) f.textContent = l.title; } }); }); });
     clearInterval(tickTimer); tick(); tickTimer = setInterval(tick, 250);
+    if (window.FSX && FSX.onFocus) try { FSX.onFocus(); } catch (e) { }
   }
   function tick() {
     var s = S.session; if (!s || s.ended) return clearInterval(tickTimer);
     var rem = s.plannedMs - elapsed(), t = $('#ftime');
     if (t) t.textContent = mmss(rem); document.title = (s.pausedAt ? 'Paused' : mmss(rem)) + ' | FutureSelf';
     FS3D.ok && FS3D.setProgress(elapsed() / s.plannedMs);
-    if (rem <= 0) finishSession(true);
+    if (rem <= 0) { if (s.remote) endRemote('Phone session finished'); else finishSession(true); }
   }
   actions.fpause = function () { var s = S.session; if (s.pausedAt) { s.pausedMs += Date.now() - s.pausedAt; s.pausedAt = null; $('#fpause').textContent = 'Pause'; } else { s.pausedAt = Date.now(); $('#fpause').textContent = 'Resume'; } pushState(); };
   /* inside a session the student gets the same lesson dashboard (visuals, notes, Q&A, quiz, video) as on the lesson page */
@@ -812,6 +919,12 @@
   actions.fvideo = function () { openDrawer('video'); };
   actions.fend = function () {
     var s = S.session;
+    if (s.remote) {
+      s.fsPrompt = true; modal('<h2>Emergency release</h2><p class="muted" style="margin-bottom:16px">Your phone started this session. Only release this PC if you really have to. Type <b>EXIT</b> and wait 10 seconds.</p><div class="fld"><input class="in" id="xcode" autocomplete="off" placeholder="Type EXIT"></div><div class="acts"><button class="btn pri" data-act="fclose">Keep studying</button><button class="btn danger" id="xgo" disabled data-act="frel">Wait 10s</button></div>', true);
+      var n2 = 10, iv2 = setInterval(function () { n2--; var b = $('#xgo'); if (!b) return clearInterval(iv2); if (n2 <= 0) { clearInterval(iv2); b.textContent = 'Release this PC'; b.dataset.ready = 1; chk2(); } else b.textContent = 'Wait ' + n2 + 's'; }, 1000);
+      function chk2() { var b = $('#xgo'); if (b) b.disabled = !(b.dataset.ready && $('#xcode').value.trim().toUpperCase() === 'EXIT'); }
+      $('#xcode').addEventListener('input', chk2); return;
+    }
     if (s.lock === 'strict') {
       s.fsPrompt = true; modal('<h2>Emergency exit</h2><p class="muted" style="margin-bottom:16px">Strict mode is meant to be hard to quit. Type <b>EXIT</b> and wait 10 seconds if you really must stop.</p><div class="fld"><input class="in" id="xcode" autocomplete="off" placeholder="Type EXIT"></div><div class="acts"><button class="btn pri" data-act="fclose">Keep studying</button><button class="btn danger" id="xgo" disabled data-act="fgo">Wait 10s</button></div>', true);
       var n = 10, iv = setInterval(function () { n--; var b = $('#xgo'); if (!b) return clearInterval(iv); if (n <= 0) { clearInterval(iv); b.textContent = 'End session'; b.dataset.ready = 1; chk(); } else b.textContent = 'Wait ' + n + 's'; }, 1000);
@@ -822,6 +935,34 @@
   };
   actions.fclose = function () { var s = S.session; if (s) s.fsPrompt = false; closeModal(); };
   actions.fgo = function () { closeModal(); finishSession(false); };
+
+  /* a study session that started on the other device (the phone): this PC locks too and unlocks when it ends */
+  var remoteSkip = 0;
+  actions.frel = function () { var s = S.session; if (s && s.remote) { remoteSkip = s.startedAt; closeModal(); endRemote('This PC is released'); } };
+  function beginRemote(st) {
+    var now = Date.now(), ends = +st.endsAt || now + 60000, started = Math.min(+st.startedAt || now, now);
+    S.session = { remote: true, native: true, topic_id: null, lesson_id: null, subject: st.subject || 'Study session', minutes: Math.max(1, Math.round((ends - started) / 60000)), lock: st.lock === 'strict' ? 'strict' : 'focus', block_id: null, startedAt: started, startedISO: new Date(started).toISOString(), plannedMs: Math.max(60000, ends - started), pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false, blocked: 0 };
+    window.fsApi.lockStart({ mode: S.session.lock, apps: S.user && S.user.settings ? S.user.settings.blocklist_apps : '', sites: S.user && S.user.settings ? S.user.settings.blocklist_sites : '', subject: S.session.subject, topicId: '', endsAt: ends }).catch(function () { });
+    closeModal(); location.hash = '#/focus'; renderFocus();
+  }
+  function endRemote(msg) {
+    var s = S.session; if (!s || !s.remote || s.ended) return;
+    s.ended = true; clearInterval(tickTimer);
+    try { window.fsApi.lockStop().catch(function () { }); } catch (e) { }
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { }
+    unmountVideo(); $$('.comeback,.drawer,.lessonov').forEach(function (x) { x.remove(); }); closeModal();
+    document.title = 'FutureSelf | Study goals, timetable and focus';
+    S.session = null; S.shell = true; location.hash = '#/'; if (typeof go === 'function') setTimeout(go, 50);
+    toast(msg || 'Phone session finished', 'This PC is unlocked.');
+  }
+  function onRemote(st) {
+    var s = S.session && S.session.ended && !S.session.remote ? null : S.session, on = !!(st && st.restrict && st.src === 'phone' && st.active); // a finished session (summary still open) does not block a new lock
+    if (on && st.startedAt && st.startedAt === remoteSkip) on = false;
+    if (on && !s && S.user) return beginRemote(st);
+    if (on && s && s.remote && !s.ended && st.endsAt) { s.plannedMs = Math.max(60000, st.endsAt - s.startedAt); return; }
+    if (!on && s && s.remote && !s.ended) endRemote('Phone session finished');
+  }
+  if (window.fsApi && window.fsApi.onRemote) window.fsApi.onRemote(onRemote);
 
   function finishSession(completed) {
     var s = S.session; if (!s || s.ended) return;
@@ -887,7 +1028,7 @@
         '<div class="card winonly"><h2>Distraction blocklist</h2><p class="muted" style="margin-bottom:14px">While a Focus or Strict session runs, FutureSelf closes these programs and closes browser windows that show these sites. Gentle mode only warns. Use program names like discord.exe and site names like instagram.</p>' +
         '<div class="fld"><label class="f" for="pa">Apps</label><input class="in" id="pa" value="' + esc(s.blocklist_apps) + '"></div><div class="fld"><label class="f" for="pw">Websites</label><input class="in" id="pw" value="' + esc(s.blocklist_sites) + '"></div></div>' +
         '<div class="row spread wrap"><span></span><button class="btn pri" data-act="psave">Save settings</button></div>' +
-        '<div class="card"><h2>System</h2><div class="kv"><span>Storage</span><b>' + (cfg.storage === 'mongo' ? 'MongoDB' : 'Local file (set MONGO_URI in .env for MongoDB)') + '</b></div><div class="kv"><span>Telegram</span><b>' + (cfg.channels.telegram ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Email (SMTP)</span><b>' + (cfg.channels.email ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Push (FCM)</span><b>' + (cfg.channels.fcm ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>AI helper key</span><b>' + (cfg.channels.ai ? 'Configured' : 'Not configured') + '</b></div></div></div></div>';
+        '<div class="card" id="updcard" style="margin-top:18px">' + updCardInner() + '</div>' + '<div class="card"><h2>System</h2><div class="kv"><span>Storage</span><b>' + (cfg.storage === 'mongo' ? 'MongoDB' : 'Local file (set MONGO_URI in .env for MongoDB)') + '</b></div><div class="kv"><span>Telegram</span><b>' + (cfg.channels.telegram ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Email (SMTP)</span><b>' + (cfg.channels.email ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>Push (FCM)</span><b>' + (cfg.channels.fcm ? 'Configured' : 'Not configured') + '</b></div><div class="kv"><span>AI helper key</span><b>' + (cfg.channels.ai ? 'Configured' : 'Not configured') + '</b></div></div></div></div>';
       window.__pl = s.default_lock;
     });
   }
@@ -920,7 +1061,7 @@
   /* ---------- global events ---------- */
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-act]'); if (!el) return;
-    var fn = actions[el.dataset.act]; if (fn) { if (el.tagName !== 'A' && el.dataset.act !== 'ovl') e.preventDefault(); fn(el, e); }
+    var fn = actions[el.dataset.act]; if (fn) { if ((el.tagName !== 'A' || el.dataset.act === 'more') && el.dataset.act !== 'ovl') e.preventDefault(); fn(el, e); }
   });
   var tiltEl = null;
   document.addEventListener('mousemove', function (e) {
@@ -942,7 +1083,67 @@
   document.addEventListener('change', function (e) { if (e.target.id === 'pfx') { FX.setEnabled(e.target.checked); toast(e.target.checked ? 'Effects on' : 'Effects off'); if (e.target.checked) FX.fireworks(2); } });
   document.addEventListener('selectstart', function (e) { if (document.body.style.cursor === 'grabbing') e.preventDefault(); });
 
-  window.FSX = window.FSX || {}; FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S };
+  /* ---------- in-app updates: check the newest GitHub release, one button to install it ---------- */
+  var UPD = { info: null, cur: '', busy: false, pct: 0, msg: '', hide: '' };
+  function vparts(v) { return String(v || '0').replace(/^v/i, '').split('.').map(function (x) { return parseInt(x, 10) || 0; }); }
+  function vnewer(a, b) { var x = vparts(a), y = vparts(b); for (var i = 0; i < 4; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; }
+  function updKind() { return (window.fsApi && window.fsApi.platform === 'android') ? 'and' : 'win'; }
+  function updAsset() { var i = UPD.info; return i && i[updKind()] ? i[updKind()] : null; }
+  function updReady() { return !!(UPD.info && UPD.info.version && vnewer(UPD.info.version, UPD.cur) && updAsset()); }
+  function updCheck(manual) {
+    if (!(window.fsApi && window.fsApi.acct && window.fsApi.info)) return Promise.resolve();
+    UPD.msg = manual ? 'Checking...' : UPD.msg; updPaint();
+    return window.fsApi.info().then(function (i) { UPD.cur = (i && i.version) || ''; return window.fsApi.acct('update', {}); }).then(function (r) {
+      if (r && r.ok && r.data) { UPD.info = r.data; UPD.msg = updReady() ? '' : (vnewer(r.data.version, UPD.cur) ? 'Version ' + r.data.version + ' is out, but its ' + (updKind() === 'and' ? 'Android' : 'Windows') + ' file is not attached to the release yet.' : (manual ? 'You have the newest version.' : '')); }
+      else if (manual) UPD.msg = (r && r.error) || 'Could not check for updates.';
+      try { localStorage.setItem('fs_upd_at', String(Date.now())); } catch (e) { }
+      updPaint();
+    }).catch(function () { if (manual) UPD.msg = 'Could not check for updates.'; updPaint(); });
+  }
+  function updPaint() {
+    var bar = $('.updbar'), show = updReady() && UPD.hide !== (UPD.info && UPD.info.version) && !(S.session && !S.session.ended);
+    if (!show) { if (bar) bar.remove(); } else {
+      if (!bar) { bar = document.createElement('div'); bar.className = 'updbar'; document.body.appendChild(bar); }
+      bar.innerHTML = '<span><b>Update ' + esc(UPD.info.version) + ' is ready.</b> ' + esc(UPD.busy ? (UPD.msg || 'Working...') : 'Your progress and account stay as they are.') + '</span>' +
+        (UPD.busy ? '<em>' + (UPD.pct ? UPD.pct + '%' : '') + '</em>' : '<button class="btn sm pri" data-act="updgo">Update now</button><button class="btn sm ghost" data-act="updlater">Later</button>');
+    }
+    var card = $('#updcard'); if (card) card.innerHTML = updCardInner();
+  }
+  function updCardInner() {
+    var ready = updReady();
+    return '<h2>App updates</h2><div class="kv"><span>This version</span><b>' + esc(UPD.cur || '...') + '</b></div>' +
+      (ready ? '<div class="tipbox" style="margin:12px 0"><b>Version ' + esc(UPD.info.version) + ' is ready.</b>' + (UPD.info.notes ? '<br>' + esc(UPD.info.notes).replace(/\n/g, '<br>') : '') + '</div>' +
+        '<div class="row wrap"><button class="btn pri" data-act="updgo"' + (UPD.busy ? ' disabled' : '') + '>' + (UPD.busy ? 'Updating ' + (UPD.pct ? UPD.pct + '%' : '...') : 'Update now') + '</button></div>' :
+        '<p class="muted" style="margin:10px 0">' + esc(UPD.msg || 'Press the button to see if a newer version is out.') + '</p><div class="row wrap"><button class="btn" data-act="updcheck">Check for updates</button></div>') +
+      (ready && UPD.msg ? '<p class="muted" style="margin-top:10px">' + esc(UPD.msg) + '</p>' : '');
+  }
+  actions.updcheck = function () { updCheck(true); };
+  actions.updlater = function () { UPD.hide = UPD.info ? UPD.info.version : ''; updPaint(); };
+  actions.updgo = function () {
+    var a = updAsset(); if (!a || UPD.busy) return;
+    if (S.session && !S.session.ended) return toast('Finish your session first', 'Updates can be installed when no study session is running.', true);
+    UPD.busy = true; UPD.pct = 0; UPD.msg = 'Downloading...'; updPaint();
+    window.fsApi.updateInstall({ url: a.url, sha256: a.sha256 }).then(function (r) {
+      UPD.busy = false;
+      if (r && r.ok) { UPD.msg = updKind() === 'and' ? 'Android\'s installer opened. Press Update there.' : 'Installing. FutureSelf will close and open again by itself.'; toast('Update ready', UPD.msg); }
+      else { UPD.msg = (r && r.error) || 'The update failed. Try again.'; toast('Update problem', UPD.msg, true); }
+      updPaint();
+    }).catch(function (e) { UPD.busy = false; UPD.msg = (e && e.message) || 'The update failed.'; updPaint(); });
+  };
+  function updProgress(n) { UPD.pct = n; if (UPD.busy) updPaint(); }
+  if (window.fsApi && window.fsApi.onUpdateProgress) window.fsApi.onUpdateProgress(updProgress);
+  window.FSX = window.FSX || {}; FSX.onUpdateProgress = updProgress;
+  (function () { var last = 0; try { last = +localStorage.getItem('fs_upd_at') || 0; } catch (e) { } if (Date.now() - last > 6 * 3600 * 1000) setTimeout(function () { updCheck(false); }, 5000); else setTimeout(function () { updCheck(false); }, 6000); })();
+
+  /* phone only: a call stops the timer, and it carries on when the call ends */
+  window.FSX = window.FSX || {};
+  FSX.onCall = function (on) {
+    var s = S.session; if (!s || s.ended || s.remote) return;
+    if (on && !s.pausedAt) { s.pausedAt = Date.now(); s.callPause = true; }
+    else if (!on && s.callPause) { s.pausedMs += Date.now() - s.pausedAt; s.pausedAt = null; s.callPause = false; }
+    pushState();
+  };
+  FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S };
   if (window.FSX && FSX.actions) Object.assign(actions, FSX.actions);
   go();
 })();

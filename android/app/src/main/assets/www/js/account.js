@@ -11,7 +11,7 @@
     return window.fsApi.acct(op, p).then(function (r) { if (!r || !r.ok) { var e = new Error((r && r.error) || 'Something went wrong'); e.needsVerify = !!(r && r.needsVerify); throw e; } return r.data; });
   }
 
-  FSX.nav = (FSX.nav || []).concat([['account', 'user', 'Account']]);
+  FSX.nav = (FSX.nav || []).concat([['account', 'user', 'Profile']]);
   FSX.icons = Object.assign(FSX.icons || {}, { user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>' });
   FSX.routes = Object.assign(FSX.routes || {}, { account: viewAccount });
 
@@ -29,7 +29,7 @@
   function formCard() {
     var su = A.mode === 'signup', st = A.st || {};
     var verify = A.step === 'verify';
-    var h = '<div class="card tilt" id="acbox" style="max-width:480px;margin:0 auto">';
+    var h = '<div class="card tilt" id="acbox">';
     if (verify) {
       h += '<h2 style="margin:0 0 6px">Check your email</h2><p class="muted">We sent a 6 digit code to <b>' + esc(A.email) + '</b>. It works for 15 minutes.</p>' +
         field('acc', 'Code', 'text', '123456', 'inputmode="numeric" maxlength="6" autocomplete="one-time-code"') +
@@ -40,6 +40,7 @@
         '<button class="btn gbtn" data-act="acgoogle"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.4z"/><path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.6 14.7a7.2 7.2 0 0 1 0-4.6v-3H1.8a12 12 0 0 0 0 10.6l3.8-3z"/><path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3A12 12 0 0 0 1.8 7.1l3.8 3C6.5 6.8 9 4.8 12 4.8z"/></svg> Continue with Google</button>' +
         '<div class="acor"><span>or use your email</span></div>' +
         (su ? field('acn', 'Your name', 'text', 'Bhavishya Kumar', 'maxlength="60" autocomplete="name"') : '') +
+        (su && FSX.trackOptions ? '<label class="acl" for="actrack">What are you studying?</label><select class="in" id="actrack">' + FSX.trackOptions(A.track || '') + '</select>' : '') +
         field('ace', 'Email', 'email', 'you@example.com', 'autocomplete="email"') +
         field('acp', 'Password' + (su ? ' (8 or more characters)' : ''), 'password', '', 'autocomplete="' + (su ? 'new-password' : 'current-password') + '"') +
         '<div class="acerr" id="acerr">' + esc(A.err) + '</div>' +
@@ -53,8 +54,8 @@
 
   function signedCard() {
     var st = A.st;
-    return '<div class="card tilt" style="max-width:480px;margin:0 auto"><h2 style="margin:0 0 6px">Your account</h2>' +
-      '<p style="margin:0"><b>' + esc(st.name || 'Student') + '</b></p><p class="muted" style="margin:2px 0 14px">' + esc(st.email) + '</p>' +
+    return '<div class="card tilt"><h2 style="margin:0 0 6px">Your account</h2>' +
+      '<p class="muted" style="margin:2px 0 14px">Signed in as <b>' + esc(st.email) + '</b></p>' +
       '<p class="muted">Sign in with this same email on your other device to link them. A Focus or Strict session on your PC then locks your phone for the same time.</p>' +
       '<button class="btn" data-act="acout">Sign out</button></div>';
   }
@@ -62,14 +63,16 @@
   function viewAccount(v) {
     return acct('status').then(function (s) {
       A.st = s;
-      v.innerHTML = '<div class="phead"><h1>Account</h1><p class="muted">' + (s.signedIn ? 'You are signed in.' : 'Sign in to link your PC and phone.') + '</p></div>' + (s.signedIn ? signedCard() : formCard());
+      var prof = (s.signedIn || s.skip) && FSX.profileCard ? FSX.profileCard(s) : '';
+      v.innerHTML = '<div class="phead"><h1>Profile</h1><p class="muted">' + (s.signedIn ? 'Your name, photo and avatar, on every device.' : 'Sign in to link your PC and phone.') + '</p></div><div class="stack" style="max-width:520px;margin:0 auto">' + prof + (s.signedIn ? signedCard() : formCard()) + '</div>';
+      if (FSX.afterAccount) FSX.afterAccount();
     }).catch(function (e) { v.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
 
   function redraw() { A.busy = false; var v = $('#view'); if (v) viewAccount(v); }
   function err(m) { A.err = m; var e = $('#acerr'); if (e) e.textContent = m; }
   function busy(on, label) { A.busy = on; document.querySelectorAll('#acbox .btn').forEach(function (b) { b.disabled = on; }); if (on && label) err(label); }
-  function done() { A.busy = false; A.err = ''; A.step = 'form'; acct('status').then(function (s) { A.st = s; H().toast('Signed in', s.email); location.hash = '#/'; setTimeout(function () { H().go(); }, 50); }); }
+  function done() { A.busy = false; A.err = ''; A.step = 'form'; acct('status').then(function (s) { A.st = s; H().toast('Signed in', s.email); if (FSX.askTrack) FSX.askTrack(); if (FSX.profileSync) FSX.profileSync(); location.hash = '#/'; setTimeout(function () { H().go(); }, 50); }); }
 
   FSX.actions = Object.assign(FSX.actions || {}, {
     acmode: function () { A.mode = A.mode === 'signup' ? 'login' : 'signup'; A.err = ''; redraw(); },
@@ -82,8 +85,8 @@
       if (A.mode === 'signup' && !name) return err('Please enter your name.');
       if (!email) return err('Please enter your email.');
       if (!pw) return err('Please enter a password.');
-      A.email = email; A.name = name; busy(true, A.mode === 'signup' ? 'Sending your code...' : 'Signing in...');
-      (A.mode === 'signup' ? acct('register', { name: name, email: email, password: pw }).then(function () { A.step = 'verify'; A.err = ''; redraw(); })
+      A.email = email; A.name = name; A.track = ($('#actrack') || {}).value || ''; busy(true, A.mode === 'signup' ? 'Sending your code...' : 'Signing in...');
+      (A.mode === 'signup' ? acct('register', { name: name, email: email, password: pw, track: ($('#actrack') || {}).value || '' }).then(function () { A.step = 'verify'; A.err = ''; redraw(); })
         : acct('login', { email: email, password: pw }).then(done)
       ).catch(function (e) { busy(false); if (e.needsVerify) { A.step = 'verify'; A.err = e.message; redraw(); } else err(e.message); });
     },

@@ -103,6 +103,7 @@ window.FS3D = (function () {
     auth:  { fx: 0.72, fy: 0.5,  s: 1.05, z: 0,    prog: false },
     dash:  { fx: 0.80, fy: 0.46, s: 1.0,  z: 0,    prog: false },
     dim:   { fx: 0.93, fy: 0.9,  s: 0.42, z: -3,   prog: false },
+    stage: { fx: 0.5,  fy: 0.2,  s: 0.5,  z: 0,    prog: false },
     focus: { fx: 0.5,  fy: 0.2,  s: 0.44, z: -1,   prog: true }
   };
   var mode = 'auth', cur = { fx: 0.72, fy: 0.5, s: 1.05, z: 0 }, mx = 0, my = 0, flashT = 0, pulse = 0, progress = 0;
@@ -172,6 +173,10 @@ window.FS3D = (function () {
     var t = (now - t0) / 1000, sp = reduce ? 0.15 : 1;
     var m = modes[mode], narrow = innerWidth < 860;
     var tf = narrow ? { fx: 0.5, fy: mode === 'focus' ? 0.2 : 0.17, s: mode === 'focus' ? 0.34 : 0.5, z: mode === 'focus' ? -1 : -2 } : m;
+    if (mode === 'stage') { /* phone home: the orb sits in its own space between the greeting and the cards */
+      var stg = document.getElementById('orbstage');
+      if (stg) { var rc = stg.getBoundingClientRect(), D = Math.min(rc.height * 0.96, innerWidth * 0.8); tf = { fx: (rc.left + rc.width / 2) / innerWidth, fy: (rc.top + rc.height / 2) / innerHeight, s: D / (0.52 * innerHeight), z: 0 }; }
+    }
     var k = 1 - Math.pow(0.0025, dt);
     cur.fx += (tf.fx - cur.fx) * k; cur.fy += (tf.fy - cur.fy) * k; cur.s += (tf.s - cur.s) * k; cur.z += (tf.z - cur.z) * k;
     var v = visSize();
