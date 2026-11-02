@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
+<link rel="icon" href="assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FutureSelf: study goals, focus lock, one download</title>
@@ -22,6 +24,7 @@ a{color:var(--b)}
 .top{position:sticky;top:0;z-index:20;background:rgba(5,7,20,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .top nav{display:flex;align-items:center;gap:18px;height:62px}
 .logo{font:700 20px var(--head);text-decoration:none;color:var(--ink)}
+.logo{display:inline-flex;align-items:center;gap:8px}.lmark{width:38px;height:38px;display:block;margin-right:2px}
 .logo i{font-style:normal;background:linear-gradient(120deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
 .links{margin-left:auto;display:flex;gap:4px;align-items:center}
 .links a{color:var(--mut);text-decoration:none;font-size:14.5px;padding:8px 12px;border-radius:99px;transition:.2s}
@@ -120,7 +123,7 @@ footer{padding:34px 0 54px;color:var(--mut);font-size:14px;border-top:1px solid 
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="glow" id="glow" aria-hidden="true"></div>
 <header class="top"><div class="wrap"><nav aria-label="Main">
-  <a class="logo" href="#top">Future<i>Self</i></a>
+  <a class="logo" href="#top"><span class="lmark" data-fslogo data-fallback="assets/favicon.png" aria-hidden="true"></span><span>Future<i>Self</i></span></a>
   <div class="links"><a href="#get">Download</a><a href="#why">What it does</a><a href="#subjects">Subjects</a><a href="#guide">Guide</a><a class="cta" href="#get">Get the app</a></div>
 </nav></div><div id="prog"></div></header>
 
@@ -232,6 +235,7 @@ footer{padding:34px 0 54px;color:var(--mut);font-size:14px;border-top:1px solid 
 <footer><div class="wrap">FutureSelf by SpinDigital. Built for B.Tech students. Check lesson content against your textbooks before exams.</div></footer>
 
 <script src="assets/three.min.js"></script>
+<script src="assets/logo3d.js"></script>
 <script>
 (function(){
   'use strict';

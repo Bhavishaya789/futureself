@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="fs_bg">#0A0B1A</color>
+    <color name="ic_bg">#080B22</color>
     <color name="fs_accent">#7C5CFF</color>
 </resources>
