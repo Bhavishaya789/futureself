@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>FutureSelf · Photo of your answer</title>
+<link rel="icon" href="assets/favicon.png">
+<style>
+:root{--bg:#080B22;--card:#121639;--line:rgba(139,107,255,.35);--txt:#eef0ff;--mut:#a9aedb;--v:#7c5cff;--c:#22d3ee;--ok:#3ddc97;--bad:#ff6b81}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:calc(24px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));background:radial-gradient(700px 420px at 80% -10%,#1d1760 0%,var(--bg) 60%)}
+.w{width:100%;max-width:440px}
+.brand{font-weight:800;font-size:20px;letter-spacing:-.3px;margin-bottom:18px}.brand i{font-style:normal;background:linear-gradient(90deg,#8b6bff,var(--c));-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px}
+h1{font-size:22px;margin:0 0 6px;line-height:1.2}p{margin:0 0 14px;color:var(--mut);line-height:1.5;font-size:15px}
+.lbl{display:inline-block;background:rgba(124,92,255,.2);border:1px solid var(--line);border-radius:30px;padding:4px 12px;font-size:13px;color:#d7d2ff;margin-bottom:12px}
+.big{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:64px;border-radius:16px;border:0;font-size:18px;font-weight:700;color:#fff;background:linear-gradient(120deg,var(--v),#4f8cff);box-shadow:0 10px 30px rgba(124,92,255,.45);cursor:pointer}
+.big[disabled]{opacity:.5}.big:active{transform:scale(.98)}
+.tips{margin:16px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--mut)}.tips li{padding:5px 0 5px 22px;position:relative}.tips li:before{content:"✓";position:absolute;left:0;color:var(--c)}
+.th{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.th img{width:calc(25% - 6px);aspect-ratio:3/4;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.msg{margin-top:14px;font-size:14px;min-height:20px}.ok{color:var(--ok)}.er{color:var(--bad)}
+.bar{height:6px;border-radius:6px;background:#1b2050;overflow:hidden;margin-top:12px;display:none}.bar b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--v),var(--c));transition:width .2s}
+.sm{font-size:12.5px;color:var(--mut);margin-top:18px;text-align:center}
+</style></head><body><div class="w">
+<div class="brand">Future<i>Self</i></div>
+<div class="card" id="card">
+ <h1>Photo of your answer</h1>
+ <p id="intro">Checking your link…</p>
+ <div id="lblw"></div>
+ <input id="f" type="file" accept="image/*" capture="environment" hidden>
+ <button class="big" id="go" disabled>📷 &nbsp;Take photo</button>
+ <div class="bar" id="bar"><b id="bb"></b></div>
+ <div class="msg" id="msg"></div>
+ <div class="th" id="th"></div>
+ <ul class="tips"><li>Good light, no shadow of your hand</li><li>Hold the phone straight above the page</li><li>The whole answer inside the frame</li></ul>
+</div>
+<div class="sm">Photos go only to your own FutureSelf on your computer. This link stops working after 20 minutes.</div>
+</div>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)},h=(location.hash||'').slice(1).split('.'),id=h[0]||'',sec=h[1]||'',MAX=4,count=0,busy=false;
+  try{history.replaceState(null,'',location.pathname)}catch(e){}
+  function api(b){b.id=id;b.secret=sec;return fetch('/api/capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok)throw new Error(j.error||'Something went wrong');return j})})}
+  function say(t,c){var m=$('msg');m.textContent=t||'';m.className='msg '+(c||'')}
+  function shrink(file){return new Promise(function(res,rej){var fr=new FileReader();fr.onerror=function(){rej(new Error('Could not read the photo'))};fr.onload=function(){var im=new Image();im.onerror=function(){rej(new Error('That is not a readable photo'))};im.onload=function(){var m=1800,s=Math.min(1,m/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,0,0,cv.width,cv.height);var q=.85,d=cv.toDataURL('image/jpeg',q);while(d.length>1.9e6&&q>.4){q-=.1;d=cv.toDataURL('image/jpeg',q)}res(d)};im.src=fr.result};fr.readAsDataURL(file)})}
+  function ui(){var g=$('go');g.disabled=busy||count>=MAX;g.innerHTML=count>=MAX?'✓ &nbsp;All '+MAX+' photos sent':(count?'📷 &nbsp;Take another photo':'📷 &nbsp;Take photo')}
+  if(id.length!==16||sec.length!==24){$('intro').textContent='This link is not complete. Scan the code on your computer again.';say('',''); return}
+  api({a:'info'}).then(function(j){count=j.count;MAX=j.max||4;$('intro').textContent='Take a clear photo of what you wrote. It appears on your computer straight away.';if(j.label)$('lblw').innerHTML='<span class="lbl">'+String(j.label).replace(/[<>&]/g,'')+'</span>';ui();if(count)say(count+' photo'+(count>1?'s':'')+' already sent.','ok')}).catch(function(e){$('intro').textContent=e.message;$('go').style.display='none'});
+  $('go').onclick=function(){$('f').click()};
+  $('f').onchange=function(){var f=this.files&&this.files[0];this.value='';if(!f)return;busy=true;ui();say('Preparing photo…','');$('bar').style.display='block';$('bb').style.width='25%';
+    shrink(f).then(function(d){$('bb').style.width='65%';return api({a:'put',img:d}).then(function(j){count=j.count;var im=new Image();im.src=d;$('th').appendChild(im);$('bb').style.width='100%';say('Sent ✓ Look at your computer.','ok')})}).catch(function(e){say(e.message,'er')}).then(function(){busy=false;ui();setTimeout(function(){$('bar').style.display='none';$('bb').style.width='0'},700)})};
+})();
+</script></body></html>

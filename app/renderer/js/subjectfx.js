@@ -9,7 +9,7 @@ window.SubjectFX = (function () {
   var fxOn = function () { try { return localStorage.getItem('fs_fx') !== '0'; } catch (e) { return true; } };
   function rnd(a, b) { return a + Math.random() * (b - a); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
-  function rgba(h, a) { a = Math.min(1, a * 1.8); var n = parseInt(h.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+  function rgba(h, a) { a = Math.min(1, a * 1.8); var n = parseInt(String(h || '#7C5CFF').slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
   function size() { dpr = Math.min(devicePixelRatio || 1, 1.5); W = innerWidth; H = innerHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); if (th) st = th.m.init(); }
   addEventListener('resize', function () { if (api.current) size(); });
   addEventListener('pointermove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
@@ -308,7 +308,7 @@ window.SubjectFX = (function () {
   };
   function themeFor(id) {
     var d = T[id]; if (!d) { var h = 0; for (var i = 0; i < (id || '').length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; var ks = ['graph', 'waves', 'network', 'stars', 'symbols'], cs = ['#7C5CFF', '#2DE2E6', '#FFC857', '#3DDC97', '#FF5C7A']; d = [ks[h % ks.length], cs[h % cs.length], cs[(h >> 3) % cs.length]]; }
-    return { m: M[d[0]], name: d[0], a: d[1], b: d[2], o: d[3] };
+    return { m: M[d[0]] || M.graph, name: M[d[0]] ? d[0] : 'graph', a: d[1] || '#7C5CFF', b: d[2] || '#2DE2E6', o: d[3] };
   }
 
   function frame(now) {

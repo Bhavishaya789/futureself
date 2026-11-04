@@ -9,6 +9,8 @@ import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
+import java.io.File
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -20,6 +22,15 @@ class MainActivity : AppCompatActivity() {
     private val chooser = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         fileCb?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(r.resultCode, r.data))
         fileCb = null
+    }
+
+    /** "Take photo with camera" in the practice page: opens the camera itself and hands the picture to the page */
+    private var camUri: Uri? = null
+    private val camera = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        val u = camUri
+        fileCb?.onReceiveValue(if (ok && u != null) arrayOf(u) else null)
+        fileCb = null
+        camUri = null
     }
 
     companion object {
@@ -42,6 +53,16 @@ class MainActivity : AppCompatActivity() {
             override fun onShowFileChooser(view: WebView, cb: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
                 fileCb?.onReceiveValue(null)
                 fileCb = cb
+                if (params.isCaptureEnabled) {
+                    try {
+                        val dir = File(cacheDir, "cam").apply { mkdirs() }
+                        dir.listFiles()?.forEach { if (System.currentTimeMillis() - it.lastModified() > 3600_000) it.delete() }
+                        val f = File.createTempFile("answer", ".jpg", dir)
+                        camUri = FileProvider.getUriForFile(this@MainActivity, "$packageName.fileprovider", f)
+                        camera.launch(camUri!!)
+                        return true
+                    } catch (e: Exception) { camUri = null /* no camera app: fall back to the normal picker below */ }
+                }
                 return try { chooser.launch(params.createIntent()); true } catch (e: Exception) { fileCb = null; false }
             }
         }

@@ -77,6 +77,16 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use friends and study rooms.'));
         return req('/api/social', 'POST', p || {}, true);
       },
+      /* challenge a friend (the server marks it and keeps the answers) */
+      challenge: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to challenge friends.'));
+        return req('/api/challenge', 'POST', p || {}, true);
+      },
+      /* take a photo with the phone: the PC asks for a slot and shows a QR code, then collects the photos */
+      capture: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use your phone camera.'));
+        p = p || {}; return req('/api/capture', 'POST', p, true).then(function (j) { if (p.a === 'new') j.url = st.site + '/cam.html#' + j.id + '.' + j.secret; return j; });
+      },
       /* what the other device is doing (null when the server cannot be reached or nobody is signed in) */
       state: function () {
         load(); if (!st.token || !st.site) return Promise.resolve(null);

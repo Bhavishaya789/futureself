@@ -28,6 +28,7 @@ async function db() {
       await out.rl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
       await out.rl.createIndex({ key: 1 }, { unique: true });
       await out.social.createIndex({ key: 1 }, { unique: true });
+      await out.social.createIndex({ uids: 1, createdAt: -1 }, { sparse: true });
     } catch (e) { indexed = false; }
   }
   return out;

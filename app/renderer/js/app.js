@@ -23,6 +23,7 @@
     flame: '<path d="M12 3c1 4 5 5 5 10a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/>',
     x: '<path d="M5 5l14 14M19 5L5 19"/>', trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
     repeat: '<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 014-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 01-4 4H4"/>',
+    camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>', spark: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>'
   };
   var MORE = {
@@ -494,6 +495,16 @@
 
   /* ---------- practice (write in notebook, photograph, upload) ---------- */
   var LVL_CLS = { Moderate: 'mod', High: 'high', Advanced: 'adv' };
+  function isPhoneApp() { return !!(window.fsApi && window.fsApi.platform === 'android'); }
+  /* the phone camera takes the clearest photo: on the phone app the camera opens directly; on the PC a QR code opens it on the student's phone */
+  function camBtns(pi) {
+    if (isPhoneApp()) return '<label class="btn pri"><input type="file" class="pfile" data-pi="' + pi + '" accept="image/*" capture="environment" hidden>' + ic('camera') + ' Take photo with camera</label>';
+    return '<button class="btn pri" data-act="pcam" data-pi="' + pi + '">' + ic('camera') + ' Use my phone camera</button>';
+  }
+  function addDataPhotos(pi, urls) {
+    var arr = S.pimgs[pi] = S.pimgs[pi] || [], room = 4 - arr.length;
+    urls.slice(0, Math.max(0, room)).forEach(function (u) { arr.push(u); }); drawThumbs(pi); return room;
+  }
   function practicePane(l) {
     var ps = l.problems || [];
     if (!ps.length) return '<div class="card"><div class="empty">No practice problems for this topic yet.</div></div>';
@@ -502,7 +513,7 @@
       ps.map(function (p, pi) {
         return '<div class="card prob" data-pi="' + pi + '" style="margin-top:16px"><div class="row spread wrap"><div class="row wrap"><span class="lvl ' + (LVL_CLS[p.level] || '') + '">' + esc(p.level) + '</span><span class="muted">Problem ' + (pi + 1) + ' &middot; ' + p.marks + ' marks</span></div><span class="badge" id="pbest' + pi + '" hidden></span></div>' +
           '<div class="pq">' + fmt(p.q) + '</div>' +
-          '<div class="drop" data-pi="' + pi + '"><label class="btn"><input type="file" class="pfile" data-pi="' + pi + '" accept="image/*" multiple hidden>' + ic('plus') + ' Add photos of your answer</label><span class="muted" style="font-size:13px">or drag and drop up to 4 photos here</span><div class="thumbs" id="pth' + pi + '"></div></div>' +
+          '<div class="drop" data-pi="' + pi + '"><label class="btn"><input type="file" class="pfile" data-pi="' + pi + '" accept="image/*" multiple hidden>' + ic('plus') + ' Add photos of your answer</label>' + camBtns(pi) + '<span class="muted" style="font-size:13px">' + (isPhoneApp() ? 'up to 4 photos' : 'or drag and drop up to 4 photos here') + '</span><div class="thumbs" id="pth' + pi + '"></div></div>' +
           '<div class="row wrap" style="margin-top:12px"><button class="btn pri" data-act="psubmit" data-pi="' + pi + '" id="psub' + pi + '" disabled>Submit for checking</button></div>' +
           '<div id="pres' + pi + '"></div><div id="phist' + pi + '"></div></div>';
       }).join('');
@@ -1143,7 +1154,7 @@
     else if (!on && s.callPause) { s.pausedMs += Date.now() - s.pausedAt; s.pausedAt = null; s.callPause = false; }
     pushState();
   };
-  FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S };
+  FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S, fmt: fmt, addDataPhotos: addDataPhotos, isPhoneApp: isPhoneApp };
   if (window.FSX && FSX.actions) Object.assign(actions, FSX.actions);
   go();
 })();
