@@ -51,7 +51,7 @@
       else if (!c.mine.closed && Date.now() + C.offset < c.mine.deadline) btns += '<button class="btn sm pri" data-act="chresume" data-id="' + esc(c.id) + '">Resume</button>';
       else btns += '<button class="btn sm" data-act="chview" data-id="' + esc(c.id) + '">View</button>';
     } else if (c.status === 'done') btns += '<button class="btn sm" data-act="chview" data-id="' + esc(c.id) + '">Result</button>';
-    var sub = esc(t.subject || '') + (t.subject ? ' &middot; ' : '') + c.n + ' questions &middot; ' + fmtT(c.limitSec * 1000) + ' min' + (c.mine.closed ? ' &middot; you scored ' + c.mine.correct + '/' + c.n : '');
+    var code = c.kind === 'code', sub = esc(t.subject || '') + (t.subject ? ' &middot; ' : '') + (code ? 'coding question' : c.n + ' questions' + (c.hasWritten ? ' + 1 written' : '')) + ' &middot; ' + fmtT(c.limitSec * 1000) + ' min' + (c.mine.closed ? ' &middot; you scored ' + (code ? c.mine.correct + '/100' : c.mine.correct + '/' + c.n) : '');
     return '<div class="item chitem"><div class="grow"><b>' + esc(t.title || 'Topic') + '</b><small>vs ' + esc(c.friend.name) + ' &middot; ' + sub + '</small></div><span class="badge ' + st[1] + '">' + st[0] + '</span>' + btns + '</div>';
   }
   function cardHTML() {
@@ -83,7 +83,7 @@
     NW = { pre: pre || null, topics: [], lessons: [], tid: '', lid: '' };
     H().modal('<div class="chnew"><div class="eyebrow">New challenge</div><h2 style="margin:6px 0 12px">Challenge a friend</h2><div id="chnbody"><div class="empty">Loading…</div></div></div>');
     Promise.all([ensureMe().then(function () { return acct('social', { a: 'overview' }); }), H().api('/topics')]).then(function (r) {
-      C.friends = r[0].board.filter(function (p) { return !p.me; }); NW.topics = r[1].filter(function (t) { return !t.planned && (t.done > 0 || (pre && pre.tid === t.id)); });
+      C.friends = r[0].board.filter(function (p) { return !p.me; }); NW.topics = r[1].filter(function (t) { return !t.planned && t.lessons > 0; }).sort(function (x, y) { return (y.done > 0) - (x.done > 0); });
       if (NW.pre) { NW.tid = NW.pre.tid; return loadLessons(NW.tid).then(function () { NW.lid = NW.pre.lid; }); }
     }).then(newPaint).catch(function (e) { var b = $('#chnbody'); if (b) b.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
@@ -100,13 +100,13 @@
     if (!C.friends || !C.friends.length) { b.innerHTML = '<p class="muted">You need a friend first. Add a friend by email on this page, and ask them to accept.</p><div class="row" style="margin-top:14px"><button class="btn" data-act="close">Close</button></div>'; return; }
     var fr = '<option value="">Choose a friend</option>' + C.friends.map(function (f) { return '<option value="' + esc(f.id) + '"' + (NW.fid === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>'; }).join('');
     var sub = '<option value="">Choose a subject</option>' + NW.topics.map(function (t) { return '<option value="' + esc(t.id) + '"' + (NW.tid === t.id ? ' selected' : '') + '>' + esc(t.title) + '</option>'; }).join('');
-    var les = '<option value="">' + (NW.tid ? 'Choose a completed topic' : 'Choose a subject first') + '</option>' + NW.lessons.map(function (l) { return '<option value="' + esc(l.id) + '"' + (l.done && l.n >= MINQ ? '' : ' disabled') + (NW.lid === l.id ? ' selected' : '') + '>' + (l.done ? '✔ ' : '') + esc(l.title) + (!l.done ? ' (complete it first)' : l.n < MINQ ? ' (too few questions)' : '') + '</option>'; }).join('');
+    var les = '<option value="">' + (NW.tid ? 'Choose a topic (✔ = completed)' : 'Choose a subject first') + '</option>' + NW.lessons.map(function (l) { return '<option value="' + esc(l.id) + '"' + (l.n >= MINQ ? '' : ' disabled') + (NW.lid === l.id ? ' selected' : '') + '>' + (l.done ? '✔ ' : '') + esc(l.title) + (!l.done ? ' (complete it first)' : l.n < MINQ ? ' (too few questions)' : '') + '</option>'; }).join('');
     var sel = NW.lessons.filter(function (l) { return l.id === NW.lid; })[0];
     b.innerHTML = '<div class="fld"><label class="f" for="chf">Friend</label><select class="in" id="chf">' + fr + '</select></div>' +
       '<div class="fld" style="margin-top:12px"><label class="f" for="chs">Subject</label><select class="in" id="chs">' + sub + '</select></div>' +
-      '<div class="fld" style="margin-top:12px"><label class="f" for="chl">Topic you completed</label><select class="in" id="chl">' + les + '</select></div>' +
+      '<div class="fld" style="margin-top:12px"><label class="f" for="chl">Topic</label><select class="in" id="chl">' + les + '</select></div>' +
       '<div class="tipbox" style="margin-top:14px"><b>How it works.</b> You both get the same ' + Math.min(QN, sel ? sel.n : QN) + ' of the hardest questions on this topic and ' + fmtT(Math.max(120, Math.min(900, Math.min(QN, sel ? sel.n : QN) * 50)) * 1000) + ' minutes. The screen is locked while you play and each person can try only once. 10 points per right answer, a bonus for finishing quicker, +10 for whoever finishes first, +20 for the winner.</div>' +
-      '<div id="cherr" class="muted" style="color:var(--bad);margin-top:8px;min-height:18px"></div><div class="row wrap" style="margin-top:6px"><button class="btn pri" data-act="chsend"' + (NW.fid && sel ? '' : ' disabled') + '>Send challenge</button><button class="btn ghost" data-act="close">Cancel</button></div>';
+      (FSX.code && FSX.code.isBtech() ? '<p class="muted" style="margin-top:10px;font-size:14px">B.Tech? <a href="#" data-act="chtocode">Challenge a friend with a coding question instead</a>.</p>' : '') + '<div id="cherr" class="muted" style="color:var(--bad);margin-top:8px;min-height:18px"></div><div class="row wrap" style="margin-top:6px"><button class="btn pri" data-act="chsend"' + (NW.fid && sel ? '' : ' disabled') + '>Send challenge</button><button class="btn ghost" data-act="close">Cancel</button></div>';
   }
   document.addEventListener('change', function (e) {
     if (!NW || !e.target) return;
@@ -118,7 +118,9 @@
     var sel = NW.lessons.filter(function (l) { return l.id === NW.lid; })[0], err = $('#cherr');
     var qs = sel && pickHard(sel.l); if (!qs) { if (err) err.textContent = 'This topic does not have enough quiz questions yet.'; return; }
     var btn = $('[data-act=chsend]'); if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
-    ch({ a: 'create', friendId: NW.fid, topicId: NW.tid, lessonId: NW.lid, title: sel.title, subject: NW.subject, questions: qs }).then(function (r) {
+    H().api('/challenge-written/' + NW.tid + '/' + NW.lid).catch(function () { return {}; }).then(function (w) {
+      return ch({ a: 'create', friendId: NW.fid, topicId: NW.tid, lessonId: NW.lid, title: sel.title, subject: NW.subject, questions: qs, written: w && w.written ? w.written : undefined });
+    }).then(function (r) {
       var id = r.id; H().closeModal(); H().toast('Challenge sent', 'Your friend will see it in their Friends page.');
       load().then(function () { H().modal('<div style="text-align:center"><div class="eyebrow">Challenge ready</div><h2 style="margin:8px 0">Play your attempt now?</h2><p class="muted" style="margin-bottom:16px">' + r.n + ' questions, ' + fmtT(r.limitSec * 1000) + ' minutes. You can also play later, within 2 days.</p><div class="row wrap" style="justify-content:center"><button class="btn pri" data-act="chstart" data-id="' + esc(id) + '">Play now</button><button class="btn" data-act="close">Later</button></div></div>'); });
     }).catch(function (e) { if (btn) { btn.disabled = false; btn.textContent = 'Send challenge'; } if (err) err.textContent = e.message; });
@@ -128,10 +130,10 @@
   function rules(id, resume) {
     var c = C.list.filter(function (x) { return x.id === id; })[0]; if (!c) return load().then(function () { rules(id, resume); });
     H().modal('<div class="chrules"><div class="eyebrow">' + (resume ? 'Resume challenge' : 'Before you start') + '</div><h2 style="margin:6px 0 4px">' + esc((c.topic || {}).title || 'Challenge') + '</h2><p class="muted">vs ' + esc(c.friend.name) + '</p>' +
-      '<ul class="chlist"><li><b>' + c.n + ' questions</b> and <b>' + fmtT(c.limitSec * 1000) + ' minutes</b>. The timer starts the moment you press the button.</li>' +
+      '<ul class="chlist"><li><b>' + (c.kind === 'code' ? 'One coding question' : c.n + ' questions' + (c.hasWritten ? ' and 1 written answer' : '')) + '</b> and <b>' + fmtT(c.limitSec * 1000) + ' minutes</b>. The timer starts the moment you press the button.</li>' +
       '<li><b>One attempt only.</b> Once it is closed or submitted it can never be played again.</li>' +
-      '<li><b>The screen is locked.</b> Leaving it 3 times submits your answers. ' + (resume ? 'You can resume only once.' : 'Closing the app does not stop the clock.') + '</li>' +
-      '<li><b>Speed counts.</b> Right answers give points, finishing quicker gives a bonus, and the faster finisher gets +10.</li></ul>' +
+      '<li><b>Strict mode switches on by itself.</b> The screen is locked' + (c.kind === 'code' ? ' and pasting is off' : '') + '. Leaving it 3 times submits your answers. ' + (resume ? 'You can resume only once.' : 'Closing the app does not stop the clock.') + '</li>' +
+      '<li><b>' + (c.kind === 'code' ? 'AI marks it.' : 'Speed counts.') + '</b> ' + (c.kind === 'code' ? 'Hidden tests run your code and the AI reviews it, then the points are given automatically. A faster finish adds a bonus.' : 'Right answers give points' + (c.hasWritten ? ', the AI marks the written answer' : '') + ', finishing quicker gives a bonus, and the faster finisher gets +10.') + '</li></ul>' +
       '<div class="row wrap" style="margin-top:14px"><button class="btn pri" data-act="chgo" data-id="' + esc(id) + '" data-resume="' + (resume ? 1 : '') + '">I am ready. ' + (resume ? 'Resume' : 'Start') + '</button><button class="btn ghost" data-act="close">Not now</button></div></div>', true);
   }
   function begin(id, resume) {
@@ -158,18 +160,22 @@
   function root() { var r = $('#arena'); if (!r) { r = document.createElement('div'); r.id = 'arena'; document.body.appendChild(r); } return r; }
   function arena(id, r) {
     var c = C.list.filter(function (x) { return x.id === id; })[0] || {};
-    AR = { id: id, title: (r.topic && r.topic.title) || (c.topic && c.topic.title) || 'Challenge', qs: r.questions, ans: (r.answers || []).slice(), i: 0, deadline: r.deadline, off: r.now - Date.now(), leaves: r.leaves || 0, sending: false, over: false, confirm: false };
+    AR = { id: id, kind: r.kind === 'code' ? 'code' : 'quiz', problem: r.problem, code: r.code, lang: r.lang, written: r.written || null, wtext: r.wtext || '', title: (r.topic && r.topic.title) || (c.topic && c.topic.title) || 'Challenge', qs: r.questions || [], ans: (r.answers || []).slice(), i: 0, deadline: r.deadline, off: r.now - Date.now(), leaves: r.leaves || 0, sending: false, over: false, confirm: false };
     while (AR.ans.length < AR.qs.length) AR.ans.push(null);
+    var isCode = AR.kind === 'code';
     for (var k = 0; k < AR.ans.length; k++) if (AR.ans[k] === undefined) AR.ans[k] = null;
     document.body.classList.add('inarena');
     lockOn(AR.title, AR.deadline - AR.off);
     try { if (!(window.fsApi && window.fsApi.isApp) && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () { }); } catch (e) { }
     on(document, 'contextmenu', function (e) { e.preventDefault(); });
-    ['copy', 'cut', 'paste', 'dragstart', 'selectstart'].forEach(function (ev) { on(document, ev, function (e) { if (AR && !AR.over) e.preventDefault(); }, true); });
+    ['copy', 'cut', 'paste', 'dragstart', 'drop', 'selectstart'].forEach(function (ev) { on(document, ev, function (e) { if (!AR || AR.over) return; var typing = e.target && e.target.closest && e.target.closest('.ceditor,.arw,.cstdin'); if (typing && (ev === 'copy' || ev === 'cut' || ev === 'selectstart')) return; e.preventDefault(); }, true); });
     on(window, 'keydown', function (e) {
       if (!AR || AR.over) return;
       var k = e.key;
+      var edit = AR.kind === 'code' || (e.target && e.target.closest && e.target.closest('.arw'));
+      if (edit && (e.ctrlKey || e.metaKey) && !e.altKey && /^[zyacxZYACX]$/.test(k)) return;
       if (e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(k) || k === 'PrintScreen' || k === 'Escape' || k === 'Tab' && e.altKey) { e.preventDefault(); e.stopPropagation(); return; }
+      if (AR.kind === 'code' || (e.target && e.target.closest && e.target.closest('.arw'))) return;
       if (k === 'ArrowRight') go(1); else if (k === 'ArrowLeft') go(-1); else if (/^[1-5]$/.test(k)) pickOpt(+k - 1);
     }, true);
     on(window, 'beforeunload', function (e) { if (AR && !AR.over) { e.preventDefault(); e.returnValue = ''; } });
@@ -177,7 +183,9 @@
     on(window, 'blur', function () { away(); });
     AR.timer = setInterval(tick, 250);
     drawQ(); tick();
+    if (AR.kind === 'code' && FSX.code) FSX.code.arenaDraw(AR, KIT);
   }
+  var KIT = { root: root, tick: function () { tick(); }, warn: function (t) { warn(t); }, AR: function () { return AR; }, meId: function () { return meId; }, words: words };
   var lastAway = 0;
   function away() {
     if (!AR || AR.over) return;
@@ -197,18 +205,36 @@
     var pb = $('#arbar'); if (pb) pb.style.width = Math.max(0, Math.min(100, 100 * ms / (AR.limitMs || (AR.limitMs = ms + 1)))) + '%';
     if (ms <= 0 && !AR.sending) submit(true);
   }
+  function nPages() { return AR.qs.length + (AR.written ? 1 : 0); }
+  function pageList() { var a = AR.qs.slice(); if (AR.written) a.push(null); return a; }
+  /* the one written question: typed, saved as you go, marked by the AI */
+  function drawW() {
+    var answered = AR.ans.filter(function (a) { return a != null; }).length;
+    root().innerHTML = '<div class="arwrap"><div class="arhead"><div class="grow"><div class="eyebrow">Challenge &middot; locked</div><b>' + esc(AR.title) + '</b></div><div class="artime" id="artime">--:--</div></div>' +
+      '<div class="arprog"><i id="arbar"></i></div><div class="archwarn" id="archwarn"></div>' +
+      '<div class="arq"><div class="muted" style="font-size:14px">Written question &middot; marked by AI (up to ' + (AR.written.marks || 20) + ' points)</div><h2>' + fm(AR.written.q) + '</h2>' +
+      '<textarea class="in arw" id="arw" rows="9" placeholder="Write your answer in your own words. Cover every point a teacher would look for." spellcheck="true"></textarea><div class="muted" style="font-size:13px;margin-top:6px">Pasting is switched off. Saved automatically.</div></div>' +
+      '<div class="arnav"><button class="btn" data-act="chprev">&larr; Back</button><div class="ardots">' + pageList().map(function (_, i) { return '<button class="ardot' + (i === AR.i ? ' cur' : '') + (i >= AR.qs.length ? (AR.wtext.trim() ? ' done' : '') : (AR.ans[i] != null ? ' done' : '')) + '" data-act="chjump" data-i="' + i + '">' + (i < AR.qs.length ? i + 1 : 'W') + '</button>'; }).join('') + '</div>' +
+      '<button class="btn pri" data-act="chsubmit" id="arsub">' + (AR.confirm ? 'Tap again to submit' : 'Submit answers') + '</button></div>' +
+      '<div class="muted arfoot">Screen locked. One attempt. ' + answered + ' of ' + AR.qs.length + ' multiple-choice answered.</div></div>';
+    var t = $('#arw'); t.value = AR.wtext;
+    t.addEventListener('input', function () { AR.wtext = t.value; clearTimeout(AR.wt); AR.wt = setTimeout(function () { if (AR && !AR.over) ch({ a: 'savew', id: AR.id, text: AR.wtext }).catch(function () { }); }, 1500); });
+    tick();
+  }
   function drawQ() {
+    if (AR.kind === 'code') return;
+    if (AR.written && AR.i >= AR.qs.length) return drawW();
     var q = AR.qs[AR.i], answered = AR.ans.filter(function (a) { return a != null; }).length;
     root().innerHTML = '<div class="arwrap"><div class="arhead"><div class="grow"><div class="eyebrow">Challenge &middot; locked</div><b>' + esc(AR.title) + '</b></div><div class="artime" id="artime">--:--</div></div>' +
       '<div class="arprog"><i id="arbar"></i></div><div class="archwarn" id="archwarn"></div>' +
       '<div class="arq"><div class="muted" style="font-size:14px">Question ' + (AR.i + 1) + ' of ' + AR.qs.length + ' &middot; ' + answered + ' answered</div><h2>' + fm(q.q) + '</h2>' +
       '<div class="aropts">' + q.o.map(function (o, oi) { return '<button class="aropt' + (AR.ans[AR.i] === oi ? ' sel' : '') + '" data-act="chopt" data-o="' + oi + '"><span class="k">' + String.fromCharCode(65 + oi) + '</span><span>' + fm(o) + '</span></button>'; }).join('') + '</div></div>' +
-      '<div class="arnav"><button class="btn" data-act="chprev"' + (AR.i ? '' : ' disabled') + '>&larr; Back</button><div class="ardots">' + AR.qs.map(function (_, i) { return '<button class="ardot' + (i === AR.i ? ' cur' : '') + (AR.ans[i] != null ? ' done' : '') + '" data-act="chjump" data-i="' + i + '" aria-label="Question ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
-      (AR.i < AR.qs.length - 1 ? '<button class="btn pri" data-act="chnext">Next &rarr;</button>' : '<button class="btn pri" data-act="chsubmit" id="arsub">' + (AR.confirm ? 'Tap again to submit' : 'Submit answers') + '</button>') + '</div>' +
+      '<div class="arnav"><button class="btn" data-act="chprev"' + (AR.i ? '' : ' disabled') + '>&larr; Back</button><div class="ardots">' + pageList().map(function (_, i) { return '<button class="ardot' + (i === AR.i ? ' cur' : '') + (i >= AR.qs.length ? (AR.wtext.trim() ? ' done' : '') : (AR.ans[i] != null ? ' done' : '')) + '" data-act="chjump" data-i="' + i + '" aria-label="Question ' + (i + 1) + '">' + (i + 1) + '</button>'; }).join('') + '</div>' +
+      (AR.i < nPages() - 1 ? '<button class="btn pri" data-act="chnext">Next &rarr;</button>' : '<button class="btn pri" data-act="chsubmit" id="arsub">' + (AR.confirm ? 'Tap again to submit' : 'Submit answers') + '</button>') + '</div>' +
       '<div class="muted arfoot">Screen locked. One attempt. ' + (AR.leaves ? 'Left the screen ' + AR.leaves + ' time(s). ' : '') + 'Pick an answer to save it. Keys: 1-4 choose, arrows move.</div></div>';
     tick();
   }
-  function go(d) { if (!AR || AR.over) return; var n = AR.i + d; if (n < 0 || n >= AR.qs.length) return; AR.i = n; AR.confirm = false; drawQ(); }
+  function go(d) { if (!AR || AR.over) return; var n = AR.i + d; if (n < 0 || n >= nPages()) return; AR.i = n; AR.confirm = false; drawQ(); }
   function pickOpt(o) {
     if (!AR || AR.over) return; var q = AR.qs[AR.i]; if (o >= q.o.length) return;
     var i = AR.i; AR.ans[i] = o; AR.confirm = false; drawQ();
@@ -216,11 +242,12 @@
   }
   function submit(forced) {
     if (!AR || AR.sending || AR.over) return;
-    var open = AR.ans.filter(function (a) { return a == null; }).length;
-    if (!forced && !AR.confirm) { AR.confirm = true; drawQ(); if (open) warn(open + ' question' + (open > 1 ? 's' : '') + ' still unanswered. Tap Submit again to finish anyway.'); return; }
-    AR.sending = true; var b = $('#arsub'); if (b) { b.disabled = true; b.textContent = 'Submitting…'; }
+    var open = AR.kind === 'code' ? 0 : AR.ans.filter(function (a) { return a == null; }).length;
+    if (!forced && !AR.confirm) { AR.confirm = true; if (AR.kind === 'code') { var sb = $('#casub'); if (sb) sb.textContent = 'Tap again to submit for good'; warn('This is final. After you submit you cannot play this challenge again. Tap Submit again to confirm.'); return; } if (AR.written && AR.i >= AR.qs.length) { var sb2 = $('#arsub'); if (sb2) sb2.textContent = 'Tap again to submit'; } else drawQ(); if (open) warn(open + ' question' + (open > 1 ? 's' : '') + ' still unanswered. Tap Submit again to finish anyway.'); return; }
+    AR.sending = true; var b = $('#arsub') || $('#casub'); if (b) { b.disabled = true; b.textContent = AR.kind === 'code' ? 'Marking your code…' : 'Submitting…'; }
+    var extra = AR.kind === 'code' ? (FSX.code && FSX.code.arenaPayload() || { code: '', lang: AR.lang }) : { answers: AR.ans, written: AR.written ? AR.wtext : undefined };
     var tries = 0; (function post() {
-      ch({ a: 'submit', id: AR.id, answers: AR.ans }).then(function (r) { finish(r.challenge); }).catch(function (e) {
+      ch(Object.assign({ a: 'submit', id: AR.id }, extra)).then(function (r) { finish(r.challenge); }).catch(function (e) {
         if (/not started|closed/i.test(e.message)) return finish(); if (tries++ < 6) setTimeout(post, 1500); else { AR.sending = false; warn('Could not reach the server. Check your internet, then tap Submit again.'); drawQ(); }
       });
     })();
@@ -239,28 +266,35 @@
     H().modal('<div class="chres"><div class="empty">Loading result…</div></div>');
     ch({ a: 'get', id: id }).then(function (r) { result(r.challenge); }).catch(function (e) { H().closeModal(); H().toast('Could not open', e.message, true); });
   }
+  function writtenBox(c) {
+    var w = c.mine.written; if (!w) return '';
+    return '<div class="tipbox" style="margin:12px 0"><b>Written answer: ' + (w.marked ? w.awarded + ' / ' + w.max + ' marks (AI)' : 'not marked') + '.</b> ' + esc(w.feedback || '') + (c.writtenModel ? '<details style="margin-top:8px"><summary>Model answer</summary><div style="margin-top:6px">' + fm(c.writtenModel) + '</div></details>' : '') + '</div>';
+  }
   function pts(p) { return p ? p.total : 0; }
   function result(c) {
-    var me = meId, done = c.status === 'done', r = c.result, fname = esc(c.friend.name);
+    var me = meId, done = c.status === 'done', r = c.result, fname = esc(c.friend.name), isCode = c.kind === 'code';
     var head, body = '';
     if (!done) {
-      head = '<div class="reshead wait"><div class="big">⏳</div><h2>Your attempt is in</h2><p class="muted">You answered <b>' + (c.mine.correct == null ? '-' : c.mine.correct) + ' of ' + c.n + '</b> in <b>' + words(c.mine.timeMs || 0) + '</b>.</p></div>' +
+      head = '<div class="reshead wait"><div class="big">⏳</div><h2>Your attempt is in</h2><p class="muted">' + (isCode ? 'Your code scored <b>' + (c.mine.correct == null ? '-' : c.mine.correct) + ' / 100</b>' : 'You answered <b>' + (c.mine.correct == null ? '-' : c.mine.correct) + ' of ' + c.n + '</b>') + ' in <b>' + words(c.mine.timeMs || 0) + '</b>.</p></div>' + (isCode && FSX.code ? FSX.code.resultBody(c, KIT) : (c.mine.written ? writtenBox(c) : '')) +
         '<p class="muted" style="text-align:center;margin:10px 0 0">' + (c.status === 'declined' ? 'Your friend declined this challenge.' : c.theirs.started ? fname + ' is still playing. The winner appears here and in your Challenges list.' : fname + ' has not played yet. They have until ' + new Date(c.expiresAt).toLocaleString() + '. The winner and the correct answers are shown when you both finish.') + '</p>';
     } else {
       var won = r.winner === me, mineP = r.points[me] || {}, theirP = r.points[c.friend.id] || {};
+      if (isCode && FSX.code) { body = FSX.code.resultBody(c, KIT); }
       head = '<div class="reshead ' + (r.draw ? 'draw' : won ? 'win' : 'lose') + '"><div class="big">' + (r.draw ? '🤝' : won ? '🏆' : '🎯') + '</div><div class="eyebrow">Winner</div><h2>' + (r.draw ? 'It is a draw' : won ? 'You won!' : esc(r.winnerName) + ' won') + '</h2>' +
         '<p class="muted">' + (r.reason === 'walkover' ? (won ? fname + ' did not play in time, so you win.' : 'You did not play in time.') : r.draw ? 'Same points and same time.' : (won ? 'More points than ' + fname + '.' : esc(r.winnerName) + ' scored more points than you.')) + '</p></div>';
       var row = function (lbl, a, b) { return '<tr><td>' + lbl + '</td><td>' + a + '</td><td>' + b + '</td></tr>'; };
-      body = '<table class="restab"><thead><tr><th></th><th>You</th><th>' + fname + '</th></tr></thead><tbody>' +
+      if (!isCode) body = '<table class="restab"><thead><tr><th></th><th>You</th><th>' + fname + '</th></tr></thead><tbody>' +
         row('Right answers', (mineP.correct || 0) + '/' + c.n, (theirP.correct || 0) + '/' + c.n) +
         row('Time taken', mineP.timeMs ? words(mineP.timeMs) : '-', theirP.timeMs ? words(theirP.timeMs) : '-') +
-        row('Marks (10 each)', '+' + (mineP.base || 0), '+' + (theirP.base || 0)) +
+        row('Marks (10 each' + (c.hasWritten ? ' + written' : '') + ')', '+' + (mineP.base || 0), '+' + (theirP.base || 0)) +
         row('Speed bonus', '+' + (mineP.timeBonus || 0), '+' + (theirP.timeBonus || 0)) +
         row('First to finish', '+' + (mineP.first || 0), '+' + (theirP.first || 0)) +
         row('Winner bonus', '+' + (mineP.win || 0), '+' + (theirP.win || 0)) +
         '<tr class="tot"><td>Points earned</td><td>' + pts(mineP) + '</td><td>' + pts(theirP) + '</td></tr></tbody></table>' +
         (r.faster ? '<p class="muted" style="text-align:center;margin-top:8px">' + (r.faster === me ? 'You' : esc(c.friend.name)) + ' finished first and got the speed bonus.</p>' : '');
-      if (c.review) body += '<details class="chrev"><summary>Review the answers</summary>' + c.review.map(function (q, i) {
+      if (!isCode && c.mine.written) body = writtenBox(c) + body;
+      if (!isCode && c.analysis) body += '<div class="tipbox" style="margin-top:12px"><b>AI study notes.</b> ' + esc(c.analysis.summary || '') + ((c.analysis.revise || []).length ? '<ul style="margin:6px 0 0 18px">' + c.analysis.revise.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div>';
+      if (c.review && !isCode) body += '<details class="chrev"><summary>Review the answers</summary>' + c.review.map(function (q, i) {
         return '<div class="rq"><p><b>' + (i + 1) + '.</b> ' + fm(q.q) + '</p>' + q.o.map(function (o, oi) { var cls = oi === q.a ? 'right' : (oi === q.mine ? 'wrong' : ''); return '<div class="ro ' + cls + '">' + String.fromCharCode(65 + oi) + '. ' + fm(o) + (oi === q.mine ? ' <small>(you)</small>' : '') + (oi === q.theirs ? ' <small>(' + fname + ')</small>' : '') + '</div>'; }).join('') + (q.why ? '<div class="muted" style="font-size:13px;margin-top:4px">' + fm(q.why) + '</div>' : '') + '</div>';
       }).join('') + '</details>';
     }
@@ -320,7 +354,7 @@
     chopt: function (el) { pickOpt(+el.dataset.o); },
     chnext: function () { go(1); }, chprev: function () { go(-1); },
     chjump: function (el) { if (AR && !AR.over) { AR.i = +el.dataset.i; AR.confirm = false; drawQ(); } },
-    chsubmit: function () { submit(false); }
+    chsubmit: function () { submit(false); }, casubmit: function () { submit(false); }
   });
-  FSX.challenge = { open: openNew, pickHard: pickHard };
+  FSX.challenge = { open: openNew, pickHard: pickHard, play: function (id) { return load().then(function () { rules(id, false); }); } };
 })();
