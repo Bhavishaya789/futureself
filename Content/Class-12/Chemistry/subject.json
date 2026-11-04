@@ -1,0 +1,32 @@
+{
+ "title": "Chemistry (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "spark",
+ "color": "#FF5C7A",
+ "tagline": "NCERT Chemistry Part 1 and 2 for Class 12 (board exam, JEE and NEET).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Solutions",
+  "Electrochemistry",
+  "Chemical Kinetics",
+  "The d- and f-Block Elements",
+  "Coordination Compounds",
+  "Haloalkanes and Haloarenes",
+  "Alcohols, Phenols and Ethers",
+  "Aldehydes, Ketones and Carboxylic Acids",
+  "Amines",
+  "Biomolecules"
+ ],
+ "tracks": [
+  "class12",
+  "jee",
+  "neet"
+ ],
+ "id": "class-12-chemistry"
+}

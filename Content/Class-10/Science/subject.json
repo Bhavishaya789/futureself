@@ -1,0 +1,30 @@
+{
+ "title": "Science (Class 10)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "atom",
+ "color": "#2DE2E6",
+ "tagline": "NCERT Science for Class 10 (CBSE board exam).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Chemical Reactions and Equations",
+  "Acids, Bases and Salts",
+  "Metals and Non-metals",
+  "Carbon and its Compounds",
+  "Life Processes",
+  "Control and Coordination",
+  "How do Organisms Reproduce?",
+  "Heredity",
+  "Light: Reflection and Refraction",
+  "The Human Eye and the Colourful World",
+  "Electricity",
+  "Magnetic Effects of Electric Current",
+  "Our Environment"
+ ],
+ "id": "class-10-science"
+}

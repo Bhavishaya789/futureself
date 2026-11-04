@@ -1,0 +1,22 @@
+{
+ "title": "Political Science (Class 10)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "people",
+ "color": "#7C5CFF",
+ "tagline": "Democratic Politics II (NCERT Social Science, Class 10 board exam).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Power-sharing",
+  "Federalism",
+  "Gender, Religion and Caste",
+  "Political Parties",
+  "Outcomes of Democracy"
+ ],
+ "id": "class-10-political-science"
+}

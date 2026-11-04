@@ -1,0 +1,34 @@
+{
+ "title": "Mathematics (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "math",
+ "color": "#7C5CFF",
+ "tagline": "NCERT Mathematics for Class 12 (board exam and JEE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Relations and Functions",
+  "Inverse Trigonometric Functions",
+  "Matrices",
+  "Determinants",
+  "Continuity and Differentiability",
+  "Application of Derivatives",
+  "Integrals",
+  "Application of Integrals",
+  "Differential Equations",
+  "Vector Algebra",
+  "Three Dimensional Geometry",
+  "Linear Programming",
+  "Probability"
+ ],
+ "tracks": [
+  "class12",
+  "jee"
+ ],
+ "id": "class-12-mathematics"
+}

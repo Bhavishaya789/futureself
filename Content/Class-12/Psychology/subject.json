@@ -1,0 +1,24 @@
+{
+ "title": "Psychology (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "brain",
+ "color": "#9B6BFF",
+ "tagline": "Psychology for Class 12 board exam (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Variations in Psychological Attributes",
+  "Self and Personality",
+  "Meeting Life Challenges",
+  "Psychological Disorders",
+  "Therapeutic Approaches",
+  "Attitude and Social Cognition",
+  "Social Influence and Group Processes"
+ ],
+ "id": "class-12-psychology"
+}

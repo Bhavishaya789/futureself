@@ -1,0 +1,36 @@
+{
+ "title": "Physics (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "atom",
+ "color": "#2DE2E6",
+ "tagline": "NCERT Physics Part 1 and 2 for Class 11. Also the base for JEE and NEET.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Units and Measurements",
+  "Motion in a Straight Line",
+  "Motion in a Plane",
+  "Laws of Motion",
+  "Work, Energy and Power",
+  "System of Particles and Rotational Motion",
+  "Gravitation",
+  "Mechanical Properties of Solids",
+  "Mechanical Properties of Fluids",
+  "Thermal Properties of Matter",
+  "Thermodynamics",
+  "Kinetic Theory",
+  "Oscillations",
+  "Waves"
+ ],
+ "tracks": [
+  "class11",
+  "jee",
+  "neet"
+ ],
+ "id": "class-11-physics"
+}

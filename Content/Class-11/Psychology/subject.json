@@ -1,0 +1,26 @@
+{
+ "title": "Psychology (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "brain",
+ "color": "#9B6BFF",
+ "tagline": "Psychology for Class 11 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "What is Psychology?",
+  "Methods of Enquiry in Psychology",
+  "The Bases of Human Behaviour",
+  "Human Development",
+  "Sensory, Attentional and Perceptual Processes",
+  "Learning",
+  "Human Memory",
+  "Thinking",
+  "Motivation and Emotion"
+ ],
+ "id": "class-11-psychology"
+}

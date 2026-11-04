@@ -1,0 +1,40 @@
+{
+ "title": "Biology (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "brain",
+ "color": "#26C281",
+ "tagline": "NCERT Biology for Class 11. Also the base for NEET.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "The Living World",
+  "Biological Classification",
+  "Plant Kingdom",
+  "Animal Kingdom",
+  "Morphology of Flowering Plants",
+  "Anatomy of Flowering Plants",
+  "Structural Organisation in Animals",
+  "Cell: The Unit of Life",
+  "Biomolecules",
+  "Cell Cycle and Cell Division",
+  "Photosynthesis in Higher Plants",
+  "Respiration in Plants",
+  "Plant Growth and Development",
+  "Breathing and Exchange of Gases",
+  "Body Fluids and Circulation",
+  "Excretory Products and their Elimination",
+  "Locomotion and Movement",
+  "Neural Control and Coordination",
+  "Chemical Coordination and Integration"
+ ],
+ "tracks": [
+  "class11",
+  "neet"
+ ],
+ "id": "class-11-biology"
+}

@@ -1,0 +1,25 @@
+{
+ "title": "Artificial Intelligence and IT (Class 10)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "brain",
+ "color": "#9B6BFF",
+ "tagline": "Skill subject: AI (417) and Information Technology (402) topics for Class 10 board exam (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Revisiting AI project cycle and ethics",
+  "Advanced Python",
+  "Data science",
+  "Computer vision",
+  "Natural language processing",
+  "Evaluating models",
+  "Digital documentation, spreadsheet, database, web applications and security",
+  "Communication, self-management, ICT, entrepreneurial and green skills"
+ ],
+ "id": "class-10-artificial-intelligence-and-it"
+}

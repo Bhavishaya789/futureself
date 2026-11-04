@@ -1,0 +1,36 @@
+{
+ "title": "Physics (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "atom",
+ "color": "#2DE2E6",
+ "tagline": "NCERT Physics Part 1 and 2 for Class 12 (board exam, JEE and NEET).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Electric Charges and Fields",
+  "Electrostatic Potential and Capacitance",
+  "Current Electricity",
+  "Moving Charges and Magnetism",
+  "Magnetism and Matter",
+  "Electromagnetic Induction",
+  "Alternating Current",
+  "Electromagnetic Waves",
+  "Ray Optics and Optical Instruments",
+  "Wave Optics",
+  "Dual Nature of Radiation and Matter",
+  "Atoms",
+  "Nuclei",
+  "Semiconductor Electronics: Materials, Devices and Simple Circuits"
+ ],
+ "tracks": [
+  "class12",
+  "jee",
+  "neet"
+ ],
+ "id": "class-12-physics"
+}

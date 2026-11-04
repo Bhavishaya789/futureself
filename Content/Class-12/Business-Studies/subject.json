@@ -1,0 +1,29 @@
+{
+ "title": "Business Studies (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#E4572E",
+ "tagline": "Business Studies for Class 12 board exam (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Nature and Significance of Management",
+  "Principles of Management",
+  "Business Environment",
+  "Planning",
+  "Organising",
+  "Staffing",
+  "Directing",
+  "Controlling",
+  "Financial Management",
+  "Financial Markets",
+  "Marketing Management",
+  "Consumer Protection"
+ ],
+ "id": "class-12-business-studies"
+}

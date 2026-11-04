@@ -1,0 +1,35 @@
+{
+ "title": "Political Science (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "people",
+ "color": "#7C5CFF",
+ "tagline": "Indian Constitution at Work and Political Theory (NCERT, Class 11).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Constitution: Why and How?",
+  "Rights in the Indian Constitution",
+  "Election and Representation",
+  "The Executive",
+  "The Legislature",
+  "The Judiciary",
+  "Federalism",
+  "Local Governments",
+  "Constitution as a Living Document",
+  "The Philosophy of the Constitution",
+  "Political Theory: An Introduction",
+  "Freedom",
+  "Equality",
+  "Social Justice",
+  "Rights",
+  "Citizenship",
+  "Nationalism",
+  "Secularism"
+ ],
+ "id": "class-11-political-science"
+}

@@ -1,0 +1,24 @@
+{
+ "title": "Geography (Class 10)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "globe",
+ "color": "#2FA66A",
+ "tagline": "Contemporary India II (NCERT Social Science, Class 10 board exam).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Resources and Development",
+  "Forest and Wildlife Resources",
+  "Water Resources",
+  "Agriculture",
+  "Minerals and Energy Resources",
+  "Manufacturing Industries",
+  "Lifelines of National Economy"
+ ],
+ "id": "class-10-geography"
+}

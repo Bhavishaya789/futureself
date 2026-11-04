@@ -1,0 +1,29 @@
+{
+ "title": "Accountancy (Class 12)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#C9A227",
+ "tagline": "Accountancy for Class 12 board exam (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Accounting for Partnership Firms: Fundamentals",
+  "Goodwill",
+  "Change in Profit Sharing Ratio",
+  "Admission of a Partner",
+  "Retirement and Death of a Partner",
+  "Dissolution of a Partnership Firm",
+  "Accounting for Share Capital",
+  "Issue and Redemption of Debentures",
+  "Financial Statements of a Company",
+  "Analysis of Financial Statements",
+  "Accounting Ratios",
+  "Cash Flow Statement"
+ ],
+ "id": "class-12-accountancy"
+}

@@ -1,0 +1,28 @@
+{
+ "title": "Business Studies (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "chart",
+ "color": "#E4572E",
+ "tagline": "Business Studies for Class 11 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Business, Trade and Commerce",
+  "Forms of Business Organisation",
+  "Private, Public and Global Enterprises",
+  "Business Services",
+  "Emerging Modes of Business",
+  "Social Responsibilities of Business and Business Ethics",
+  "Formation of a Company",
+  "Sources of Business Finance",
+  "Small Business and Entrepreneurship",
+  "Internal Trade",
+  "International Business"
+ ],
+ "id": "class-11-business-studies"
+}

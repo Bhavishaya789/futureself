@@ -1,0 +1,35 @@
+{
+ "title": "Mathematics (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "math",
+ "color": "#7C5CFF",
+ "tagline": "NCERT Mathematics for Class 11. Also the base for JEE.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Sets",
+  "Relations and Functions",
+  "Trigonometric Functions",
+  "Complex Numbers and Quadratic Equations",
+  "Linear Inequalities",
+  "Permutations and Combinations",
+  "Binomial Theorem",
+  "Sequences and Series",
+  "Straight Lines",
+  "Conic Sections",
+  "Introduction to Three Dimensional Geometry",
+  "Limits and Derivatives",
+  "Statistics",
+  "Probability"
+ ],
+ "tracks": [
+  "class11",
+  "jee"
+ ],
+ "id": "class-11-mathematics"
+}

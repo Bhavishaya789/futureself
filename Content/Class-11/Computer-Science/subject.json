@@ -1,0 +1,28 @@
+{
+ "title": "Computer Science (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "code",
+ "color": "#2DE2E6",
+ "tagline": "Computer Science with Python for Class 11 (CBSE).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Computer System",
+  "Encoding Schemes and Number System",
+  "Emerging Trends",
+  "Introduction to Problem Solving",
+  "Getting Started with Python",
+  "Conditional and Iterative Statements",
+  "Functions",
+  "Strings",
+  "Lists",
+  "Tuples and Dictionaries",
+  "Societal Impact"
+ ],
+ "id": "class-11-computer-science"
+}

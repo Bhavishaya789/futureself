@@ -1,0 +1,35 @@
+{
+ "title": "Geography (Class 11)",
+ "semester": 0,
+ "credits": 0,
+ "icon": "globe",
+ "color": "#2FA66A",
+ "tagline": "Fundamentals of Physical Geography and India: Physical Environment (NCERT, Class 11).",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Khan Academy India",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Geography as a Discipline",
+  "The Origin and Evolution of the Earth",
+  "Interior of the Earth",
+  "Distribution of Oceans and Continents",
+  "Minerals and Rocks",
+  "Geomorphic Processes and Landforms",
+  "Composition and Structure of the Atmosphere",
+  "Solar Radiation, Heat Balance and Temperature",
+  "Atmospheric Circulation and Weather Systems",
+  "Water in the Atmosphere",
+  "World Climate and Climate Change",
+  "Oceans and Ocean Water Movements",
+  "Life on the Earth and Biodiversity",
+  "India: Location, Structure and Physiography",
+  "India: Drainage System",
+  "India: Climate",
+  "India: Natural Vegetation and Soils",
+  "Natural Hazards and Disasters"
+ ],
+ "id": "class-11-geography"
+}
