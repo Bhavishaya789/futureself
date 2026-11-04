@@ -440,6 +440,103 @@
   }
 
 
+  /* ================= 5 HARD questions of a topic: friend challenge, strict, on the coding dashboard ================= */
+  var N5 = null;
+  function challenge5Modal(pre) {
+    N5 = { fid: '', sid: pre ? pre.sid : '', tid: pre ? pre.tid : '', idx: [], friends: [] };
+    H().modal('<div class="chnew"><div class="eyebrow">Coding challenge</div><h2 style="margin:6px 0 4px">5 Hard questions</h2><div id="c5body"><div class="empty">Loading…</div></div></div>');
+    Promise.all([acct('social', { a: 'overview' }), ctIndex()]).then(function (r) {
+      N5.friends = r[0].board.filter(function (x) { return !x.me; });
+      N5.idx = r[1].filter(function (x) { return x.topics.some(function (t) { return t.hard >= 5; }); });
+      c5paint();
+    }).catch(function (e) { var b = $('#c5body'); if (b) b.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+  }
+  function c5paint() {
+    var b = $('#c5body'); if (!b || !N5) return;
+    if (!N5.friends.length) { b.innerHTML = '<p class="muted" style="margin-top:12px">Add a friend first (Friends page). Your friend must also be a B.Tech student.</p><div class="row" style="margin-top:12px"><button class="btn" data-act="close">Close</button></div>'; return; }
+    var s = N5.idx.filter(function (x) { return x.id === N5.sid; })[0];
+    var fr = '<option value="">Choose a friend</option>' + N5.friends.map(function (f) { return '<option value="' + esc(f.id) + '"' + (N5.fid === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>'; }).join('');
+    var su = '<option value="">Choose a subject</option>' + N5.idx.map(function (x) { return '<option value="' + esc(x.id) + '"' + (N5.sid === x.id ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('');
+    var tp = '<option value="">' + (s ? 'Choose a topic' : 'Choose a subject first') + '</option>' + (s ? s.topics.filter(function (t) { return t.hard >= 5; }).map(function (t) { return '<option value="' + esc(t.id) + '"' + (N5.tid === t.id ? ' selected' : '') + '>' + esc(t.title) + '</option>'; }).join('') : '');
+    b.innerHTML = '<div class="fld" style="margin-top:12px"><label class="f" for="c5f">Friend (B.Tech)</label><select class="in" id="c5f">' + fr + '</select></div>' +
+      '<div class="fld" style="margin-top:12px"><label class="f" for="c5s">Subject</label><select class="in" id="c5s">' + su + '</select></div>' +
+      '<div class="fld" style="margin-top:12px"><label class="f" for="c5t">Topic</label><select class="in" id="c5t">' + tp + '</select></div>' +
+      '<div class="tipbox" style="margin-top:14px"><b>How it works.</b> You both get the same <b>5 Hard questions</b> of this topic and solve them on the coding dashboard in <b>strict mode</b>. There is <b>no time limit</b>, but the clock runs and a faster finish adds a bonus. <b>If you exit even once, your challenge ends at once</b> and the AI marks whatever you had saved. One attempt only. Hidden tests plus an AI review give the points (100 in all); the higher score wins.</div>' +
+      '<div id="cherr" class="muted" style="color:var(--bad);margin-top:8px;min-height:18px"></div><div class="row wrap" style="margin-top:6px"><button class="btn pri" data-act="c5send">Send challenge</button><button class="btn ghost" data-act="close">Cancel</button></div>';
+  }
+  function c5send() {
+    var err = $('#cherr'); if (!N5 || !N5.fid || !N5.sid || !N5.tid) { if (err) err.textContent = 'Choose a friend, a subject and a topic.'; return; }
+    var btn = $('[data-act=c5send]'); if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+    acct('challenge', { a: 'create', kind: 'code5', friendId: N5.fid, subjectId: N5.sid, topicId: N5.tid }).then(function (r) {
+      H().closeModal(); H().toast('Challenge sent', 'Your friend will see it in their Friends page.');
+      H().modal('<div style="text-align:center"><div class="eyebrow">Challenge ready</div><h2 style="margin:8px 0">Play your attempt now?</h2><p class="muted" style="margin-bottom:16px">5 Hard questions, no time limit, strict mode. Exiting once ends your attempt. You can also play later from the Friends page (within 2 days).</p><div class="row wrap" style="justify-content:center"><button class="btn pri" data-act="ccplay" data-id="' + esc(r.id) + '">Play now</button><button class="btn ghost" data-act="close">Later</button></div></div>');
+    }).catch(function (e) { if (btn) { btn.disabled = false; btn.textContent = 'Send challenge'; } if (err) err.textContent = e.message; });
+  }
+  var A5 = null;
+  function fixedLang(subjectId) { var s = (window.FS_CTX || []).filter(function (x) { return x.id === subjectId; })[0]; return s && s.lang ? s.lang : ''; }
+  function arena5Draw(AR, K) {
+    var fl = fixedLang(AR.subjectId);
+    A5 = { AR: AR, K: K, i: 0, fl: fl, codes: [], langs: [], out: [], busy: false, saveT: null, tab: 'out', stdin: '' };
+    for (var k = 0; k < AR.problems.length; k++) { var d = (AR.codes || {})[k] || {}; A5.langs[k] = fl || d.lang || ls('fs_code_lang') || 'python'; A5.codes[k] = d.code || TPL[A5.langs[k]] || ''; A5.out[k] = ''; }
+    a5frame(); a5show(0); K.tick();
+  }
+  function a5frame() {
+    var AR = A5.AR, root = A5.K.root();
+    root.innerHTML = '<div class="arwrap carena"><div class="arhead"><div class="grow"><div class="eyebrow">Coding challenge &middot; 5 Hard &middot; strict</div><b>' + esc(AR.title) + '</b></div><div class="artime" id="artime" title="Time so far">0:00</div><button class="btn sm ghost" data-act="c5exit" id="c5exit" style="margin-left:10px">Emergency exit</button></div>' +
+      '<div class="archwarn" id="archwarn"></div><div class="c5tabs" id="c5tabs"></div>' +
+      '<div class="cagrid"><div class="card caprob" id="c5prob"></div>' +
+      '<div class="card cawork"><div class="row spread wrap" style="gap:10px"><select class="in csel" id="c5lang" aria-label="Language"' + (A5.fl ? ' disabled' : '') + '></select><div class="row wrap" style="gap:10px"><button class="btn sm" data-act="c5run" id="c5rb">▶ Check samples</button><button class="btn sm pri" data-act="casubmit" id="casub">Submit all 5</button></div></div>' +
+      '<div id="c5ed" class="cedwrap"></div><div class="ctabs"><button class="ctab on" data-act="c5tab" data-t="out">Output</button><button class="ctab" data-act="c5tab" data-t="in">Test your own input</button></div><div id="c5pane" class="cpane"></div></div></div>' +
+      '<div class="muted arfoot">Strict mode. One attempt. <b>Exiting even once ends the challenge</b> and the AI marks what you have saved. No pasting. Your code is saved automatically. Hidden tests and the AI mark all 5 questions when you submit.</div></div>';
+    var sel = $('#c5lang'); sel.innerHTML = LANGS.filter(function (l) { return !A5.fl || l[0] === A5.fl; }).map(function (l) { return '<option value="' + l[0] + '">' + l[1] + '</option>'; }).join('');
+  }
+  function a5tabs() {
+    var t = $('#c5tabs'); if (!t) return;
+    t.innerHTML = A5.AR.problems.map(function (p, i) { var has = A5.codes[i] && A5.codes[i] !== (TPL[A5.langs[i]] || '') && A5.codes[i].trim(); return '<button class="c5tab' + (i === A5.i ? ' on' : '') + (has ? ' has' : '') + '" data-act="c5q" data-i="' + i + '"><b>Q' + (i + 1) + '</b><small>' + esc(p.title) + '</small></button>'; }).join('');
+  }
+  function a5show(i) {
+    var p = A5.AR.problems[i]; A5.i = i;
+    $('#c5prob').innerHTML = '<div class="cpbody"><div class="row spread wrap"><div><span class="lv hard">Hard</span> <b style="font-size:18px">' + esc(p.title) + '</b></div><small class="muted">Question ' + (i + 1) + ' of ' + A5.AR.problems.length + '</small></div>' +
+      '<p style="margin:10px 0">' + esc(p.statement) + '</p><div class="cpmeta"><div><b>Input</b><br>' + esc(p.input) + '</div><div><b>Output</b><br>' + esc(p.output) + '</div></div>' +
+      (p.samples || []).map(function (s, k) { return '<div class="cpsamp"><div><small>Sample input ' + (k + 1) + '</small><pre>' + esc(s.in) + '</pre></div><div><small>Expected output</small><pre>' + esc(s.out) + '</pre></div></div>'; }).join('') + '</div>';
+    $('#c5lang').value = A5.langs[i];
+    var ed = $('#c5ed'); ed.innerHTML = '';
+    A5.ed = mountEditor(ed, { lang: A5.langs[i], value: A5.codes[i], onChange: function () { A5.codes[A5.i] = A5.ed.get(); a5save(A5.i); } });
+    a5tabs(); a5pane();
+  }
+  function a5save(i) {
+    clearTimeout(A5.saveT); A5.saveT = setTimeout(function () { if (!A5 || A5.AR.over) return; acct('challenge', { a: 'savecode', id: A5.AR.id, i: i, code: A5.codes[i], lang: A5.langs[i] }).catch(function () { }); }, 1200);
+  }
+  function a5pane() {
+    var p = $('#c5pane'); if (!p || !A5) return;
+    $$('.ctab').forEach(function (b) { b.classList.toggle('on', b.dataset.t === A5.tab); });
+    if (A5.tab === 'in') { p.innerHTML = '<textarea class="in cstdin" id="c5stdin" placeholder="Type any input to test your program with, then press Run on this input." spellcheck="false"></textarea><div class="row" style="margin-top:8px"><button class="btn sm" data-act="c5run1">Run on this input</button></div>'; $('#c5stdin').value = A5.stdin; $('#c5stdin').addEventListener('input', function (e) { A5.stdin = e.target.value; }); }
+    else p.innerHTML = '<pre class="cout" id="c5out">' + (A5.out[A5.i] || '<span class="muted">Press "Check samples" to test this question on its sample inputs. Hidden tests run when you submit.</span>') + '</pre>';
+  }
+  function a5run(samples) {
+    if (!A5 || A5.busy) return; var i = A5.i, code = A5.ed.get(); if (!code.trim()) return A5.K.warn('Write some code first.');
+    A5.busy = true; var b = $('#c5rb'); if (b) b.disabled = true; A5.tab = 'out'; a5pane(); var o = $('#c5out'); if (o) o.innerHTML = '<span class="muted">Running…</span>';
+    var pr = samples ? checkSamples(code, A5.langs[i], A5.AR.problems[i]).then(samplesHTML) : runCode(A5.langs[i], code, A5.stdin).then(function (r) { return outHTML(r); });
+    pr.catch(function (e) { return '<span class="cerr">' + esc(e.message) + '</span>'; }).then(function (h) { A5.out[i] = h; A5.busy = false; var b2 = $('#c5rb'); if (b2) b2.disabled = false; if (A5.i === i) a5pane(); });
+  }
+  function a5codes() { if (!A5) return []; A5.codes[A5.i] = A5.ed.get(); return A5.codes.map(function (c, i) { return { code: c === (TPL[A5.langs[i]] || '') ? '' : c, lang: A5.langs[i] }; }); }
+  function a5langChange(v) { var i = A5.i, old = A5.ed.get(); if (!old.trim() || old === (TPL[A5.langs[i]] || '')) A5.ed.set(TPL[v] || ''); A5.langs[i] = v; ls('fs_code_lang', v); A5.ed.setLang(v); A5.codes[i] = A5.ed.get(); a5tabs(); a5save(i); }
+  function resultBody5(c, K) {
+    var me = K.meId(), r = c.result, done = c.status === 'done', m = c.mine || {}, qs = m.qs || [];
+    var rows = qs.map(function (q, i) { var pt = c.review && c.review.problems ? c.review.problems[i] : null; return '<tr><td>Q' + (i + 1) + (pt ? ' &middot; ' + esc(pt.title) : '') + '</td><td>' + (q.runner ? q.passed + '/' + q.tests : 'AI') + '</td><td>' + (q.testPts || 0) + '/14</td><td>' + (q.quality || 0) + '/6</td><td><b>' + (q.score || 0) + '</b>/20</td></tr>'; }).join('');
+    var body = '<div class="cvd ' + (m.correct >= 70 ? 'ok' : 'mid') + '"><b>Your score: ' + (m.correct == null ? '-' : m.correct) + ' / 100</b><small>' + (m.how === 'left' ? 'You exited, so the attempt ended and the saved code was marked.' : 'All 5 questions marked by hidden tests and the AI.') + '</small></div>' +
+      (rows ? '<table class="restab" style="margin-top:10px"><thead><tr><th>Question</th><th>Tests</th><th>Test pts</th><th>AI quality</th><th>Score</th></tr></thead><tbody>' + rows + '</tbody></table>' : '') +
+      (qs.length ? '<details class="chrev"><summary>AI review of each question</summary>' + qs.map(function (q, i) { var a = q.ai || {}; return '<div class="rq"><p><b>Q' + (i + 1) + '.</b> ' + esc(a.feedback || '') + (a.complexity ? ' <small>(' + esc(a.complexity) + ')</small>' : '') + (a.hint ? '<br><small>Tip: ' + esc(a.hint) + '</small>' : '') + '</p></div>'; }).join('') + '</details>' : '') +
+      (m.ungraded ? '<p class="muted" style="margin-top:8px">The marker was not available, so this attempt was not scored.</p>' : '');
+    if (done) {
+      var mp = r.points[me] || {}, tp = r.points[c.friend.id] || {}, fname = esc(c.friend.name);
+      var row = function (l, a, b) { return '<tr><td>' + l + '</td><td>' + a + '</td><td>' + b + '</td></tr>'; };
+      body += '<table class="restab" style="margin-top:10px"><thead><tr><th></th><th>You</th><th>' + fname + '</th></tr></thead><tbody>' + row('Score (out of 100)', mp.base || 0, tp.base || 0) + row('Questions fully solved', (mp.correct || 0) + '/5', (tp.correct || 0) + '/5') + row('Time taken', mp.timeMs ? K.words(mp.timeMs) : '-', tp.timeMs ? K.words(tp.timeMs) : '-') + row('Speed bonus', '+' + (mp.timeBonus || 0), '+' + (tp.timeBonus || 0)) + row('First to finish', '+' + (mp.first || 0), '+' + (tp.first || 0)) + row('Winner bonus', '+' + (mp.win || 0), '+' + (tp.win || 0)) + '<tr class="tot"><td>Points earned</td><td>' + (mp.total || 0) + '</td><td>' + (tp.total || 0) + '</td></tr></tbody></table>';
+      if (c.review && c.review.codes) body += '<details class="chrev"><summary>Your submitted code</summary>' + c.review.codes.map(function (x, i) { return '<p style="margin:8px 0 4px"><b>Q' + (i + 1) + '</b> <small>' + esc(langName(x.lang)) + '</small></p><pre class="cout" style="max-height:200px">' + esc(x.code || '(nothing written)') + '</pre>'; }).join('') + '</details>';
+    }
+    return body;
+  }
+
   /* ================= topic sessions (no timer) ================= */
   var TL = {};
   function ctScript(src) {
@@ -478,7 +575,7 @@
       var rows = s.topics.map(function (t) {
         var d = 0; for (var k in pr.solved) if (k.indexOf(s.id + '-' + t.id + '-') === 0) d++;
         var done = d >= t.n;
-        return '<div class="card cttopic"><div class="grow"><b>' + esc(t.title) + '</b><small class="muted" style="display:block">' + esc(t.desc || '') + '</small><div class="row wrap" style="gap:8px;margin-top:8px"><span class="lv easy">Easy ' + t.easy + '</span><span class="lv medium">Medium ' + t.medium + '</span><span class="lv hard">Hard ' + t.hard + '</span></div><div class="cbar" style="margin-top:10px"><i style="width:' + Math.round(100 * d / t.n) + '%"></i></div><small>' + d + ' of ' + t.n + ' solved' + (done ? ' · completed' : '') + '</small></div><button class="btn ' + (done ? '' : 'pri') + '" data-act="ctstart" data-id="' + esc(t.id) + '">' + (done ? 'Practise again' : d ? 'Continue session' : 'Start session') + '</button></div>';
+        return '<div class="card cttopic"><div class="grow"><b>' + esc(t.title) + '</b><small class="muted" style="display:block">' + esc(t.desc || '') + '</small><div class="row wrap" style="gap:8px;margin-top:8px"><span class="lv easy">Easy ' + t.easy + '</span><span class="lv medium">Medium ' + t.medium + '</span><span class="lv hard">Hard ' + t.hard + '</span></div><div class="cbar" style="margin-top:10px"><i style="width:' + Math.round(100 * d / t.n) + '%"></i></div><small>' + d + ' of ' + t.n + ' solved' + (done ? ' · completed' : '') + '</small></div><button class="btn ' + (done ? '' : 'pri') + '" data-act="ctstart" data-id="' + esc(t.id) + '">' + (done ? 'Practise again' : d ? 'Continue session' : 'Start session') + '</button>' + (t.hard >= 5 ? '<button class="btn" data-act="c5new" data-id="' + esc(t.id) + '" title="Challenge a friend with 5 Hard questions">' + H().ic('flame') + ' Challenge</button>' : '') + '</div>';
       }).join('');
       g.innerHTML = '<div class="row spread wrap" style="grid-column:1/-1"><div><button class="btn sm ghost" data-act="ctback">← All subjects</button></div><div class="muted" style="font-size:14px">' + (s.lang ? 'You code in <b>' + esc(langName(s.lang)) + '</b> for this subject.' : s.kind === 'dsa' ? 'Use any language you like for DSA.' : 'Python only.') + '</div></div><div class="cttopics"><h2 style="margin:0 0 10px">' + esc(s.title) + '</h2>' + rows + '</div>';
     }).catch(function (e) { g.innerHTML = '<div class="card"><p class="cerr">' + esc(e.message) + '</p></div>'; });
@@ -588,11 +685,20 @@
     ccplay: function (el) { H().closeModal(); FSX.challenge.play(el.dataset.id); },
     carun: function () { arenaRun(true); }, carun1: function () { arenaRun(false); },
     catab: function (el) { if (CA) { CA.tab = el.dataset.t; capane(); } },
-    chtocode: function () { H().closeModal(); location.hash = '#/code'; }
+    chtocode: function () { H().closeModal(); location.hash = '#/code'; },
+    c5new: function (el) { challenge5Modal(el && el.dataset && el.dataset.id ? { sid: TS.subj, tid: el.dataset.id } : null); }, c5send: c5send,
+    c5q: function (el) { if (A5 && !A5.AR.over) { A5.codes[A5.i] = A5.ed.get(); a5show(+el.dataset.i); } },
+    c5run: function () { a5run(true); }, c5run1: function () { a5run(false); },
+    c5tab: function (el) { if (A5) { A5.tab = el.dataset.t; a5pane(); } },
+    c5exit: function () { if (A5 && A5.K.exit) A5.K.exit(); }
   });
   document.addEventListener('change', function (e) {
     if (e.target && e.target.id === 'clang' && P.ed) setLang(e.target.value);
+    else if (e.target && e.target.id === 'c5lang' && A5) a5langChange(e.target.value);
+    else if (e.target && e.target.id === 'c5s' && N5) { N5.sid = e.target.value; N5.tid = ''; c5paint(); }
+    else if (e.target && e.target.id === 'c5t' && N5) { N5.tid = e.target.value; }
+    else if (e.target && e.target.id === 'c5f' && N5) { N5.fid = e.target.value; }
     else if (e.target && e.target.id === 'calang' && CA) { var old = CA.ed.get(); if (old === (TPL[CA.lang] || '') || !old.trim()) CA.ed.set(TPL[e.target.value] || ''); CA.lang = e.target.value; ls('fs_code_lang', CA.lang); CA.ed.setLang(CA.lang); CA.ed.focus(); }
   });
-  FSX.code = { run: runCode, mount: mountEditor, templates: TPL, langName: langName, arenaDraw: arenaDraw, arenaPayload: arenaPayload, arenaFlush: arenaFlush, resultBody: resultBody, isBtech: isBtech, localInfo: localInfo };
+  FSX.code = { run: runCode, mount: mountEditor, templates: TPL, langName: langName, arenaDraw: arenaDraw, arenaPayload: arenaPayload, arenaFlush: arenaFlush, resultBody: resultBody, arena5Draw: arena5Draw, arena5Codes: a5codes, resultBody5: resultBody5, challenge5: challenge5Modal, isBtech: isBtech, localInfo: localInfo };
 })();

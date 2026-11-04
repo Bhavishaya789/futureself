@@ -48,10 +48,11 @@
     var t = c.topic || {};
     if (c.status === 'pending' || c.status === 'active') {
       if (!c.mine.started) btns += '<button class="btn sm pri" data-act="chstart" data-id="' + esc(c.id) + '">Play now</button>' + (!c.iAmChallenger ? '<button class="btn sm ghost" data-act="chdecl" data-id="' + esc(c.id) + '">Decline</button>' : '');
+      else if (c.kind === 'code5' && !c.mine.closed) btns += '<button class="btn sm" data-act="chresume" data-id="' + esc(c.id) + '">Close attempt</button>';
       else if (!c.mine.closed && Date.now() + C.offset < c.mine.deadline) btns += '<button class="btn sm pri" data-act="chresume" data-id="' + esc(c.id) + '">Resume</button>';
       else btns += '<button class="btn sm" data-act="chview" data-id="' + esc(c.id) + '">View</button>';
     } else if (c.status === 'done') btns += '<button class="btn sm" data-act="chview" data-id="' + esc(c.id) + '">Result</button>';
-    var code = c.kind === 'code', sub = esc(t.subject || '') + (t.subject ? ' &middot; ' : '') + (code ? 'coding question' : c.n + ' questions' + (c.hasWritten ? ' + 1 written' : '')) + ' &middot; ' + fmtT(c.limitSec * 1000) + ' min' + (c.mine.closed ? ' &middot; you scored ' + (code ? c.mine.correct + '/100' : c.mine.correct + '/' + c.n) : '');
+    var c5 = c.kind === 'code5', code = c.kind === 'code' || c5, sub = esc(t.subject || '') + (t.subject ? ' &middot; ' : '') + (c5 ? '5 Hard questions &middot; no time limit' : (code ? 'coding question' : c.n + ' questions' + (c.hasWritten ? ' + 1 written' : '')) + ' &middot; ' + fmtT(c.limitSec * 1000) + ' min') + (c.mine.closed ? ' &middot; you scored ' + (code ? c.mine.correct + '/100' : c.mine.correct + '/' + c.n) : '');
     return '<div class="item chitem"><div class="grow"><b>' + esc(t.title || 'Topic') + '</b><small>vs ' + esc(c.friend.name) + ' &middot; ' + sub + '</small></div><span class="badge ' + st[1] + '">' + st[0] + '</span>' + btns + '</div>';
   }
   function cardHTML() {
@@ -106,7 +107,7 @@
       '<div class="fld" style="margin-top:12px"><label class="f" for="chs">Subject</label><select class="in" id="chs">' + sub + '</select></div>' +
       '<div class="fld" style="margin-top:12px"><label class="f" for="chl">Topic</label><select class="in" id="chl">' + les + '</select></div>' +
       '<div class="tipbox" style="margin-top:14px"><b>How it works.</b> You both get the same ' + Math.min(QN, sel ? sel.n : QN) + ' of the hardest questions on this topic and ' + fmtT(Math.max(120, Math.min(900, Math.min(QN, sel ? sel.n : QN) * 50)) * 1000) + ' minutes. The screen is locked while you play and each person can try only once. 10 points per right answer, a bonus for finishing quicker, +10 for whoever finishes first, +20 for the winner.</div>' +
-      (FSX.code && FSX.code.isBtech() ? '<p class="muted" style="margin-top:10px;font-size:14px">B.Tech? <a href="#" data-act="chtocode">Challenge a friend with a coding question instead</a>.</p>' : '') + '<div id="cherr" class="muted" style="color:var(--bad);margin-top:8px;min-height:18px"></div><div class="row wrap" style="margin-top:6px"><button class="btn pri" data-act="chsend"' + (NW.fid && sel ? '' : ' disabled') + '>Send challenge</button><button class="btn ghost" data-act="close">Cancel</button></div>';
+      (FSX.code && FSX.code.isBtech() ? '<p class="muted" style="margin-top:10px;font-size:14px">B.Tech? <a href="#" data-act="chtocode">Challenge a friend with a coding question instead</a> or <a href="#" data-act="c5new">with 5 Hard coding questions of a topic</a>.</p>' : '') + '<div id="cherr" class="muted" style="color:var(--bad);margin-top:8px;min-height:18px"></div><div class="row wrap" style="margin-top:6px"><button class="btn pri" data-act="chsend"' + (NW.fid && sel ? '' : ' disabled') + '>Send challenge</button><button class="btn ghost" data-act="close">Cancel</button></div>';
   }
   document.addEventListener('change', function (e) {
     if (!NW || !e.target) return;
@@ -130,10 +131,10 @@
   function rules(id, resume) {
     var c = C.list.filter(function (x) { return x.id === id; })[0]; if (!c) return load().then(function () { rules(id, resume); });
     H().modal('<div class="chrules"><div class="eyebrow">' + (resume ? 'Resume challenge' : 'Before you start') + '</div><h2 style="margin:6px 0 4px">' + esc((c.topic || {}).title || 'Challenge') + '</h2><p class="muted">vs ' + esc(c.friend.name) + '</p>' +
-      '<ul class="chlist"><li><b>' + (c.kind === 'code' ? 'One coding question' : c.n + ' questions' + (c.hasWritten ? ' and 1 written answer' : '')) + '</b> and <b>' + fmtT(c.limitSec * 1000) + ' minutes</b>. The timer starts the moment you press the button.</li>' +
+      (c.kind === 'code5' ? '<ul class="chlist"><li><b>5 Hard coding questions</b> on this topic, solved on the coding dashboard. <b>No time limit</b>, but the clock runs from the moment you press the button and a faster finish adds a bonus.</li><li><b>One attempt only.</b></li><li><b>Strict mode switches on by itself. If you exit even once</b> (Emergency exit, switching windows or closing the app) <b>the challenge ends at once</b> and the AI marks whatever code you had saved.</li><li><b>AI marks it.</b> Hidden tests run your code and the AI reviews it (100 points over the 5 questions). Higher score wins; the faster finisher gets a bonus.</li>' : '<ul class="chlist"><li><b>' + (c.kind === 'code' ? 'One coding question' : c.n + ' questions' + (c.hasWritten ? ' and 1 written answer' : '')) + '</b> and <b>' + fmtT(c.limitSec * 1000) + ' minutes</b>. The timer starts the moment you press the button.</li>' +
       '<li><b>One attempt only.</b> Once it is closed or submitted it can never be played again.</li>' +
       '<li><b>Strict mode switches on by itself.</b> The screen is locked' + (c.kind === 'code' ? ' and pasting is off' : '') + '. Leaving it 3 times submits your answers. ' + (resume ? 'You can resume only once.' : 'Closing the app does not stop the clock.') + '</li>' +
-      '<li><b>' + (c.kind === 'code' ? 'AI marks it.' : 'Speed counts.') + '</b> ' + (c.kind === 'code' ? 'Hidden tests run your code and the AI reviews it, then the points are given automatically. A faster finish adds a bonus.' : 'Right answers give points' + (c.hasWritten ? ', the AI marks the written answer' : '') + ', finishing quicker gives a bonus, and the faster finisher gets +10.') + '</li></ul>' +
+      '<li><b>' + (c.kind === 'code' ? 'AI marks it.' : 'Speed counts.') + '</b> ' + (c.kind === 'code' ? 'Hidden tests run your code and the AI reviews it, then the points are given automatically. A faster finish adds a bonus.' : 'Right answers give points' + (c.hasWritten ? ', the AI marks the written answer' : '') + ', finishing quicker gives a bonus, and the faster finisher gets +10.') + '</li></ul>') +
       '<div class="row wrap" style="margin-top:14px"><button class="btn pri" data-act="chgo" data-id="' + esc(id) + '" data-resume="' + (resume ? 1 : '') + '">I am ready. ' + (resume ? 'Resume' : 'Start') + '</button><button class="btn ghost" data-act="close">Not now</button></div></div>', true);
   }
   function begin(id, resume) {
@@ -160,22 +161,22 @@
   function root() { var r = $('#arena'); if (!r) { r = document.createElement('div'); r.id = 'arena'; document.body.appendChild(r); } return r; }
   function arena(id, r) {
     var c = C.list.filter(function (x) { return x.id === id; })[0] || {};
-    AR = { id: id, kind: r.kind === 'code' ? 'code' : 'quiz', problem: r.problem, code: r.code, lang: r.lang, written: r.written || null, wtext: r.wtext || '', title: (r.topic && r.topic.title) || (c.topic && c.topic.title) || 'Challenge', qs: r.questions || [], ans: (r.answers || []).slice(), i: 0, deadline: r.deadline, off: r.now - Date.now(), leaves: r.leaves || 0, sending: false, over: false, confirm: false };
+    AR = { id: id, kind: r.kind === 'code5' ? 'code5' : r.kind === 'code' ? 'code' : 'quiz', problems: r.problems, codes: r.codes, subjectId: (r.topic && r.topic.subjectId) || (c.topic && c.topic.subjectId) || '', t0: Date.now(), problem: r.problem, code: r.code, lang: r.lang, written: r.written || null, wtext: r.wtext || '', title: (r.topic && r.topic.title) || (c.topic && c.topic.title) || 'Challenge', qs: r.questions || [], ans: (r.answers || []).slice(), i: 0, deadline: r.deadline, off: r.now - Date.now(), leaves: r.leaves || 0, sending: false, over: false, confirm: false };
     while (AR.ans.length < AR.qs.length) AR.ans.push(null);
     var isCode = AR.kind === 'code';
     for (var k = 0; k < AR.ans.length; k++) if (AR.ans[k] === undefined) AR.ans[k] = null;
     document.body.classList.add('inarena');
-    lockOn(AR.title, AR.deadline - AR.off);
+    lockOn(AR.title, AR.kind === 'code5' ? Date.now() + 864e5 : AR.deadline - AR.off);
     try { if (!(window.fsApi && window.fsApi.isApp) && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () { }); } catch (e) { }
     on(document, 'contextmenu', function (e) { e.preventDefault(); });
     ['copy', 'cut', 'paste', 'dragstart', 'drop', 'selectstart'].forEach(function (ev) { on(document, ev, function (e) { if (!AR || AR.over) return; var typing = e.target && e.target.closest && e.target.closest('.ceditor,.arw,.cstdin'); if (typing && (ev === 'copy' || ev === 'cut' || ev === 'selectstart')) return; e.preventDefault(); }, true); });
     on(window, 'keydown', function (e) {
       if (!AR || AR.over) return;
       var k = e.key;
-      var edit = AR.kind === 'code' || (e.target && e.target.closest && e.target.closest('.arw'));
+      var edit = AR.kind === 'code' || AR.kind === 'code5' || (e.target && e.target.closest && e.target.closest('.arw'));
       if (edit && (e.ctrlKey || e.metaKey) && !e.altKey && /^[zyacxZYACX]$/.test(k)) return;
       if (e.ctrlKey || e.metaKey || e.altKey || /^F\d+$/.test(k) || k === 'PrintScreen' || k === 'Escape' || k === 'Tab' && e.altKey) { e.preventDefault(); e.stopPropagation(); return; }
-      if (AR.kind === 'code' || (e.target && e.target.closest && e.target.closest('.arw'))) return;
+      if (AR.kind === 'code' || AR.kind === 'code5' || (e.target && e.target.closest && e.target.closest('.arw'))) return;
       if (k === 'ArrowRight') go(1); else if (k === 'ArrowLeft') go(-1); else if (/^[1-5]$/.test(k)) pickOpt(+k - 1);
     }, true);
     on(window, 'beforeunload', function (e) { if (AR && !AR.over) { e.preventDefault(); e.returnValue = ''; } });
@@ -183,13 +184,22 @@
     on(window, 'blur', function () { away(); });
     AR.timer = setInterval(tick, 250);
     drawQ(); tick();
-    if (AR.kind === 'code' && FSX.code) FSX.code.arenaDraw(AR, KIT);
+    if (AR.kind === 'code5' && FSX.code) FSX.code.arena5Draw(AR, KIT); else if (AR.kind === 'code' && FSX.code) FSX.code.arenaDraw(AR, KIT);
   }
-  var KIT = { root: root, tick: function () { tick(); }, warn: function (t) { warn(t); }, AR: function () { return AR; }, meId: function () { return meId; }, words: words };
+  /* strict 5-question challenge: ONE exit ends it at once; the saved code is marked by the tests and the AI */
+  function exit5(auto) {
+    if (!AR || AR.over || AR.leaving) return;
+    if (!auto && !AR.confirmExit) { AR.confirmExit = true; var eb = $('#c5exit'); if (eb) eb.textContent = 'Tap again: this ends the challenge'; warn('Exiting ends your challenge at once and the AI marks what you have saved. Tap Emergency exit again to confirm.'); setTimeout(function () { if (AR) { AR.confirmExit = false; var e2 = $('#c5exit'); if (e2) e2.textContent = 'Emergency exit'; } }, 5000); return; }
+    AR.leaving = true; warn(auto ? 'You left the challenge screen, so the challenge is ending.' : 'Ending your challenge…');
+    var codes = FSX.code ? FSX.code.arena5Codes() : [], tries = 0, id = AR.id;
+    (function post() { ch({ a: 'leave', id: id, codes: codes }).then(function () { if (!AR || AR.over) return; ch({ a: 'get', id: id }).then(function (r) { finish(r.challenge); }).catch(function () { finish(); }); }).catch(function (e) { if (/closed/i.test(e.message)) return finish(); if (tries++ < 5) setTimeout(post, 1500); else finish(); }); })();
+  }
+  var KIT = { exit: function () { exit5(false); }, root: root, tick: function () { tick(); }, warn: function (t) { warn(t); }, AR: function () { return AR; }, meId: function () { return meId; }, words: words };
   var lastAway = 0;
   function away() {
     if (!AR || AR.over) return;
     var now = Date.now(); if (now - lastAway < 2500) return; lastAway = now;
+    if (AR.kind === 'code5') { if (now - AR.t0 < 4000) return; return exit5(true); }
     ch({ a: 'leave', id: AR.id }).then(function (r) {
       if (!AR || AR.over) return;
       AR.leaves = r.leaves; warn(r.closed ? 'You left the challenge 3 times. Your answers were submitted.' : 'You left the challenge screen (' + r.leaves + ' of 3). At 3 your answers are submitted.');
@@ -201,6 +211,7 @@
   function remaining() { return AR.deadline - (Date.now() + AR.off); }
   function tick() {
     if (!AR || AR.over) return;
+    if (AR.kind === 'code5') { var el = $('#artime'); if (el) el.textContent = fmtT(Date.now() - AR.t0); return; }
     var ms = remaining(), t = $('#artime'); if (t) { t.textContent = fmtT(ms); t.classList.toggle('low', ms < 60000); t.classList.toggle('crit', ms < 20000); }
     var pb = $('#arbar'); if (pb) pb.style.width = Math.max(0, Math.min(100, 100 * ms / (AR.limitMs || (AR.limitMs = ms + 1)))) + '%';
     if (ms <= 0 && !AR.sending) submit(true);
@@ -222,7 +233,7 @@
     tick();
   }
   function drawQ() {
-    if (AR.kind === 'code') return;
+    if (AR.kind === 'code' || AR.kind === 'code5') return;
     if (AR.written && AR.i >= AR.qs.length) return drawW();
     var q = AR.qs[AR.i], answered = AR.ans.filter(function (a) { return a != null; }).length;
     root().innerHTML = '<div class="arwrap"><div class="arhead"><div class="grow"><div class="eyebrow">Challenge &middot; locked</div><b>' + esc(AR.title) + '</b></div><div class="artime" id="artime">--:--</div></div>' +
@@ -242,10 +253,10 @@
   }
   function submit(forced) {
     if (!AR || AR.sending || AR.over) return;
-    var open = AR.kind === 'code' ? 0 : AR.ans.filter(function (a) { return a == null; }).length;
-    if (!forced && !AR.confirm) { AR.confirm = true; if (AR.kind === 'code') { var sb = $('#casub'); if (sb) sb.textContent = 'Tap again to submit for good'; warn('This is final. After you submit you cannot play this challenge again. Tap Submit again to confirm.'); return; } if (AR.written && AR.i >= AR.qs.length) { var sb2 = $('#arsub'); if (sb2) sb2.textContent = 'Tap again to submit'; } else drawQ(); if (open) warn(open + ' question' + (open > 1 ? 's' : '') + ' still unanswered. Tap Submit again to finish anyway.'); return; }
-    AR.sending = true; var b = $('#arsub') || $('#casub'); if (b) { b.disabled = true; b.textContent = AR.kind === 'code' ? 'Marking your code…' : 'Submitting…'; }
-    var extra = AR.kind === 'code' ? (FSX.code && FSX.code.arenaPayload() || { code: '', lang: AR.lang }) : { answers: AR.ans, written: AR.written ? AR.wtext : undefined };
+    var open = AR.kind === 'code' || AR.kind === 'code5' ? 0 : AR.ans.filter(function (a) { return a == null; }).length;
+    if (!forced && !AR.confirm) { AR.confirm = true; if (AR.kind === 'code' || AR.kind === 'code5') { var sb = $('#casub'); if (sb) sb.textContent = 'Tap again to submit for good'; warn('This is final. After you submit you cannot play this challenge again. Tap Submit again to confirm.'); return; } if (AR.written && AR.i >= AR.qs.length) { var sb2 = $('#arsub'); if (sb2) sb2.textContent = 'Tap again to submit'; } else drawQ(); if (open) warn(open + ' question' + (open > 1 ? 's' : '') + ' still unanswered. Tap Submit again to finish anyway.'); return; }
+    AR.sending = true; var b = $('#arsub') || $('#casub'); if (b) { b.disabled = true; b.textContent = AR.kind === 'code' || AR.kind === 'code5' ? 'Marking your code…' : 'Submitting…'; }
+    var extra = AR.kind === 'code5' ? { codes: FSX.code ? FSX.code.arena5Codes() : [] } : AR.kind === 'code' ? (FSX.code && FSX.code.arenaPayload() || { code: '', lang: AR.lang }) : { answers: AR.ans, written: AR.written ? AR.wtext : undefined };
     var tries = 0; (function post() {
       ch(Object.assign({ a: 'submit', id: AR.id }, extra)).then(function (r) { finish(r.challenge); }).catch(function (e) {
         if (/not started|closed/i.test(e.message)) return finish(); if (tries++ < 6) setTimeout(post, 1500); else { AR.sending = false; warn('Could not reach the server. Check your internet, then tap Submit again.'); drawQ(); }
@@ -272,14 +283,14 @@
   }
   function pts(p) { return p ? p.total : 0; }
   function result(c) {
-    var me = meId, done = c.status === 'done', r = c.result, fname = esc(c.friend.name), isCode = c.kind === 'code';
+    var me = meId, done = c.status === 'done', r = c.result, fname = esc(c.friend.name), isCode = c.kind === 'code' || c.kind === 'code5', is5 = c.kind === 'code5';
     var head, body = '';
     if (!done) {
-      head = '<div class="reshead wait"><div class="big">⏳</div><h2>Your attempt is in</h2><p class="muted">' + (isCode ? 'Your code scored <b>' + (c.mine.correct == null ? '-' : c.mine.correct) + ' / 100</b>' : 'You answered <b>' + (c.mine.correct == null ? '-' : c.mine.correct) + ' of ' + c.n + '</b>') + ' in <b>' + words(c.mine.timeMs || 0) + '</b>.</p></div>' + (isCode && FSX.code ? FSX.code.resultBody(c, KIT) : (c.mine.written ? writtenBox(c) : '')) +
+      head = '<div class="reshead wait"><div class="big">⏳</div><h2>Your attempt is in</h2><p class="muted">' + (isCode ? 'Your code scored <b>' + (c.mine.correct == null ? '-' : c.mine.correct) + ' / 100</b>' : 'You answered <b>' + (c.mine.correct == null ? '-' : c.mine.correct) + ' of ' + c.n + '</b>') + ' in <b>' + words(c.mine.timeMs || 0) + '</b>.</p></div>' + (isCode && FSX.code ? (is5 ? FSX.code.resultBody5(c, KIT) : FSX.code.resultBody(c, KIT)) : (c.mine.written ? writtenBox(c) : '')) +
         '<p class="muted" style="text-align:center;margin:10px 0 0">' + (c.status === 'declined' ? 'Your friend declined this challenge.' : c.theirs.started ? fname + ' is still playing. The winner appears here and in your Challenges list.' : fname + ' has not played yet. They have until ' + new Date(c.expiresAt).toLocaleString() + '. The winner and the correct answers are shown when you both finish.') + '</p>';
     } else {
       var won = r.winner === me, mineP = r.points[me] || {}, theirP = r.points[c.friend.id] || {};
-      if (isCode && FSX.code) { body = FSX.code.resultBody(c, KIT); }
+      if (isCode && FSX.code) { body = is5 ? FSX.code.resultBody5(c, KIT) : FSX.code.resultBody(c, KIT); }
       head = '<div class="reshead ' + (r.draw ? 'draw' : won ? 'win' : 'lose') + '"><div class="big">' + (r.draw ? '🤝' : won ? '🏆' : '🎯') + '</div><div class="eyebrow">Winner</div><h2>' + (r.draw ? 'It is a draw' : won ? 'You won!' : esc(r.winnerName) + ' won') + '</h2>' +
         '<p class="muted">' + (r.reason === 'walkover' ? (won ? fname + ' did not play in time, so you win.' : 'You did not play in time.') : r.draw ? 'Same points and same time.' : (won ? 'More points than ' + fname + '.' : esc(r.winnerName) + ' scored more points than you.')) + '</p></div>';
       var row = function (lbl, a, b) { return '<tr><td>' + lbl + '</td><td>' + a + '</td><td>' + b + '</td></tr>'; };

@@ -33,5 +33,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/challenge.js": {
+      "maxDuration": 60
+    }
+  }
 }
