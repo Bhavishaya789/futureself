@@ -219,6 +219,14 @@ function createApi(opts) {
     safe.units.forEach((u) => u.lessons.forEach((l) => { l.problems = (l.problems || []).map((p) => ({ level: p.level, rank: p.rank, q: p.q, marks: p.marks })); }));
     return { topic: safe, progress, ai: !!env.ANTHROPIC_API_KEY };
   });
+  /* the one typed (written) question a challenge may carry: the lesson's best-suited practice problem with its model answer and rubric.
+     Only used when the student creates a challenge; it goes straight to the server, which keeps it hidden from the friend. */
+  add('GET', /^\/challenge-written\/([\w-]+)\/([\w-]+)$/, async (m) => {
+    const l = lessonOf(m[1], m[2]);
+    const ps = (l.problems || []).filter((p) => p.rubric && p.rubric.length >= 2 && p.a && p.a.length < 2400 && p.marks >= 3 && p.marks <= 8).sort((a, b) => (b.rank - a.rank) || (a.marks - b.marks));
+    const p = ps[0]; if (!p) return { written: null };
+    return { written: { q: p.q, model: p.a, rubric: p.rubric.map((r) => ({ m: r.m, t: r.t })) } };
+  });
   add('POST', /^\/progress$/, async (m, d) => {
     const t = topics[d.topic_id];
     if (!t || !lessonsOf(t).some((l) => l.id === d.lesson_id)) throw bad('Unknown lesson', 404);

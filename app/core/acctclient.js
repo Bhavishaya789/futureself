@@ -82,6 +82,11 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to challenge friends.'));
         return req('/api/challenge', 'POST', p || {}, true);
       },
+      /* run code on the server's code runner (C, Java, Go ...) */
+      run: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to run code on the server.'));
+        return req('/api/run', 'POST', p || {}, true);
+      },
       /* take a photo with the phone: the PC asks for a slot and shows a QR code, then collects the photos */
       capture: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use your phone camera.'));

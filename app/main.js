@@ -205,6 +205,11 @@ app.whenReady().then(async () => {
       applyLock(true, cfg);
       return Object.assign({ ok: true }, r);
     });
+    const coder = require('./core/coderun').create({ dir: dataDir, log });
+    ipcMain.handle('code:info', () => coder.info());
+    ipcMain.handle('code:run', (_e, p) => coder.run(p).catch((e) => ({ ok: false, error: e.message })));
+    ipcMain.handle('code:shell', (_e, p) => { const id = String(p && p.id || '').slice(0, 40); return coder.shell(id, p && p.cmd, (chunk, kind) => send('code:out', { id, chunk, kind })).catch((e) => ({ ok: false, error: e.message })); });
+    ipcMain.handle('code:kill', (_e, id) => ({ ok: coder.kill(String(id || '')) }));
     ipcMain.handle('lock:stop', () => { blocker.stop(); applyLock(false); return { ok: true }; });
 
     createWindow(process.argv.includes('--hidden'));

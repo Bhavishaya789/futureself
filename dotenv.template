@@ -50,3 +50,7 @@ SMTP_USER=
 SMTP_PASSWORD=
 # AI-generated quizzes and study help
 ANTHROPIC_API_KEY=
+
+# Coding platform (see website/CODE-SETUP.md)
+PISTON_URL=
+GEMINI_API_KEY=

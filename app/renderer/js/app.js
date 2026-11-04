@@ -149,7 +149,7 @@
   window.addEventListener('hashchange', go);
 
   function ensureShell(active) {
-    var nav = [['home', 'home', 'Home'], ['learn', 'book', 'Learn'], ['timetable', 'cal', 'Timetable'], ['start', 'focus', 'Focus'], ['progress', 'chart', 'Progress']].concat((window.FSX && FSX.nav) || []).concat([['settings', 'gear', 'Settings']]);
+    var nav = [['home', 'home', 'Home'], ['learn', 'book', 'Learn'], ['timetable', 'cal', 'Timetable'], ['start', 'focus', 'Focus'], ['progress', 'chart', 'Progress']].concat((window.FSX && FSX.nav) || []).concat((window.FSX && FSX.navDyn && FSX.navDyn()) || []).concat([['settings', 'gear', 'Settings']]);
     var key = active === 'topic' || active === 'lesson' ? 'learn' : active;
     if (!S.shell || !$('#view')) {
       $('#app').innerHTML =
