@@ -676,3 +676,15 @@ body.inarena{overflow:hidden}
 .dot{width:10px;height:10px;border-radius:50%;background:#7c8cff}.dot.solved{background:#4fe3a0}.dot.check{background:#ffc857}
 @media (max-width:900px){.cstats{grid-template-columns:repeat(2,minmax(0,1fr))}.cdgrid,.cact{grid-template-columns:1fr}}
 .crow .grow{flex:1 1 auto;min-width:60px}.cbar{width:100%}
+
+/* topic sessions */
+.ctwrap{display:block}.ctinfo{margin-bottom:16px}.ctsubs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.ctsub{text-align:left;display:grid;gap:8px;color:var(--text);cursor:pointer}.ctsub:hover{border-color:var(--line-2)}.ctsub b{font-size:17px}.ctsub small{color:var(--muted)}
+.cttopics{display:grid;gap:12px;margin-top:14px}.cttopic{display:flex;gap:16px;align-items:center;justify-content:space-between}.cttopic .grow{flex:1 1 auto;min-width:0}
+.cprob.locked{opacity:.55}
+@media (max-width:900px){.cttopic{flex-direction:column;align-items:stretch}}
+.codefocus{max-width:1500px;margin:0 auto;padding:14px 18px}
+.cfbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.cfbar .cfsub{flex:1;min-width:140px;font-size:16px}
+.cftime{font-variant-numeric:tabular-nums;font-weight:700;font-size:18px}
+.codeov{z-index:60}

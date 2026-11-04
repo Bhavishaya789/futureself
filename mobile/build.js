@@ -8,7 +8,7 @@ const rm = (p) => fs.rmSync(p, { recursive: true, force: true });
 const copyDir = (a, b) => fs.cpSync(a, b, { recursive: true });
 
 rm(OUT); fs.mkdirSync(OUT, { recursive: true });
-['css', 'fonts', 'vendor', 'icons'].forEach((d) => { if (fs.existsSync(path.join(R, d))) copyDir(path.join(R, d), path.join(OUT, d)); });
+['css', 'fonts', 'vendor', 'icons', 'data'].forEach((d) => { if (fs.existsSync(path.join(R, d))) copyDir(path.join(R, d), path.join(OUT, d)); });
 fs.mkdirSync(path.join(OUT, 'js'), { recursive: true });
 ['logo3d.js', 'fx.js', 'float3d.js', 'subjectfx.js', 'vguard.js', 'visuals.js', 'lesson3d.js', 'scene.js', 'account.js', 'profile.js', 'extras.js', 'challenge.js', 'phonecam.js', 'dropdown.js', 'daily.js', 'dict.js', 'lang.js', 'app.js'].forEach((f) => fs.copyFileSync(path.join(R, 'js', f), path.join(OUT, 'js', f)));
 ['mobile.js', 'phone.js'].forEach((f) => fs.copyFileSync(path.join(__dirname, 'web', f), path.join(OUT, 'js', f)));

@@ -68,6 +68,7 @@
   /* run(lang, code, stdin) -> { stdout, stderr, code, via, timedOut } */
   function runCode(lang, code, stdin) {
     stdin = stdin || '';
+    if (lang === 'sql' && stdin.trim()) { code = stdin.replace(/\s*$/, '\n') + code; stdin = ''; } /* SQL questions ship their table setup as the test input */
     return localInfo().then(function (inf) {
       if (inf.local.indexOf(lang) >= 0) return window.fsApi.codeRun({ lang: lang, code: code, stdin: stdin }).then(function (r) {
         if (r && r.ok === false) throw new Error(r.error || 'Could not run');
@@ -167,29 +168,42 @@
   function ago(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; }
 
   /* ================= the Code page ================= */
+  var TS = { idx: null, subj: null, topic: null, items: null, res: null };
   var P = { problems: null, cur: null, ed: null, lang: 'python', tab: 'out', stdin: '', busy: false, filter: 'all', view: 'dash', ch: null };
   function problemsLoad() {
     if (P.problems) return Promise.resolve(P.problems);
     return acct('challenge', { a: 'problems' }).then(function (r) { P.problems = r.problems; return P.problems; });
   }
   function draftKey(pid, lang) { return 'fs_code_' + (pid || 'free') + '_' + lang; }
-  function nav() { return isBtech() ? [['code', 'code', 'Code']] : []; }
+  function isSchool() { var t = String((H().S && H().S.user && H().S.user.track) || ''); return /class1[12]/.test(t); }
+  function nav() { return (isBtech() || isSchool()) ? [['code', 'code', 'Code']] : []; }
   FSX.navDyn = nav;
 
   function viewCode(v, r) {
-    if (!isBtech()) { v.innerHTML = '<div class="top"><div><h1>Coding platform</h1><p class="sub">This section is for B.Tech students. Change your class in Settings to use it.</p></div></div>'; return Promise.resolve(); }
-    P.lang = ls('fs_code_lang') || 'python'; P.cur = null; P.out = null;
-    P.view = r && r.a ? 'practice' : (P.view === 'practice' && P.keep ? 'practice' : 'dash'); P.keep = false;
+    if (!isBtech() && !isSchool()) { v.innerHTML = '<div class="top"><div><h1>Coding platform</h1><p class="sub">This section is for B.Tech students and for Class 11 and 12 (Python). Change your class in Settings to use it.</p></div></div>'; return Promise.resolve(); }
+    P.lang = isBtech() ? (ls('fs_code_lang') || 'python') : 'python'; P.cur = null; P.out = null;
+    P.view = r && r.a ? 'practice' : (P.keep && (P.view === 'practice' || P.view === 'session') ? P.view : (isBtech() ? 'dash' : 'topics')); if (P.view === 'session' && !TS.items) P.view = 'topics'; P.keep = false;
     v.innerHTML = '<div class="top"><div><h1>Coding platform</h1><p class="sub">Write, run and test code in any language. Practise on our questions, then challenge a friend.</p></div></div><div class="seg cviews" id="cviews"></div><div id="cgrid" class="cgrid"><div class="empty">Loading…</div></div>';
     return Promise.all([localInfo(), problemsLoad().catch(function () { return []; })]).then(function () {
       var pid = r && r.a; if (pid) P.cur = (P.problems || []).filter(function (x) { return x.id === pid; })[0] || null;
       go2();
     });
   }
+  function openSess() { var s = H().S && H().S.session; return !!(s && !s.ended); }
+  /* the strict coding session (and the coding dashboard inside normal sessions) draws the same editor, questions and terminal */
+  FSX.codeOK = function () { return isBtech() || isSchool(); };
+  FSX.codeMount = function () {
+    P.view = TS.sess && TS.items ? 'session' : 'practice'; P.keep = true;
+    Promise.all([localInfo(), problemsLoad().catch(function () { return []; })]).then(function () {
+      if (!$('#cgrid')) return;
+      if (P.view === 'practice' && !P.cur) P.cur = (P.problems || [])[0] || null;
+      go2();
+    });
+  };
   function go2() {
-    var vw = $('#cviews'); if (vw) vw.innerHTML = [['dash', 'Dashboard'], ['practice', 'Practice & Terminal']].map(function (x) { return '<button class="segb' + (P.view === x[0] ? ' on' : '') + '" data-act="cdview" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('');
-    var g = $('#cgrid'); if (g) g.className = P.view === 'dash' ? 'cdash' : 'cgrid';
-    if (P.view === 'dash') dash(); else draw();
+    var vw = $('#cviews'); if (vw) vw.innerHTML = (isBtech() ? [['dash', 'Dashboard'], ['topics', 'Topics'], ['practice', 'Practice & Terminal']] : [['topics', 'Topics'], ['practice', 'Practice & Terminal']]).map(function (x) { return '<button class="segb' + ((P.view === x[0] || (P.view === 'session' && x[0] === 'topics')) ? ' on' : '') + '" data-act="cdview" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+    var g = $('#cgrid'); if (g) g.className = P.view === 'dash' ? 'cdash' : P.view === 'topics' ? 'ctwrap' : 'cgrid';
+    if (P.view === 'dash') dash(); else if (P.view === 'topics') topicsView(); else if (P.view === 'session') tdraw(); else draw();
   }
   function runnersLine() {
     var inf = INFO || { local: [] };
@@ -209,7 +223,7 @@
   }
   function draw() {
     var g = $('#cgrid'); if (!g) return;
-    var lopts = LANGS.map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
+    var lopts = LANGS.filter(function (l) { return isBtech() || l[0] === 'python'; }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
     g.innerHTML = '<aside class="card cpside"><div class="eyebrow">Questions</div>' + probListHTML() + '</aside>' +
       '<section class="cmain"><div class="card" id="cprob">' + problemHTML(P.cur) + '</div>' +
       '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language">' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button></div>' +
@@ -425,22 +439,151 @@
     return body;
   }
 
+
+  /* ================= topic sessions (no timer) ================= */
+  var TL = {};
+  function ctScript(src) {
+    if (TL[src]) return TL[src];
+    return TL[src] = new Promise(function (res, rej) { var sc = document.createElement('script'); sc.src = src; sc.onload = function () { res(); }; sc.onerror = function () { delete TL[src]; rej(new Error('The question bank could not be loaded.')); }; document.head.appendChild(sc); });
+  }
+  function ctWho() { var t = String((H().S && H().S.user && H().S.user.track) || ''); return { b: /btech\d/.test(t), c11: /class11/.test(t), c12: /class12/.test(t) }; }
+  function ctIndex() {
+    return ctScript('data/ct/index.js').then(function () {
+      var w = ctWho(); return (window.FS_CTX || []).filter(function (s) { return s.kind === 'dsa' || s.kind === 'lang' ? w.b : s.kind === 'cs11' ? w.c11 : s.kind === 'cs12' ? w.c12 : false; });
+    });
+  }
+  function ctSubj(id) { return ctScript('data/ct/' + id + '.js').then(function () { return window.FS_CT[id]; }); }
+  function ctProg() { try { var r = JSON.parse(ls('fs_ct_prog') || '{}'); r.solved = r.solved || {}; r.done = r.done || {}; return r; } catch (e) { return { solved: {}, done: {} }; } }
+  function ctSave(r) { ls('fs_ct_prog', JSON.stringify(r)); }
+  function ctSolvedN(items, pr) { return items.filter(function (x) { return pr.solved[x.id]; }).length; }
+  function ctUnlocked(items, pr, it) {
+    var order = ['Easy', 'Medium', 'Hard'], k = order.indexOf(it.level);
+    for (var i = 0; i < k; i++) if (items.some(function (x) { return x.level === order[i] && !pr.solved[x.id]; })) return false;
+    return true;
+  }
+  function topicsView() {
+    var g = $('#cgrid'); if (!g) return; g.innerHTML = '<div class="card"><p class="muted">Loading the question bank…</p></div>';
+    ctIndex().then(function (idx) {
+      TS.idx = idx; var pr = ctProg();
+      if (!idx.length) { g.innerHTML = '<div class="card"><p class="muted">No coding topics are set up for your class yet.</p></div>'; return; }
+      if (!TS.subj) {
+        var cards = idx.map(function (s) {
+          var d = 0; s.topics.forEach(function (t) { for (var k in pr.solved) if (k.indexOf(s.id + '-' + t.id + '-') === 0) d++; });
+          return '<button class="card ctsub" data-act="ctsub" data-id="' + esc(s.id) + '"><div class="eyebrow">' + (s.lang ? 'Language' : s.kind === 'dsa' ? 'Any language' : 'Python') + '</div><b>' + esc(s.title) + '</b><small>' + s.topics.length + ' topics · ' + s.n + ' questions</small><div class="cbar"><i style="width:' + Math.round(100 * d / Math.max(1, s.n)) + '%"></i></div><small>' + d + ' solved</small></button>';
+        }).join('');
+        g.innerHTML = '<div class="ctinfo card"><div class="eyebrow">How a topic session works</div><p class="muted" style="margin-top:6px">Pick a subject and a topic. A session starts with no timer and ends only when you have solved every question of that topic: Easy first, then Medium, then Hard. You get an editor and a real terminal the whole time. You can pause and come back whenever you like; your progress is saved.</p></div><div class="ctsubs">' + cards + '</div>';
+        return;
+      }
+      var s = idx.filter(function (x) { return x.id === TS.subj; })[0]; if (!s) { TS.subj = null; return topicsView(); }
+      var rows = s.topics.map(function (t) {
+        var d = 0; for (var k in pr.solved) if (k.indexOf(s.id + '-' + t.id + '-') === 0) d++;
+        var done = d >= t.n;
+        return '<div class="card cttopic"><div class="grow"><b>' + esc(t.title) + '</b><small class="muted" style="display:block">' + esc(t.desc || '') + '</small><div class="row wrap" style="gap:8px;margin-top:8px"><span class="lv easy">Easy ' + t.easy + '</span><span class="lv medium">Medium ' + t.medium + '</span><span class="lv hard">Hard ' + t.hard + '</span></div><div class="cbar" style="margin-top:10px"><i style="width:' + Math.round(100 * d / t.n) + '%"></i></div><small>' + d + ' of ' + t.n + ' solved' + (done ? ' · completed' : '') + '</small></div><button class="btn ' + (done ? '' : 'pri') + '" data-act="ctstart" data-id="' + esc(t.id) + '">' + (done ? 'Practise again' : d ? 'Continue session' : 'Start session') + '</button></div>';
+      }).join('');
+      g.innerHTML = '<div class="row spread wrap" style="grid-column:1/-1"><div><button class="btn sm ghost" data-act="ctback">← All subjects</button></div><div class="muted" style="font-size:14px">' + (s.lang ? 'You code in <b>' + esc(langName(s.lang)) + '</b> for this subject.' : s.kind === 'dsa' ? 'Use any language you like for DSA.' : 'Python only.') + '</div></div><div class="cttopics"><h2 style="margin:0 0 10px">' + esc(s.title) + '</h2>' + rows + '</div>';
+    }).catch(function (e) { g.innerHTML = '<div class="card"><p class="cerr">' + esc(e.message) + '</p></div>'; });
+  }
+  function ctStart(tid) {
+    var g = $('#cgrid'); if (g) g.innerHTML = '<div class="card"><p class="muted">Opening the session…</p></div>';
+    ctSubj(TS.subj).then(function (s) {
+      var t = s.topics.filter(function (x) { return x.id === tid; })[0]; if (!t) return;
+      TS.subject = s; TS.topic = t; TS.items = t.items; TS.res = null; var pr = ctProg();
+      var first = t.items.filter(function (x) { return !pr.solved[x.id]; })[0] || t.items[0];
+      P.cur = first; P.out = null; P.stdin = (first.samples[0] || {}).in || '';
+      P.lang = s.lang || (isBtech() ? (ls('fs_code_lang') || 'python') : 'python'); P.view = 'session'; TS.sess = true;
+      if (H().startCoding(t.title + ' · ' + s.title)) return; go2();
+    }).catch(function (e) { H().toast('Could not open', e.message, true); });
+  }
+  function tProblemHTML(p) {
+    return '<div class="cpbody"><div class="row spread wrap"><div><span class="lv ' + p.level.toLowerCase() + '">' + p.level + '</span> <b style="font-size:18px">' + esc(p.title) + '</b></div><small class="muted">' + (TS.items.indexOf(p) + 1) + ' of ' + TS.items.length + '</small></div>' +
+      '<p style="margin:10px 0">' + esc(p.statement) + '</p><div class="cpmeta"><div><b>Input</b><br>' + esc(p.input) + '</div><div><b>Output</b><br>' + esc(p.output) + '</div></div>' +
+      (p.samples || []).map(function (x, i) { return '<div class="cpsamp"><div><small>Sample input ' + (i + 1) + '</small><pre>' + esc(x.in) + '</pre></div><div><small>Expected output</small><pre>' + esc(x.out) + '</pre></div></div>'; }).join('') + '</div>';
+  }
+  function tSideHTML() {
+    var pr = ctProg(), it = TS.items, d = ctSolvedN(it, pr), out = '';
+    ['Easy', 'Medium', 'Hard'].forEach(function (lv) {
+      var grp = it.filter(function (x) { return x.level === lv; }); if (!grp.length) return;
+      out += '<div class="eyebrow" style="margin-top:12px">' + lv + ' · ' + grp.filter(function (x) { return pr.solved[x.id]; }).length + '/' + grp.length + '</div><div class="cplist">' + grp.map(function (x) {
+        var ok = !!pr.solved[x.id], open = ctUnlocked(it, pr, x);
+        return '<button class="cprob' + (P.cur && P.cur.id === x.id ? ' on' : '') + (open ? '' : ' locked') + '" data-act="ctpick" data-id="' + esc(x.id) + '"><b>' + (ok ? '✔ ' : open ? '' : '🔒 ') + esc(x.title) + '</b></button>';
+      }).join('') + '</div>';
+    });
+    return '<div class="eyebrow">' + esc(TS.topic.title) + '</div><div class="cbar" style="margin:8px 0"><i style="width:' + Math.round(100 * d / it.length) + '%"></i></div><small class="muted">' + d + ' of ' + it.length + ' solved · no timer</small>' + out + (H().S.session && !H().S.session.ended && H().S.session.coding ? '<small class="muted" style="display:block;margin-top:14px">Strict session. Use Emergency exit at the top if you must stop.</small>' : '<button class="btn sm ghost" style="margin-top:14px;width:100%" data-act="ctpause">Pause and leave</button>');
+  }
+  function tdraw() {
+    var g = $('#cgrid'); if (!g || !TS.items) return;
+    var fixed = TS.subject && TS.subject.lang, lopts = LANGS.filter(function (l) { return isBtech() || l[0] === 'python'; }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
+    g.innerHTML = '<aside class="card cpside" id="ctside">' + tSideHTML() + '</aside>' +
+      '<section class="cmain"><div class="card" id="cprob">' + tProblemHTML(P.cur) + '</div>' +
+      '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language"' + ((fixed || !isBtech()) ? ' disabled' : '') + '>' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button></div>' +
+      '<div class="row wrap" style="gap:10px"><button class="btn sm" data-act="cdrun" id="cdrb">▶ Run</button><button class="btn sm pri" data-act="ctsubmit" id="ctsb">Submit answer</button></div></div>' +
+      '<div id="ced" class="cedwrap"></div>' +
+      '<div class="ctabs" role="tablist"><button class="ctab' + (P.tab === 'out' ? ' on' : '') + '" data-act="cdtab" data-t="out">Output</button><button class="ctab' + (P.tab === 'in' ? ' on' : '') + '" data-act="cdtab" data-t="in">Input</button><button class="ctab' + (P.tab === 'term' ? ' on' : '') + '" data-act="cdtab" data-t="term">Terminal</button></div>' +
+      '<div id="cpane" class="cpane"></div><p class="muted" style="font-size:13px;margin-top:8px">' + runnersLine() + '</p></div></section>';
+    P.ed = mountEditor($('#ced'), { lang: P.lang, value: loadDraft(), onChange: function (v) { ls(draftKey(P.cur && P.cur.id, P.lang), v); } });
+    pane();
+  }
+  function ctPick(id) {
+    var it = TS.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
+    var pr = ctProg(); if (!ctUnlocked(TS.items, pr, it)) return H().toast('Finish the earlier level first', 'Medium opens after every Easy question is solved, and Hard after every Medium one.', true);
+    ls(draftKey(P.cur && P.cur.id, P.lang), P.ed ? P.ed.get() : ''); P.cur = it; P.out = null; P.stdin = (it.samples[0] || {}).in || ''; tdraw();
+  }
+  function ctSubmit() {
+    if (P.busy || !P.cur) return; var code = P.ed.get(); if (!code.trim()) return H().toast('Nothing to submit', 'Write some code first.', true);
+    P.busy = true; var b = $('#ctsb'); if (b) { b.disabled = true; b.textContent = 'Checking…'; } P.tab = 'out'; pane();
+    var tests = P.cur.tests, res = [], i = 0, cur = P.cur;
+    (function next() {
+      if (i >= tests.length) return fin();
+      var t = tests[i++]; var o = $('#cout'); if (o) o.innerHTML = '<span class="muted">Running test ' + i + ' of ' + tests.length + '…</span>';
+      return runCode(P.lang, code, t.in).then(function (r) { res.push({ ok: r.code === 0 && norm(r.stdout) === norm(t.out), r: r, t: t }); }).catch(function (e) { res.push({ ok: false, r: { stdout: '', stderr: e.message, code: 1 }, t: t }); }).then(function () { if (res.length && !res[res.length - 1].ok && /code server is not switched|could not run|not installed|cannot run/i.test(res[res.length - 1].r.stderr || '')) return fin(); return next(); });
+    })();
+    function fin() {
+      var pass = res.filter(function (x) { return x.ok; }).length, all = pass === tests.length && res.length === tests.length;
+      recRun(P.lang, 'run', cur, all);
+      var pr = ctProg();
+      if (all && !pr.solved[cur.id]) { pr.solved[cur.id] = { at: Date.now(), lang: P.lang }; ctSave(pr); }
+      var bad = res.filter(function (x) { return !x.ok; })[0], html;
+      if (all) html = '<div class="cvd ok"><b>All ' + tests.length + ' tests passed. Question solved.</b><small>' + (ctSolvedN(TS.items, ctProg()) >= TS.items.length ? 'That was the last question of this topic.' : 'Pick the next question on the left.') + '</small></div>';
+      else html = '<div class="cvd bad"><b>' + pass + ' of ' + tests.length + ' tests passed</b><small>Fix the failing case and submit again. There is no timer.</small></div>' + (bad ? '<div class="cpsamp"><div><small>Failing input</small><pre>' + esc(bad.t.in.length > 300 ? bad.t.in.slice(0, 300) + '…' : bad.t.in) + '</pre></div><div><small>Expected</small><pre>' + esc(bad.t.out) + '</pre></div></div><div class="cpsamp"><div><small>Your output</small><pre class="cerr">' + esc(bad.r.stdout || bad.r.stderr || '(no output)') + '</pre></div></div>' : '');
+      P.out = html; P.busy = false;
+      var sd = $('#ctside'); if (sd) sd.innerHTML = tSideHTML();
+      var b2 = $('#ctsb'); if (b2) { b2.disabled = false; b2.textContent = 'Submit answer'; } if (P.tab === 'out') pane();
+      if (all) ctAfterSolve();
+    }
+  }
+  function ctAfterSolve() {
+    var pr = ctProg(), n = ctSolvedN(TS.items, pr);
+    if (n >= TS.items.length) {
+      pr.done[TS.subject.id + '/' + TS.topic.id] = Date.now(); ctSave(pr);
+      H().modal('<div style="text-align:center"><div class="eyebrow">Session complete</div><h2 style="margin:8px 0">' + esc(TS.topic.title) + '</h2><p class="muted" style="margin-bottom:16px">You solved all ' + TS.items.length + ' questions of this topic. The session has ended.</p><button class="btn pri" data-act="ctend">Back to topics</button></div>');
+    } else H().toast('Solved', n + ' of ' + TS.items.length + ' done in this topic.');
+  }
+
   /* ================= hooks ================= */
   FSX.routes = Object.assign(FSX.routes || {}, { code: viewCode });
   var prevGate = FSX.after;
   FSX.actions = Object.assign(FSX.actions || {}, {
     cdview: function (el) { P.view = el.dataset.v; P.keep = true; go2(); },
-    cdopen: function (el) { P.cur = (P.problems || []).filter(function (x) { return x.id === el.dataset.id; })[0] || null; P.out = null; P.stdin = ((P.cur && P.cur.samples && P.cur.samples[0]) || {}).in || ''; P.view = 'practice'; go2(); },
+    cdopen: function (el) { P.cur = (P.problems || []).filter(function (x) { return x.id === el.dataset.id; })[0] || null; P.out = null; P.stdin = ((P.cur && P.cur.samples && P.cur.samples[0]) || {}).in || ''; P.view = 'practice'; TS.sess = false;
+      if (P.cur && !openSess()) return H().startCoding('Practice · ' + P.cur.title); go2(); },
     cdfilter: function (el) { P.filter = el.dataset.l; var s = $('.cpside'); if (s) s.innerHTML = '<div class="eyebrow">Questions</div>' + probListHTML(); },
     cdprob: function (el) {
       ls(draftKey(P.cur && P.cur.id, P.lang), P.ed ? P.ed.get() : '');
       P.cur = (P.problems || []).filter(function (x) { return x.id === el.dataset.id; })[0] || null; P.out = null; P.stdin = ((P.cur && P.cur.samples && P.cur.samples[0]) || {}).in || '';
+      if (P.cur && !openSess()) { TS.sess = false; P.view = 'practice'; return H().startCoding('Practice · ' + P.cur.title); }
       draw();
     },
     cdtab: function (el) { P.tab = el.dataset.t; pane(); },
     cdrun: doRun, cdsamples: doSamples,
     cdreset: function () { if (P.ed) { ls(draftKey(P.cur && P.cur.id, P.lang), ''); P.ed.set(TPL[P.lang] || ''); } },
     cdstop: stopTerm,
+    ctsub: function (el) { TS.subj = el.dataset.id; topicsView(); },
+    ctback: function () { TS.subj = null; topicsView(); },
+    ctstart: function (el) { ctStart(el.dataset.id); },
+    ctpick: function (el) { ctPick(el.dataset.id); },
+    ctsubmit: ctSubmit,
+    ctpause: function () { ls(draftKey(P.cur && P.cur.id, P.lang), P.ed ? P.ed.get() : ''); P.view = 'topics'; go2(); },
+    ctend: function () { H().closeModal(); TS.items = null; TS.sess = false; P.view = 'topics'; var s = H().S.session; if (s && s.coding && !s.ended) H().endCoding(true); else go2(); },
     cdchallenge: challengeModal, ccsend: challengeSend,
     ccplay: function (el) { H().closeModal(); FSX.challenge.play(el.dataset.id); },
     carun: function () { arenaRun(true); }, carun1: function () { arenaRun(false); },

@@ -843,7 +843,7 @@
   var wake = null, tickTimer = null;
   function beginSession(c) {
     if (window.FSX && FSX.canStart && FSX.canStart(c.lock) === false) return; // on the phone: the permissions the lock needs must be on first
-    S.session = { topic_id: c.topic_id, lesson_id: c.lesson_id, subject: c.subject, minutes: c.minutes, lock: c.lock, block_id: c.block_id || null, startedAt: Date.now(), startedISO: new Date().toISOString(), plannedMs: c.minutes * 60000, pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false };
+    S.session = { topic_id: c.topic_id, lesson_id: c.lesson_id, subject: c.subject, minutes: c.minutes, lock: c.lock, block_id: c.block_id || null, startedAt: Date.now(), startedISO: new Date().toISOString(), plannedMs: c.minutes * 60000, pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false, coding: !!c.coding };
     S.session.blocked = 0;
     if (window.fsApi && window.fsApi.isApp) {
       S.session.native = true;
@@ -899,9 +899,15 @@
   function renderFocus() {
     var s = S.session; S.shell = false; FS3D.ok && FS3D.setMode('focus'); if (s.topic_id) SubjectFX.set(s.topic_id); else SubjectFX.clear();
     var topic = s.topic_id && topicById(s.topic_id);
+    if (s.coding) { /* a coding session: the strict lock is on and the whole coding dashboard lives inside it */
+      $('#app').innerHTML = '<div class="codefocus"><div class="cfbar"><span class="badge">' + ic('lock').replace('class="i"', 'class="i" style="width:14px;height:14px"') + ' Strict coding session</span><b class="cfsub">' + esc(s.subject) + '</b><span class="badge" id="fdist">' + s.distractions + ' distractions</span><span class="cftime" id="ftime">' + mmss(elapsed()) + '</span><button class="btn ghost sm" data-act="fend">Emergency exit</button></div><div id="cgrid" class="cgrid"><div class="empty">Loading…</div></div></div>';
+      clearInterval(tickTimer); tick(); tickTimer = setInterval(tick, 250);
+      if (window.FSX && FSX.codeMount) try { FSX.codeMount(); } catch (e) { }
+      return;
+    }
     $('#app').innerHTML = '<div class="focus"><div class="meta"><span class="badge">' + ic('lock').replace('class="i"', 'class="i" style="width:14px;height:14px"') + ' ' + LOCKS[s.lock][0] + ' lock</span><span class="badge" id="fdist">' + s.distractions + ' distractions</span></div>' +
       '<div class="eyebrow" style="margin-bottom:10px">Now studying</div><div class="time" id="ftime">' + mmss(s.plannedMs - elapsed()) + '</div><div class="what"><b>' + esc(s.subject) + '</b>' + (topic && s.lesson_id ? ' &middot; <span id="flesson"></span>' : '') + '</div>' +
-      '<div class="ctrl">' + (s.topic_id && s.lesson_id ? '<button class="btn" data-act="fdrawer">' + ic('book') + ' Open lesson</button><button class="btn" data-act="fvideo">' + ic('play') + ' Watch video</button>' : '') + (s.lock === 'gentle' ? '<button class="btn" data-act="fpause" id="fpause">Pause</button>' : '') +
+      '<div class="ctrl">' + (s.topic_id && s.lesson_id ? '<button class="btn" data-act="fdrawer">' + ic('book') + ' Open lesson</button><button class="btn" data-act="fvideo">' + ic('play') + ' Watch video</button>' : '') + (codingSubject(s, topic) ? '<button class="btn" data-act="fcode">&lt;/&gt; Coding dashboard</button>' : '') + (s.lock === 'gentle' ? '<button class="btn" data-act="fpause" id="fpause">Pause</button>' : '') +
       (s.remote ? '<button class="btn ghost sm" data-act="fend">Emergency release</button>' : s.lock === 'strict' ? '<button class="btn ghost sm" data-act="fend">Emergency exit</button>' : '<button class="btn danger" data-act="fend">End early</button>') + '</div>' + (s.remote ? '<p class="muted" style="margin-top:18px">Started on your phone. This PC unlocks when that session ends.</p>' : '') + '</div>';
     if (s.topic_id && s.lesson_id) api('/topics/' + s.topic_id).then(function (d) { s.topicData = d.topic; d.topic.units.forEach(function (u) { u.lessons.forEach(function (l) { if (l.id === s.lesson_id) { s.lessonData = l; var f = $('#flesson'); if (f) f.textContent = l.title; } }); }); });
     clearInterval(tickTimer); tick(); tickTimer = setInterval(tick, 250);
@@ -909,7 +915,8 @@
   }
   function tick() {
     var s = S.session; if (!s || s.ended) return clearInterval(tickTimer);
-    var rem = s.plannedMs - elapsed(), t = $('#ftime');
+    var rem = s.coding ? Infinity : s.plannedMs - elapsed(), t = $('#ftime');
+    if (s.coding) { if (t) t.textContent = mmss(elapsed()); document.title = mmss(elapsed()) + ' coding | FutureSelf'; return; }
     if (t) t.textContent = mmss(rem); document.title = (s.pausedAt ? 'Paused' : mmss(rem)) + ' | FutureSelf';
     FS3D.ok && FS3D.setProgress(elapsed() / s.plannedMs);
     if (rem <= 0) { if (s.remote) endRemote('Phone session finished'); else finishSession(true); }
@@ -926,6 +933,19 @@
     document.body.appendChild(d); $('#dclose').onclick = function () { unmountVideo(); d.remove(); };
     if (S.ltab === 'video') lessonVideoMount();
   }
+  function codingSubject(s, topic) {
+    if (!(window.FSX && FSX.codeOK && FSX.codeOK())) return false;
+    return /code|coding|program|python|java\b|javascript|c\+\+|\bc\b|c#|golang|\bgo\b|dsa|data structure|algorithm|sql|database|software|computer|web develop/i.test((s.subject || '') + ' ' + (topic ? topic.title : ''));
+  }
+  actions.fcode = function () {
+    $$('.codeov').forEach(function (x) { x.remove(); });
+    var d = document.createElement('div'); d.className = 'lessonov codeov';
+    d.innerHTML = '<div class="lessonov-in" style="max-width:1400px"><div class="row spread" style="margin-bottom:14px"><div><div class="eyebrow">During your session</div><h1 style="margin-top:6px">Coding dashboard</h1></div><button class="btn" id="cdclose">' + ic('x') + ' Back to timer</button></div><div id="cgrid" class="cgrid"><div class="empty">Loading…</div></div></div>';
+    document.body.appendChild(d); $('#cdclose').onclick = function () { d.remove(); };
+    if (window.FSX && FSX.codeMount) FSX.codeMount();
+  };
+  function startCoding(subject) { if (S.session && !S.session.ended) return true; beginSession({ topic_id: null, lesson_id: null, subject: subject || 'Coding session', minutes: 720, lock: 'strict', coding: true }); return !!(S.session && !S.session.ended); }
+  function endCoding(done) { var s = S.session; if (!s || !s.coding || s.ended) return; var el = elapsed(); s.minutes = Math.max(1, Math.ceil(el / 60000)); s.plannedMs = Math.max(60000, el); finishSession(!!done); }
   actions.fdrawer = function () { openDrawer('lesson'); };
   actions.fvideo = function () { openDrawer('video'); };
   actions.fend = function () {
@@ -961,7 +981,7 @@
     s.ended = true; clearInterval(tickTimer);
     try { window.fsApi.lockStop().catch(function () { }); } catch (e) { }
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { }
-    unmountVideo(); $$('.comeback,.drawer,.lessonov').forEach(function (x) { x.remove(); }); closeModal();
+    unmountVideo(); $$('.comeback,.drawer,.lessonov,.codeov').forEach(function (x) { x.remove(); }); closeModal();
     document.title = 'FutureSelf | Study goals, timetable and focus';
     S.session = null; S.shell = true; location.hash = '#/'; if (typeof go === 'function') setTimeout(go, 50);
     toast(msg || 'Phone session finished', 'This PC is unlocked.');
@@ -1154,7 +1174,7 @@
     else if (!on && s.callPause) { s.pausedMs += Date.now() - s.pausedAt; s.pausedAt = null; s.callPause = false; }
     pushState();
   };
-  FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S, fmt: fmt, addDataPhotos: addDataPhotos, isPhoneApp: isPhoneApp };
+  FSX.h = { startCoding: startCoding, endCoding: endCoding, esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S, fmt: fmt, addDataPhotos: addDataPhotos, isPhoneApp: isPhoneApp };
   if (window.FSX && FSX.actions) Object.assign(actions, FSX.actions);
   go();
 })();
