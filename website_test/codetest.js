@@ -16,7 +16,7 @@ global.__FS_FETCH = async (url, opt) => {
   const txt = /marking a student's typed answer/.test(prompt) ? JSON.stringify({ awarded: [2, 1, 0], feedback: 'Good start.' }) : /programming examiner/.test(prompt) ? JSON.stringify({ quality: 24, correctness: 90, complexity: 'O(n)', feedback: 'Clean and correct.', hint: 'Add comments.' }) : JSON.stringify({ summary: 'You mix up two ideas.', revise: ['Definition of X'] });
   return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: txt }] } }] }) };
 };
-const L = require('../website/api/_lib.js'), ch = require('../website/api/challenge.js'), run = require('../website/api/run.js');
+const L = require('../website/api/_lib.js'), ch = require('../website/api/challenge.js'), run = require('../website/api/_run.js');
 function call(h, body, token) { return new Promise((res) => { const r = { method: 'POST', body, headers: token ? { authorization: 'Bearer ' + token } : {} }; h(r, { statusCode: 0, setHeader() { }, end(t) { res({ s: this.statusCode, j: t ? JSON.parse(t) : null }); } }); }); }
 let bad = 0; const T = (n, ok, x) => { console.log((ok ? 'PASS ' : 'FAIL ') + n + (ok ? '' : ' ' + JSON.stringify(x))); if (!ok) bad++; };
 async function mk(name, track) { const u = { _id: crypto.randomBytes(6).toString('hex'), email: name + '@x.com', name, track, verified: true, tv: 0 }; global.__FS_FAKE_DB.users.rows.push(u); global.__FS_FAKE_DB.social.rows.push({ key: 'u:' + u._id, name, friends: [] }); return { id: String(u._id), t: L.newToken(u) }; }

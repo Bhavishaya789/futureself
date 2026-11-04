@@ -16,7 +16,15 @@ object Updater {
     private val OK_URL = Regex("^https://github\\.com/[\\w.-]+/[\\w.-]+/releases/download/\\S+$")
     private fun okHost(h: String) = h == "github.com" || h.endsWith(".githubusercontent.com")
 
+    @Volatile private var busy = false
+
     fun install(c: Context, url: String, sha: String): JSONObject {
+        if (busy) return errJson("The update is still downloading. Please wait for it to finish.")
+        busy = true
+        try { return doInstall(c, url, sha) } finally { busy = false }
+    }
+
+    private fun doInstall(c: Context, url: String, sha: String): JSONObject {
         if (!OK_URL.matches(url)) return errJson("That update address is not allowed.")
         val want = sha.lowercase()
         if (want.isNotEmpty() && !Regex("^[a-f0-9]{64}$").matches(want)) return errJson("Bad update checksum.")

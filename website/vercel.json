@@ -38,5 +38,19 @@
     "api/challenge.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/run",
+      "destination": "/api/misc?fn=run"
+    },
+    {
+      "source": "/api/capture",
+      "destination": "/api/misc?fn=capture"
+    },
+    {
+      "source": "/api/avatar",
+      "destination": "/api/misc?fn=avatar"
+    }
+  ]
 }

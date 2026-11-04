@@ -29,7 +29,7 @@ function col() {
   return self;
 }
 global.__FS_FAKE_DB = { users: col(), sessions: col(), tickets: col(), vcache: col(), rl: col(), social: col() };
-const L = require('../website/api/_lib.js'), ch = require('../website/api/challenge.js'), cap = require('../website/api/capture.js');
+const L = require('../website/api/_lib.js'), ch = require('../website/api/challenge.js'), cap = require('../website/api/_capture.js');
 function call(h, body, token) {
   return new Promise((res) => { const headers = {}; const r = { method: 'POST', body, headers: token ? { authorization: 'Bearer ' + token } : {} };
     h(r, { statusCode: 0, setHeader(k, v) { headers[k] = v; }, end(t) { res({ s: this.statusCode, j: t ? JSON.parse(t) : null }); } }); });

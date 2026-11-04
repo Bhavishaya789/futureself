@@ -43,13 +43,13 @@
     if (!(window.fsApi && window.fsApi.codeInfo)) return Promise.resolve(INFO = { local: [], desktop: false });
     return window.fsApi.codeInfo().then(function (i) { INFO = { local: (i && i.local) || [], desktop: true, cwd: i && i.cwd, platform: i && i.platform }; return INFO; }).catch(function () { return INFO = { local: [], desktop: false }; });
   }
-  var W = { js: null, py: null };
+  var W = { js: null, py: null, sql: null };
   function worker(kind, file) {
     return new Promise(function (res, rej) {
       if (W[kind]) return res(W[kind]);
       try { var w = new Worker(file); } catch (e) { return rej(e); }
       W[kind] = w;
-      if (kind === 'js') return res(w);
+      if (kind === 'js' || kind === 'sql') return res(w);
       var done = false, to = setTimeout(function () { if (!done) { done = true; W[kind] = null; try { w.terminate(); } catch (e) { } rej(new Error('Python is still loading')); } }, 60000);
       w.onmessage = function (e) { if (e.data && e.data.hello && !done) { done = true; clearTimeout(to); res(w); } };
       w.onerror = function () { if (!done) { done = true; clearTimeout(to); W[kind] = null; rej(new Error('Python could not start here')); } };
@@ -74,6 +74,7 @@
         if (r && r.ok === false) throw new Error(r.error || 'Could not run');
         return { stdout: r.stdout || '', stderr: r.stderr || '', code: r.code, phase: r.phase, timedOut: r.timedOut, ms: r.ms, via: 'pc' };
       });
+      if (lang === 'sql') return inBrowser('sql', 'vendor/sqlworker.js', code, '', 8000).then(function (r) { r.phase = 'run'; return r; });   /* SQL runs inside the app: no server, works offline */
       var viaServer = function (why) {
         return acct('run', { a: 'run', language: lang, code: code, stdin: stdin }).then(function (r) { return { stdout: r.stdout || '', stderr: r.stderr || '', code: r.code, phase: r.phase, timedOut: r.timedOut, via: 'server' }; })
           .catch(function (e) { throw new Error((why ? why + ' ' : '') + (/not set up|runner|configured/i.test(e.message) ? 'The FutureSelf code server is not switched on yet. ' : '') + e.message); });
@@ -87,6 +88,8 @@
     });
   }
   function viaLabel(v) { return v === 'pc' ? 'on this PC' : v === 'app' ? 'inside the app' : 'on the FutureSelf server'; }
+  /* SQL: sqlite prints a whole-number REAL as 80.0, so 80 and 80.0 are the same answer here */
+  function eqOut(lang, a, b) { var A = norm(a), B = norm(b); if (lang === 'sql') { var f = function (t) { return t.replace(/(^|[|\s])(-?\d+)\.0+(?=$|[|\s])/gm, '$1$2'); }; A = f(A); B = f(B); } return A === B; }
   function norm(s) { return String(s || '').replace(/\r/g, '').split('\n').map(function (l) { return l.replace(/\s+$/, ''); }).join('\n').replace(/\s+$/, ''); }
 
   /* ================= editor with line numbers and colours ================= */
@@ -294,7 +297,7 @@
     return (function next() {
       if (i >= ss.length) return Promise.resolve(res);
       var s = ss[i++]; setProgress && setProgress(i, ss.length);
-      return runCode(lang, code, s.in).then(function (r) { res.push({ ok: r.code === 0 && norm(r.stdout) === norm(s.out), r: r, s: s }); }).catch(function (e) { res.push({ ok: false, r: { stdout: '', stderr: e.message, code: 1 }, s: s }); }).then(next);
+      return runCode(lang, code, s.in).then(function (r) { res.push({ ok: r.code === 0 && eqOut(lang, r.stdout, s.out), r: r, s: s }); }).catch(function (e) { res.push({ ok: false, r: { stdout: '', stderr: e.message, code: 1 }, s: s }); }).then(next);
     })();
   }
   function samplesHTML(res) {
@@ -632,7 +635,7 @@
     (function next() {
       if (i >= tests.length) return fin();
       var t = tests[i++]; var o = $('#cout'); if (o) o.innerHTML = '<span class="muted">Running test ' + i + ' of ' + tests.length + '…</span>';
-      return runCode(P.lang, code, t.in).then(function (r) { res.push({ ok: r.code === 0 && norm(r.stdout) === norm(t.out), r: r, t: t }); }).catch(function (e) { res.push({ ok: false, r: { stdout: '', stderr: e.message, code: 1 }, t: t }); }).then(function () { if (res.length && !res[res.length - 1].ok && /code server is not switched|could not run|not installed|cannot run/i.test(res[res.length - 1].r.stderr || '')) return fin(); return next(); });
+      return runCode(P.lang, code, t.in).then(function (r) { res.push({ ok: r.code === 0 && eqOut(P.lang, r.stdout, t.out), r: r, t: t }); }).catch(function (e) { res.push({ ok: false, r: { stdout: '', stderr: e.message, code: 1 }, t: t }); }).then(function () { if (res.length && !res[res.length - 1].ok && /code server is not switched|could not run|not installed|cannot run/i.test(res[res.length - 1].r.stderr || '')) return fin(); return next(); });
     })();
     function fin() {
       var pass = res.filter(function (x) { return x.ok; }).length, all = pass === tests.length && res.length === tests.length;

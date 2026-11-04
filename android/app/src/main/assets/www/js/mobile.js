@@ -29,7 +29,7 @@
     return new Promise(function (res) {
       if (!hasNative || typeof B[name] !== 'function') return res({ ok: false, error: 'This needs the FutureSelf Android app' });
       var id = ++cid; cbs[id] = res;
-      setTimeout(function () { if (cbs[id]) { delete cbs[id]; res({ ok: false, error: 'Timed out' }); } }, 45000);
+      setTimeout(function () { if (cbs[id]) { delete cbs[id]; res({ ok: false, error: 'Timed out' }); } }, name === 'updateInstall' ? 900000 : 45000);   /* an APK download on a slow connection can take several minutes */
       try { B[name].apply(B, [id].concat(args)); } catch (e) { delete cbs[id]; res({ ok: false, error: String(e && e.message || e) }); }
     });
   }
@@ -119,7 +119,7 @@
   }
   /* the phone's background lock service needs the sign-in too, so it can follow the PC */
   function syncAccount(c) { var s = c.status(); jcall('accountSave', JSON.stringify({ site: s.site, token: s.signedIn ? c.token() : '' })); }
-  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, update: 1, social: 1, profile: 1, avatarFromPhoto: 1 };
+  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, update: 1, social: 1, challenge: 1, capture: 1, run: 1, profile: 1, avatarFromPhoto: 1 };
   function acct(op, payload) {
     if (!ACCT_OPS[op]) return Promise.resolve({ ok: false, error: 'Unknown account action' });
     return getClient().then(function (c) {

@@ -15,7 +15,7 @@ function col() {
     } };
 }
 global.__FS_FAKE_DB = { users: col(), sessions: col(), tickets: col(), vcache: col(), rl: col(), social: col() };
-const L = require('../website/api/_lib.js'), av = require('../website/api/avatar.js');
+const L = require('../website/api/_lib.js'), av = require('../website/api/_avatar.js');
 function call(h, method, body, token) {
   return new Promise((res) => { const headers = {}; const r = { method, body, headers: token ? { authorization: 'Bearer ' + token } : {} };
     h(r, { statusCode: 0, setHeader(k, v) { headers[k] = v; }, end(t) { res({ s: this.statusCode, j: t ? JSON.parse(t) : null }); } }); });

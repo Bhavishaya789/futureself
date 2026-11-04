@@ -29,7 +29,7 @@
     return new Promise(function (res) {
       if (!hasNative || typeof B[name] !== 'function') return res({ ok: false, error: 'This needs the FutureSelf Android app' });
       var id = ++cid; cbs[id] = res;
-      setTimeout(function () { if (cbs[id]) { delete cbs[id]; res({ ok: false, error: 'Timed out' }); } }, 45000);
+      setTimeout(function () { if (cbs[id]) { delete cbs[id]; res({ ok: false, error: 'Timed out' }); } }, name === 'updateInstall' ? 900000 : 45000);   /* an APK download on a slow connection can take several minutes */
       try { B[name].apply(B, [id].concat(args)); } catch (e) { delete cbs[id]; res({ ok: false, error: String(e && e.message || e) }); }
     });
   }

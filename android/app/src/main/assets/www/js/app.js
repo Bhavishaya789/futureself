@@ -23,6 +23,7 @@
     flame: '<path d="M12 3c1 4 5 5 5 10a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z"/>',
     x: '<path d="M5 5l14 14M19 5L5 19"/>', trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
     repeat: '<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 014-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 01-4 4H4"/>',
+    camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>', spark: '<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>'
   };
   var MORE = {
@@ -148,7 +149,7 @@
   window.addEventListener('hashchange', go);
 
   function ensureShell(active) {
-    var nav = [['home', 'home', 'Home'], ['learn', 'book', 'Learn'], ['timetable', 'cal', 'Timetable'], ['start', 'focus', 'Focus'], ['progress', 'chart', 'Progress']].concat((window.FSX && FSX.nav) || []).concat([['settings', 'gear', 'Settings']]);
+    var nav = [['home', 'home', 'Home'], ['learn', 'book', 'Learn'], ['timetable', 'cal', 'Timetable'], ['start', 'focus', 'Focus'], ['progress', 'chart', 'Progress']].concat((window.FSX && FSX.nav) || []).concat((window.FSX && FSX.navDyn && FSX.navDyn()) || []).concat([['settings', 'gear', 'Settings']]);
     var key = active === 'topic' || active === 'lesson' ? 'learn' : active;
     if (!S.shell || !$('#view')) {
       $('#app').innerHTML =
@@ -494,6 +495,16 @@
 
   /* ---------- practice (write in notebook, photograph, upload) ---------- */
   var LVL_CLS = { Moderate: 'mod', High: 'high', Advanced: 'adv' };
+  function isPhoneApp() { return !!(window.fsApi && window.fsApi.platform === 'android'); }
+  /* the phone camera takes the clearest photo: on the phone app the camera opens directly; on the PC a QR code opens it on the student's phone */
+  function camBtns(pi) {
+    if (isPhoneApp()) return '<label class="btn pri"><input type="file" class="pfile" data-pi="' + pi + '" accept="image/*" capture="environment" hidden>' + ic('camera') + ' Take photo with camera</label>';
+    return '<button class="btn pri" data-act="pcam" data-pi="' + pi + '">' + ic('camera') + ' Use my phone camera</button>';
+  }
+  function addDataPhotos(pi, urls) {
+    var arr = S.pimgs[pi] = S.pimgs[pi] || [], room = 4 - arr.length;
+    urls.slice(0, Math.max(0, room)).forEach(function (u) { arr.push(u); }); drawThumbs(pi); return room;
+  }
   function practicePane(l) {
     var ps = l.problems || [];
     if (!ps.length) return '<div class="card"><div class="empty">No practice problems for this topic yet.</div></div>';
@@ -502,7 +513,7 @@
       ps.map(function (p, pi) {
         return '<div class="card prob" data-pi="' + pi + '" style="margin-top:16px"><div class="row spread wrap"><div class="row wrap"><span class="lvl ' + (LVL_CLS[p.level] || '') + '">' + esc(p.level) + '</span><span class="muted">Problem ' + (pi + 1) + ' &middot; ' + p.marks + ' marks</span></div><span class="badge" id="pbest' + pi + '" hidden></span></div>' +
           '<div class="pq">' + fmt(p.q) + '</div>' +
-          '<div class="drop" data-pi="' + pi + '"><label class="btn"><input type="file" class="pfile" data-pi="' + pi + '" accept="image/*" multiple hidden>' + ic('plus') + ' Add photos of your answer</label><span class="muted" style="font-size:13px">or drag and drop up to 4 photos here</span><div class="thumbs" id="pth' + pi + '"></div></div>' +
+          '<div class="drop" data-pi="' + pi + '"><label class="btn"><input type="file" class="pfile" data-pi="' + pi + '" accept="image/*" multiple hidden>' + ic('plus') + ' Add photos of your answer</label>' + camBtns(pi) + '<span class="muted" style="font-size:13px">' + (isPhoneApp() ? 'up to 4 photos' : 'or drag and drop up to 4 photos here') + '</span><div class="thumbs" id="pth' + pi + '"></div></div>' +
           '<div class="row wrap" style="margin-top:12px"><button class="btn pri" data-act="psubmit" data-pi="' + pi + '" id="psub' + pi + '" disabled>Submit for checking</button></div>' +
           '<div id="pres' + pi + '"></div><div id="phist' + pi + '"></div></div>';
       }).join('');
@@ -832,7 +843,7 @@
   var wake = null, tickTimer = null;
   function beginSession(c) {
     if (window.FSX && FSX.canStart && FSX.canStart(c.lock) === false) return; // on the phone: the permissions the lock needs must be on first
-    S.session = { topic_id: c.topic_id, lesson_id: c.lesson_id, subject: c.subject, minutes: c.minutes, lock: c.lock, block_id: c.block_id || null, startedAt: Date.now(), startedISO: new Date().toISOString(), plannedMs: c.minutes * 60000, pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false };
+    S.session = { topic_id: c.topic_id, lesson_id: c.lesson_id, subject: c.subject, minutes: c.minutes, lock: c.lock, block_id: c.block_id || null, startedAt: Date.now(), startedISO: new Date().toISOString(), plannedMs: c.minutes * 60000, pausedMs: 0, pausedAt: null, distractions: 0, awaySince: null, ended: false, coding: !!c.coding };
     S.session.blocked = 0;
     if (window.fsApi && window.fsApi.isApp) {
       S.session.native = true;
@@ -888,9 +899,15 @@
   function renderFocus() {
     var s = S.session; S.shell = false; FS3D.ok && FS3D.setMode('focus'); if (s.topic_id) SubjectFX.set(s.topic_id); else SubjectFX.clear();
     var topic = s.topic_id && topicById(s.topic_id);
+    if (s.coding) { /* a coding session: the strict lock is on and the whole coding dashboard lives inside it */
+      $('#app').innerHTML = '<div class="codefocus"><div class="cfbar"><span class="badge">' + ic('lock').replace('class="i"', 'class="i" style="width:14px;height:14px"') + ' Strict coding session</span><b class="cfsub">' + esc(s.subject) + '</b><span class="badge" id="fdist">' + s.distractions + ' distractions</span><span class="cftime" id="ftime">' + mmss(elapsed()) + '</span><button class="btn ghost sm" data-act="fend">Emergency exit</button></div><div id="cgrid" class="cgrid"><div class="empty">Loading…</div></div></div>';
+      clearInterval(tickTimer); tick(); tickTimer = setInterval(tick, 250);
+      if (window.FSX && FSX.codeMount) try { FSX.codeMount(); } catch (e) { }
+      return;
+    }
     $('#app').innerHTML = '<div class="focus"><div class="meta"><span class="badge">' + ic('lock').replace('class="i"', 'class="i" style="width:14px;height:14px"') + ' ' + LOCKS[s.lock][0] + ' lock</span><span class="badge" id="fdist">' + s.distractions + ' distractions</span></div>' +
       '<div class="eyebrow" style="margin-bottom:10px">Now studying</div><div class="time" id="ftime">' + mmss(s.plannedMs - elapsed()) + '</div><div class="what"><b>' + esc(s.subject) + '</b>' + (topic && s.lesson_id ? ' &middot; <span id="flesson"></span>' : '') + '</div>' +
-      '<div class="ctrl">' + (s.topic_id && s.lesson_id ? '<button class="btn" data-act="fdrawer">' + ic('book') + ' Open lesson</button><button class="btn" data-act="fvideo">' + ic('play') + ' Watch video</button>' : '') + (s.lock === 'gentle' ? '<button class="btn" data-act="fpause" id="fpause">Pause</button>' : '') +
+      '<div class="ctrl">' + (s.topic_id && s.lesson_id ? '<button class="btn" data-act="fdrawer">' + ic('book') + ' Open lesson</button><button class="btn" data-act="fvideo">' + ic('play') + ' Watch video</button>' : '') + (codingSubject(s, topic) ? '<button class="btn" data-act="fcode">&lt;/&gt; Coding dashboard</button>' : '') + (s.lock === 'gentle' ? '<button class="btn" data-act="fpause" id="fpause">Pause</button>' : '') +
       (s.remote ? '<button class="btn ghost sm" data-act="fend">Emergency release</button>' : s.lock === 'strict' ? '<button class="btn ghost sm" data-act="fend">Emergency exit</button>' : '<button class="btn danger" data-act="fend">End early</button>') + '</div>' + (s.remote ? '<p class="muted" style="margin-top:18px">Started on your phone. This PC unlocks when that session ends.</p>' : '') + '</div>';
     if (s.topic_id && s.lesson_id) api('/topics/' + s.topic_id).then(function (d) { s.topicData = d.topic; d.topic.units.forEach(function (u) { u.lessons.forEach(function (l) { if (l.id === s.lesson_id) { s.lessonData = l; var f = $('#flesson'); if (f) f.textContent = l.title; } }); }); });
     clearInterval(tickTimer); tick(); tickTimer = setInterval(tick, 250);
@@ -898,7 +915,8 @@
   }
   function tick() {
     var s = S.session; if (!s || s.ended) return clearInterval(tickTimer);
-    var rem = s.plannedMs - elapsed(), t = $('#ftime');
+    var rem = s.coding ? Infinity : s.plannedMs - elapsed(), t = $('#ftime');
+    if (s.coding) { if (t) t.textContent = mmss(elapsed()); document.title = mmss(elapsed()) + ' coding | FutureSelf'; return; }
     if (t) t.textContent = mmss(rem); document.title = (s.pausedAt ? 'Paused' : mmss(rem)) + ' | FutureSelf';
     FS3D.ok && FS3D.setProgress(elapsed() / s.plannedMs);
     if (rem <= 0) { if (s.remote) endRemote('Phone session finished'); else finishSession(true); }
@@ -915,6 +933,19 @@
     document.body.appendChild(d); $('#dclose').onclick = function () { unmountVideo(); d.remove(); };
     if (S.ltab === 'video') lessonVideoMount();
   }
+  function codingSubject(s, topic) {
+    if (!(window.FSX && FSX.codeOK && FSX.codeOK())) return false;
+    return /code|coding|program|python|java\b|javascript|c\+\+|\bc\b|c#|golang|\bgo\b|dsa|data structure|algorithm|sql|database|software|computer|web develop/i.test((s.subject || '') + ' ' + (topic ? topic.title : ''));
+  }
+  actions.fcode = function () {
+    $$('.codeov').forEach(function (x) { x.remove(); });
+    var d = document.createElement('div'); d.className = 'lessonov codeov';
+    d.innerHTML = '<div class="lessonov-in" style="max-width:1400px"><div class="row spread" style="margin-bottom:14px"><div><div class="eyebrow">During your session</div><h1 style="margin-top:6px">Coding dashboard</h1></div><button class="btn" id="cdclose">' + ic('x') + ' Back to timer</button></div><div id="cgrid" class="cgrid"><div class="empty">Loading…</div></div></div>';
+    document.body.appendChild(d); $('#cdclose').onclick = function () { d.remove(); };
+    if (window.FSX && FSX.codeMount) FSX.codeMount();
+  };
+  function startCoding(subject) { if (S.session && !S.session.ended) return true; beginSession({ topic_id: null, lesson_id: null, subject: subject || 'Coding session', minutes: 720, lock: 'strict', coding: true }); return !!(S.session && !S.session.ended); }
+  function endCoding(done) { var s = S.session; if (!s || !s.coding || s.ended) return; var el = elapsed(); s.minutes = Math.max(1, Math.ceil(el / 60000)); s.plannedMs = Math.max(60000, el); finishSession(!!done); }
   actions.fdrawer = function () { openDrawer('lesson'); };
   actions.fvideo = function () { openDrawer('video'); };
   actions.fend = function () {
@@ -950,7 +981,7 @@
     s.ended = true; clearInterval(tickTimer);
     try { window.fsApi.lockStop().catch(function () { }); } catch (e) { }
     try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { }
-    unmountVideo(); $$('.comeback,.drawer,.lessonov').forEach(function (x) { x.remove(); }); closeModal();
+    unmountVideo(); $$('.comeback,.drawer,.lessonov,.codeov').forEach(function (x) { x.remove(); }); closeModal();
     document.title = 'FutureSelf | Study goals, timetable and focus';
     S.session = null; S.shell = true; location.hash = '#/'; if (typeof go === 'function') setTimeout(go, 50);
     toast(msg || 'Phone session finished', 'This PC is unlocked.');
@@ -1143,7 +1174,7 @@
     else if (!on && s.callPause) { s.pausedMs += Date.now() - s.pausedAt; s.pausedAt = null; s.callPause = false; }
     pushState();
   };
-  FSX.h = { esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S };
+  FSX.h = { startCoding: startCoding, endCoding: endCoding, esc: esc, ic: ic, toast: toast, api: api, modal: modal, closeModal: closeModal, go: go, S: S, fmt: fmt, addDataPhotos: addDataPhotos, isPhoneApp: isPhoneApp };
   if (window.FSX && FSX.actions) Object.assign(actions, FSX.actions);
   go();
 })();
