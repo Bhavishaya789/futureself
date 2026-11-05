@@ -1,0 +1,21 @@
+{
+ "title": "Business Economics and Business and Commercial Knowledge",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#F59E0B",
+ "tagline": "Paper 4: microeconomics, market forms, and business knowledge.",
+ "channels": [
+  "CA Wallah",
+  "Aaditya Jain",
+  "CA Foundation"
+ ],
+ "syllabus": [
+  "Demand and supply",
+  "Production and cost",
+  "Markets",
+  "National income",
+  "Business environment"
+ ],
+ "id": "cafound-economics"
+}

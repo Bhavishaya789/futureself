@@ -1,0 +1,22 @@
+{
+ "title": "Quantitative Aptitude",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#F59E0B",
+ "tagline": "Paper 3: business mathematics, logical reasoning and statistics.",
+ "channels": [
+  "CA Wallah",
+  "Aaditya Jain",
+  "CA Foundation"
+ ],
+ "syllabus": [
+  "Ratio and proportion",
+  "Interest",
+  "Series",
+  "Logical reasoning",
+  "Statistics",
+  "Probability"
+ ],
+ "id": "cafound-quant"
+}

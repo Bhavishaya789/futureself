@@ -1,0 +1,20 @@
+{
+ "title": "Integrated Business Solutions",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#F59E0B",
+ "tagline": "Paper 6: case study based integration across subjects.",
+ "channels": [
+  "CA Wallah",
+  "Aaditya Jain",
+  "CA Final"
+ ],
+ "syllabus": [
+  "Case studies",
+  "Strategy",
+  "Ethics",
+  "Integration"
+ ],
+ "id": "cafinal-ibs"
+}

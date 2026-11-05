@@ -1,0 +1,21 @@
+{
+ "title": "Indirect Tax Laws",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#F59E0B",
+ "tagline": "Paper 5: GST advanced, customs and FTP.",
+ "channels": [
+  "CA Wallah",
+  "Aaditya Jain",
+  "CA Final"
+ ],
+ "syllabus": [
+  "GST",
+  "Customs",
+  "FTP",
+  "Refunds",
+  "Appeals"
+ ],
+ "id": "cafinal-idt"
+}

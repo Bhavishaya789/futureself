@@ -1,0 +1,21 @@
+{
+ "title": "Advanced Accounting",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#F59E0B",
+ "tagline": "Paper 1: Accounting Standards, company accounts, amalgamation, branch and departmental accounts.",
+ "channels": [
+  "CA Wallah",
+  "Aaditya Jain",
+  "CA Inter"
+ ],
+ "syllabus": [
+  "Accounting Standards",
+  "Company accounts",
+  "Amalgamation",
+  "Branch accounts",
+  "Departmental accounts"
+ ],
+ "id": "cainter-accounting"
+}

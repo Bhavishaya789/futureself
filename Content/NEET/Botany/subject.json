@@ -1,0 +1,23 @@
+{
+ "title": "NEET Botany",
+ "semester": 0,
+ "credits": 0,
+ "icon": "leaf",
+ "color": "#26C281",
+ "tagline": "Plant science for NEET with generated practice.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Diversity",
+  "Plant structure",
+  "Plant physiology",
+  "Genetics",
+  "Ecology",
+  "Reproduction",
+  "Biotechnology"
+ ],
+ "id": "neet-botany"
+}

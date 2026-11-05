@@ -1,0 +1,21 @@
+{
+ "title": "NEET Zoology",
+ "semester": 0,
+ "credits": 0,
+ "icon": "heart",
+ "color": "#E5484D",
+ "tagline": "Human and animal biology for NEET with generated practice.",
+ "channels": [
+  "Physics Wallah",
+  "Vedantu",
+  "Unacademy"
+ ],
+ "syllabus": [
+  "Physiology",
+  "Reproduction",
+  "Genetics",
+  "Evolution and health",
+  "Animal kingdom"
+ ],
+ "id": "neet-zoology"
+}

@@ -1,0 +1,21 @@
+{
+ "title": "Business Laws",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#F59E0B",
+ "tagline": "Paper 2: Indian Contract Act, Sale of Goods Act, LLP Act and Partnership Act.",
+ "channels": [
+  "CA Wallah",
+  "Aaditya Jain",
+  "CA Foundation"
+ ],
+ "syllabus": [
+  "Contract Act",
+  "Sale of Goods",
+  "Partnership",
+  "LLP",
+  "Companies Act basics"
+ ],
+ "id": "cafound-laws"
+}
