@@ -148,7 +148,7 @@ footer{padding:34px 0 54px;color:var(--mut);font-size:14px;border-top:1px solid 
     <div class="stat"><b data-n="39581">39,581</b><span>practice Q&amp;A</span></div>
     <div class="stat"><b data-n="42642">42,642</b><span>quiz questions</span></div>
   </div>
-  <p class="fine">Version 1.25.0. 300 of the 553 lessons already have the full 100+ Q&amp;A, 100+ quiz and formula sheet; the rest are being filled in.</p>
+  <p class="fine">Latest version <span id="ver">1.31.1</span>. Lessons across school, B.Tech and coding practice are added with every update.</p>
 </div></section>
 
 <section id="get"><div class="wrap">
@@ -426,7 +426,7 @@ footer{padding:34px 0 54px;color:var(--mut);font-size:14px;border-top:1px solid 
   }
   /* always offer the NEWEST release: the server reads the latest GitHub release (same source the apps use to update); downloads.json is only the fallback */
   fetch('/api/update',{cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject()}).then(function(u){
-    var c={};if(u&&u.win&&u.win.url)c.win=u.win.url;if(u&&u.and&&u.and.url)c.and=u.and.url;
+    var c={};try{var vv=document.getElementById('ver');if(vv&&u&&u.version)vv.textContent=u.version}catch(e){}if(u&&u.win&&u.win.url)c.win=u.win.url;if(u&&u.and&&u.and.url)c.and=u.and.url;
     if(!c.win&&!c.and)return Promise.reject();return c;
   }).catch(function(){return fetch('downloads.json').then(function(r){return r.ok?r.json():{}}).catch(function(){return {}})}).then(boot);
 })();
