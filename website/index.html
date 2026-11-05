@@ -424,7 +424,11 @@ footer{padding:34px 0 54px;color:var(--mut);font-size:14px;border-top:1px solid 
       $('none-note').textContent=m+'FutureSelf runs on Windows PCs and Android phones. Choose the device you will install it on.';
     }
   }
-  fetch('downloads.json').then(function(r){return r.ok?r.json():{}}).catch(function(){return {}}).then(boot);
+  /* always offer the NEWEST release: the server reads the latest GitHub release (same source the apps use to update); downloads.json is only the fallback */
+  fetch('/api/update',{cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject()}).then(function(u){
+    var c={};if(u&&u.win&&u.win.url)c.win=u.win.url;if(u&&u.and&&u.and.url)c.and=u.and.url;
+    if(!c.win&&!c.and)return Promise.reject();return c;
+  }).catch(function(){return fetch('downloads.json').then(function(r){return r.ok?r.json():{}}).catch(function(){return {}})}).then(boot);
 })();
 </script>
 </body>
