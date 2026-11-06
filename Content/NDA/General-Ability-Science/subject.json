@@ -1,0 +1,19 @@
+{
+ "title": "NDA Physics, Chemistry and General Science",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#2E7D32",
+ "tagline": "GAT Part B: physics, chemistry and biology at class 11-12 level.",
+ "channels": [
+  "Defence Wallah",
+  "Unacademy",
+  "Physics Wallah"
+ ],
+ "syllabus": [
+  "Physics",
+  "Chemistry",
+  "Biology"
+ ],
+ "id": "nda-science"
+}

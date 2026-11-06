@@ -1,0 +1,17 @@
+{
+ "title": "SSC Quantitative Aptitude",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#6A1B9A",
+ "tagline": "Arithmetic, algebra, geometry, trigonometry, DI.",
+ "channels": [
+  "Unacademy",
+  "Drishti IAS",
+  "Adda247"
+ ],
+ "syllabus": [
+  "Arithmetic, algebra, geometry, trigonometry, DI."
+ ],
+ "id": "ssc-quant"
+}

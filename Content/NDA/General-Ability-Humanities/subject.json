@@ -1,0 +1,19 @@
+{
+ "title": "NDA History, Geography and Current Affairs",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#2E7D32",
+ "tagline": "GAT Part B: history, freedom movement, geography and current events.",
+ "channels": [
+  "Defence Wallah",
+  "Unacademy",
+  "Physics Wallah"
+ ],
+ "syllabus": [
+  "History",
+  "Geography",
+  "Current affairs"
+ ],
+ "id": "nda-humanities"
+}

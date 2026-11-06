@@ -124,12 +124,24 @@ function parseFormulas(lines) {
   return out;
 }
 
+// @pyq: past-paper questions the AI checks.   ? [Label] question text   then optional  - option  lines (no option = written answer)   optional  = key: B  (official answer if known)
+function parsePyq(lines) {
+  const out = []; let cur = null;
+  lines.forEach((l) => {
+    if (/^\? /.test(l)) { const m = l.slice(2).match(/^\[([^\]]+)\]\s*(.*)$/); cur = { label: m ? m[1] : '', q: (m ? m[2] : l.slice(2)).trim(), opts: [], key: '' }; out.push(cur); }
+    else if (/^- /.test(l) && cur) cur.opts.push(l.slice(2).trim());
+    else if (/^= /.test(l) && cur) cur.key = l.slice(2).trim();
+    else if (l.trim() && cur && !cur.opts.length) cur.q += ' ' + l.trim();
+  });
+  return out;
+}
+
 function parseTopic(text, file, problems) {
   const lines = text.replace(/\r/g, '').split('\n');
-  const t = { title: '', minutes: 20, yt: [], blocks: [], qa: [], quiz: [], visuals: [], problems: [], videos: [], formulas: [] };
-  let sec = 'head'; const bufs = { study: [], qa: [], quiz: [], visual: [], problems: [], video: [], formulas: [] };
+  const t = { title: '', minutes: 20, yt: [], blocks: [], qa: [], quiz: [], visuals: [], problems: [], videos: [], formulas: [], pyq: [] };
+  let sec = 'head'; const bufs = { study: [], qa: [], quiz: [], visual: [], problems: [], video: [], formulas: [], pyq: [] };
   lines.forEach((l) => {
-    const m = l.match(/^@(study|qa|quiz|visual|problems|video|formulas)\s*$/);
+    const m = l.match(/^@(study|qa|quiz|visual|problems|video|formulas|pyq)\s*$/);
     if (m) { sec = m[1]; return; }
     if (sec === 'head') {
       if (/^# /.test(l)) t.title = l.slice(2).trim();
@@ -140,7 +152,7 @@ function parseTopic(text, file, problems) {
   if (!t.title) problems.push(file + ': missing "# Title"');
   t.blocks = parseStudy(bufs.study); t.qa = parseQA(bufs.qa); t.quiz = parseQuiz(bufs.quiz, problems, file);
   t.visuals = parseVisual(bufs.visual, problems, file); t.problems = parseProblems(bufs.problems, problems, file); t.videos = parseVideo(bufs.video, problems, file);
-  t.formulas = parseFormulas(bufs.formulas);
+  t.formulas = parseFormulas(bufs.formulas); t.pyq = parsePyq(bufs.pyq);
   if (!t.blocks.length) problems.push(file + ': empty @study');
   if (!t.yt.length) t.yt.push(t.title + ' explained');
   return t;

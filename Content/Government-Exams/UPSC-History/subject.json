@@ -1,0 +1,17 @@
+{
+ "title": "UPSC History and Culture",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#6A1B9A",
+ "tagline": "Ancient, medieval, modern history, art and culture.",
+ "channels": [
+  "Unacademy",
+  "Drishti IAS",
+  "Adda247"
+ ],
+ "syllabus": [
+  "Ancient, medieval, modern history, art and culture."
+ ],
+ "id": "upsc-history"
+}

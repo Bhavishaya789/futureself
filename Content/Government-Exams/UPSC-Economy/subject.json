@@ -1,0 +1,17 @@
+{
+ "title": "UPSC Indian Economy",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#6A1B9A",
+ "tagline": "Macroeconomy, banking, budget, sectors.",
+ "channels": [
+  "Unacademy",
+  "Drishti IAS",
+  "Adda247"
+ ],
+ "syllabus": [
+  "Macroeconomy, banking, budget, sectors."
+ ],
+ "id": "upsc-eco"
+}

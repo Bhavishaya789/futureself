@@ -591,6 +591,30 @@
     var pi = el.dataset.pi, ticks = $$('#pres' + pi + ' .rb input').map(function (x) { return x.checked; });
     api('/practice/' + el.dataset.id + '/score', { method: 'POST', body: { ticks: ticks } }).then(function (r) { scored(r, pi); }).catch(function (e) { toast('Could not save', e.message, true); });
   };
+  /* past-paper questions: pick or type an answer, the server's AI judges it and explains */
+  function pyqPane(l) {
+    return '<div class="card"><h2>Past paper questions</h2><p class="muted" style="margin-bottom:14px">Each question shows the exam and year it came from. Choose or write your answer, then tap <b>Check with AI</b>. ' + (window.fsApi && window.fsApi.acct ? 'Sign in on the Account page first.' : '') + ' Where no official answer key exists, the AI works the question out and tells you how sure it is, so confirm anything marked unsure.</p>' +
+      l.pyq.map(function (q, i) {
+        var mc = q.opts && q.opts.length;
+        return '<div class="pyq" id="pyq' + i + '" style="padding:14px 0;border-top:1px solid var(--line,#2a2a35)"><span class="badge">' + esc(q.label || 'Past paper') + '</span><p style="margin:8px 0">' + esc(q.q) + '</p>' +
+          (mc ? q.opts.map(function (o, k) { return '<label style="display:block;margin:4px 0"><input type="radio" name="pq' + i + '" value="' + String.fromCharCode(65 + k) + '"> ' + String.fromCharCode(65 + k) + ') ' + esc(o) + '</label>'; }).join('') : '<textarea class="inp" id="pqt' + i + '" rows="4" style="width:100%" placeholder="Write your answer"></textarea>') +
+          '<div class="row wrap" style="margin-top:8px"><button class="btn pri sm" data-act="pyqai" data-pi="' + i + '">Check with AI</button></div><div id="pqr' + i + '"></div></div>';
+      }).join('') + '</div>';
+  }
+  actions.pyqai = function (el) {
+    var i = +el.dataset.pi, q = ((curLesson.l.pyq || [])[i]) || null; if (!q) return;
+    var mc = q.opts && q.opts.length, r = mc ? $('input[name=pq' + i + ']:checked') : null, ans = mc ? (r ? r.value : '') : (($('#pqt' + i) || {}).value || '').trim();
+    if (!ans) return toast('Add your answer', mc ? 'Choose an option first.' : 'Write your answer first.', true);
+    if (!(window.fsApi && window.fsApi.acct)) return toast('AI check', 'Open the app to use AI checking.', true);
+    el.disabled = true; el.textContent = 'Checking...';
+    window.fsApi.acct('pyqcheck', { question: q.q, options: q.opts, answer: ans, label: q.label, key: q.key }).then(function (r) {
+      el.disabled = false; el.textContent = 'Check again';
+      if (!r || !r.ok) throw new Error((r && r.error) || 'The server could not check it.');
+      var d = r.data, col = d.verdict === 'correct' ? 'ok' : (d.verdict === 'wrong' ? 'bad' : 'warn');
+      $('#pqr' + i).innerHTML = '<div class="result" style="margin-top:10px"><h3><span class="badge ' + col + '">' + esc(d.verdict.toUpperCase()) + '</span> ' + (d.keyed ? '<span class="badge">Official key</span>' : '<span class="badge">AI worked answer, confidence ' + esc(d.confidence) + '</span>') + '</h3>' + (d.right ? '<p><b>Right answer:</b> ' + esc(d.right) + '</p>' : '') + '<p class="fb">' + esc(d.explanation) + '</p></div>';
+      if (d.verdict === 'correct') { try { chime(); } catch (e) { } }
+    }).catch(function (e) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', e.message || 'Try again.', true); });
+  };
   actions.pai = function (el) {
     var pi = el.dataset.pi, id = el.dataset.id, a = S.pr.filter(function (x) { return x._id === id; })[0];
     function fail(msg) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', msg, true); }
@@ -665,7 +689,7 @@
   }
   /* the lesson dashboard (tabs + content), used on the lesson page and inside a running session */
   function lessonPanes(t, l, p, inSess) {
-      var tabs = [['study', 'Study']].concat((l.formulas || []).length ? [['formulas', 'Formulas (' + l.formulas.length + ')']] : []).concat([['qa', 'Q&amp;A (' + l.qa.length + ')'], ['quiz', 'Quiz (' + l.quiz.length + ')'], ['practice', 'Practice (' + (l.problems || []).length + ')'], ['video', 'Videos']]);
+      var tabs = [['study', 'Study']].concat((l.formulas || []).length ? [['formulas', 'Formulas (' + l.formulas.length + ')']] : []).concat([['qa', 'Q&amp;A (' + l.qa.length + ')'], ['quiz', 'Quiz (' + l.quiz.length + ')'], ['practice', 'Practice (' + (l.problems || []).length + ')']]).concat((l.pyq || []).length ? [['pyq', 'Past papers (' + l.pyq.length + ')']] : []).concat([['video', 'Videos']]);
       var QA_SHOW = 25;
       var qaHTML = l.qa.length ? (l.qa.length > QA_SHOW ? '<input class="in" id="qasearch" type="search" placeholder="Search these ' + l.qa.length + ' questions" aria-label="Search questions" style="margin-bottom:12px">' : '') + l.qa.map(function (x, xi) { return '<details class="qa"' + (xi >= QA_SHOW ? ' data-more="1" hidden' : '') + '><summary>' + (xi + 1) + '. ' + fmt(x.q) + '</summary><div>' + fmt(x.a) + '</div></details>'; }).join('') + (l.qa.length > QA_SHOW ? '<div class="row" style="margin-top:10px"><button class="btn sm" data-act="qamore">Show the other ' + (l.qa.length - QA_SHOW) + ' questions</button></div>' : '') : '<div class="empty">No Q&amp;A for this topic yet.</div>';
       var qset = quizSet(l, t.id + '/' + l.id);
@@ -678,6 +702,7 @@
         '' + formulaPane(l) + '<div class="pane" data-pane="qa"' + (S.ltab === 'qa' ? '' : ' hidden') + '><div class="card"><div class="row spread wrap" style="margin-bottom:6px"><h2 style="margin:0">Questions and answers</h2><button class="btn sm" data-act="qaall">Show all answers</button></div><p class="muted" style="margin-bottom:16px">Try to answer each question in your own words first, then click it to check.</p>' + qaHTML + '</div></div>' +
         '<div class="pane" data-pane="quiz"' + (S.ltab === 'quiz' ? '' : ' hidden') + '><div class="card"><h2>Check yourself</h2><div id="quiz">' + quizHTML + '</div></div></div>' +
         '<div class="pane" data-pane="practice"' + (S.ltab === 'practice' ? '' : ' hidden') + '>' + (inSess ? '' : practicePane(l)) + '</div>' +
+        (l.pyq && l.pyq.length ? '<div class="pane" data-pane="pyq"' + (S.ltab === 'pyq' ? '' : ' hidden') + '>' + pyqPane(l) + '</div>' : '') +
         '<div class="pane" data-pane="video"' + (S.ltab === 'video' ? '' : ' hidden') + '>' + videoPane(inSess) + '</div>';
   }
   function viewLesson(v, r) {

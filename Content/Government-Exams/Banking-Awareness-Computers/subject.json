@@ -1,0 +1,17 @@
+{
+ "title": "Banking, Insurance and Computer Awareness",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#6A1B9A",
+ "tagline": "IBPS, SBI, RBI exams.",
+ "channels": [
+  "Unacademy",
+  "Drishti IAS",
+  "Adda247"
+ ],
+ "syllabus": [
+  "IBPS, SBI, RBI exams."
+ ],
+ "id": "bank-aware"
+}

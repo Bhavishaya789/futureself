@@ -7,6 +7,7 @@ const TRACKS = [
   { id: 'class12', label: 'Class 12', group: 'School (CBSE)' },
   { id: 'jee', label: 'JEE Main and Advanced', group: 'Entrance exams' },
   { id: 'neet', label: 'NEET', group: 'Entrance exams' },
+  { id: 'nda', label: 'NDA', group: 'Entrance exams' },
   { id: 'cafound', label: 'CA Foundation', group: 'Chartered Accountancy' },
   { id: 'cainter', label: 'CA Intermediate', group: 'Chartered Accountancy' },
   { id: 'cafinal', label: 'CA Final', group: 'Chartered Accountancy' },
@@ -31,6 +32,7 @@ function fromFolder(g) {
   if (/^jee-?adv/i.test(g)) return { tags: ['jee'], group: 'JEE Advanced', order: 125 };
   if (/^jee/i.test(g)) return { tags: ['jee'], group: 'JEE Main', order: 120 };
   if (/^neet/i.test(g)) return { tags: ['neet'], group: 'NEET', order: 130 };
+  if (/^nda/i.test(g)) return { tags: ['nda'], group: 'NDA', order: 128 };
   if (/^ca-?found/i.test(g)) return { tags: ['cafound'], group: 'CA Foundation', order: 132 };
   if (/^ca-?inter/i.test(g)) return { tags: ['cainter'], group: 'CA Intermediate', order: 134 };
   if (/^ca-?final/i.test(g)) return { tags: ['cafinal'], group: 'CA Final', order: 136 };

@@ -59,6 +59,11 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use AI checking.'));
         return req('/api/check', 'POST', { question: p.question, model: p.model, rubric: p.rubric, images: p.images }, true);
       },
+      /* the SERVER judges a typed answer to a past-paper question and explains it */
+      pyqcheck: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to use AI checking.'));
+        return req('/api/check', 'POST', { mode: 'pyq', question: p.question, options: p.options, answer: p.answer, label: p.label, key: p.key }, true);
+      },
       /* the shared profile: with p = { name?, photo?, avatar? } it saves, with nothing it just reads. Returns the user. */
       profile: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to sync your profile.'));

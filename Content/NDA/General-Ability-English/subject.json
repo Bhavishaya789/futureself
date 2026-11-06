@@ -1,0 +1,19 @@
+{
+ "title": "NDA English",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#2E7D32",
+ "tagline": "GAT Part A: grammar, vocabulary, comprehension.",
+ "channels": [
+  "Defence Wallah",
+  "Unacademy",
+  "Physics Wallah"
+ ],
+ "syllabus": [
+  "Grammar",
+  "Vocabulary",
+  "Comprehension"
+ ],
+ "id": "nda-english"
+}

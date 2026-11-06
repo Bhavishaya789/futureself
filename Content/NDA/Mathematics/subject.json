@@ -1,0 +1,23 @@
+{
+ "title": "NDA Mathematics",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#2E7D32",
+ "tagline": "Paper 1: algebra, matrices, trigonometry, coordinate geometry, calculus, vectors, statistics and probability.",
+ "channels": [
+  "Defence Wallah",
+  "Unacademy",
+  "Physics Wallah"
+ ],
+ "syllabus": [
+  "Algebra",
+  "Matrices",
+  "Trigonometry",
+  "Analytical geometry",
+  "Calculus",
+  "Vectors",
+  "Statistics and probability"
+ ],
+ "id": "nda-maths"
+}

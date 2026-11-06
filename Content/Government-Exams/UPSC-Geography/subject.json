@@ -1,0 +1,17 @@
+{
+ "title": "UPSC Geography",
+ "semester": 0,
+ "credits": 0,
+ "icon": "book",
+ "color": "#6A1B9A",
+ "tagline": "Physical, Indian and world geography.",
+ "channels": [
+  "Unacademy",
+  "Drishti IAS",
+  "Adda247"
+ ],
+ "syllabus": [
+  "Physical, Indian and world geography."
+ ],
+ "id": "upsc-geo"
+}
