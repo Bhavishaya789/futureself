@@ -51,6 +51,26 @@
     {
       "source": "/api/avatar",
       "destination": "/api/misc?fn=avatar"
+    },
+    {
+      "source": "/api/share",
+      "destination": "/api/misc?fn=share"
+    },
+    {
+      "source": "/api/pview",
+      "destination": "/api/misc?fn=pview"
+    },
+    {
+      "source": "/api/plan",
+      "destination": "/api/misc?fn=plan"
+    },
+    {
+      "source": "/api/report",
+      "destination": "/api/misc?fn=report"
+    },
+    {
+      "source": "/p/:t",
+      "destination": "/p.html"
     }
   ]
 }

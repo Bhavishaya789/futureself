@@ -69,6 +69,26 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to ask the AI tutor.'));
         return req('/api/check', 'POST', { mode: 'doubt', question: p.question, context: p.context, title: p.title, lang: p.lang }, true);
       },
+      /* parent/teacher link: op = status | create | revoke | sync (with snap) */
+      share: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to share your progress.'));
+        return req('/api/share', 'POST', { op: p.op, snap: p.snap }, true);
+      },
+      /* plan status and licence codes: op = status | redeem (with code) */
+      plan: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf first.'));
+        return req('/api/plan', 'POST', { op: p.op, code: p.code }, true);
+      },
+      /* AI practice questions made from the text of a lesson */
+      genq: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to make AI practice questions.'));
+        return req('/api/check', 'POST', { mode: 'genq', title: p.title, context: p.context, n: p.n, lang: p.lang }, true);
+      },
+      /* anonymous crash and usage reports; never fails loudly, sent only when the student has not turned them off */
+      report: function (p) {
+        load(); if (!st.site) return Promise.resolve({ ok: false });
+        return req('/api/report', 'POST', { kind: p.kind, msg: p.msg, stack: p.stack, where: p.where, event: p.event, ver: p.ver, plat: p.plat }, !!st.token).catch(function () { return { ok: false }; });
+      },
       /* the shared profile: with p = { name?, photo?, avatar? } it saves, with nothing it just reads. Returns the user. */
       profile: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to sync your profile.'));

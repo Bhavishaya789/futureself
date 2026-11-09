@@ -16,7 +16,7 @@
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
 
   var D = null;
-  function fresh() { return { items: {}, log: {}, topic: {}, xp: 0, notes: {}, exam: { date: '', name: '' }, goal: 60, remind: '', lastRemind: '', mocks: [] }; }
+  function fresh() { return { items: {}, log: {}, topic: {}, xp: 0, notes: {}, exam: { date: '', name: '' }, goal: 60, remind: '', lastRemind: '', mocks: [], planDone: {}, share: { on: false, token: '', at: 0 }, reports: true, lastPing: '' }; }
   function load() {
     if (D) return D;
     try { D = JSON.parse(lsGet(KEY) || 'null'); } catch (e) { D = null; }
@@ -24,7 +24,8 @@
     var f = fresh(); Object.keys(f).forEach(function (k) { if (D[k] === undefined) D[k] = f[k]; });
     return D;
   }
-  function save() { lsSet(KEY, JSON.stringify(D || fresh())); }
+  var onSave = null;
+  function save() { lsSet(KEY, JSON.stringify(D || fresh())); if (onSave) try { onSave(); } catch (e) { } }
   function day(d) { load(); var k = d || today(); if (!D.log[k]) D.log[k] = { q: 0, c: 0, min: 0 }; return D.log[k]; }
 
   /* one answered question. it = {key, tt, lt, q, o, a, why, src, label}; ok = right or wrong */
@@ -99,7 +100,61 @@
   function letterIndex(k, n) { var m = String(k || '').toUpperCase().match(/[A-F]/); if (!m) return -1; var i = m[0].charCodeAt(0) - 65; return i < (n || 6) ? i : -1; }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
-  FSX.studyCore = { load: load, save: save, record: record, review: review, addCard: addCard, due: due, mistakes: mistakes, remove: remove, addMin: addMin, streak: streak, weak: weak, week: week, level: level, plan: plan, mark: mark, letterIndex: letterIndex, hash: hash, today: today, addDays: addDays, diffDays: diffDays, INT: INT, shuffle: shuffle, _reset: function () { D = null; }, data: function () { return load(); } };
+  /* ---- Android/desktop reminders for the next two weeks, and the exam countdown ---- */
+  function atOf(dateIso, hm) { var p = dateIso.split('-'), h = hm.split(':'); return new Date(+p[0], +p[1] - 1, +p[2], +h[0], +h[1]).getTime(); }
+  var NUDGE = ['Your revision cards are waiting. A few minutes keeps your streak alive.', 'Quick revision now means less to learn again later.', 'Open FutureSelf and clear today\'s revision.', 'Small steps every day beat long nights before the exam.'];
+  function reminders(now) {
+    load(); now = now || Date.now(); var out = [], t = today(), hm = /^\d{2}:\d{2}$/.test(D.remind || '') ? D.remind : '';
+    if (hm) {
+      var L = D.log[t] || { q: 0, min: 0 };
+      for (var i = 0; i < 14; i++) {
+        var d = addDays(t, i), at = atOf(d, hm);
+        if (at <= now) continue; if (i === 0 && (L.q > 0 || L.min >= 1)) continue;
+        out.push({ id: 'study|' + d, at: at, kind: 'remind', title: 'Time to revise', body: NUDGE[i % NUDGE.length] });
+      }
+    }
+    if (D.exam && D.exam.date) {
+      [7, 3, 1].forEach(function (n) {
+        var d = addDays(D.exam.date, -n), at = atOf(d, hm || '09:00');
+        if (at > now && diffDays(t, d) <= 14) out.push({ id: 'exam|' + d, at: at, kind: 'remind', title: (D.exam.name || 'Your exam') + ' in ' + n + (n === 1 ? ' day' : ' days'), body: n === 1 ? 'Light revision today: your mistakes and flashcards. Then rest well.' : 'Take a mock test and revise your weak topics.' });
+      });
+    }
+    return out;
+  }
+  /* what a parent or teacher is allowed to see (the server cleans it again) */
+  function snapshot() {
+    load(); var t = day(), lv = level(D.xp);
+    return { streak: streak(), xp: D.xp, level: lv.level, due: due().length, goal: D.goal, today: { q: t.q, c: t.c, min: Math.round(t.min) }, week: week(),
+      weak: weak().slice(0, 5).map(function (x) { return { tt: x.tt, q: x.q, acc: Math.round(x.acc * 100) / 100 }; }),
+      mocks: D.mocks.slice(-5).map(function (x) { return { date: x.date, score: x.score, max: x.max }; }), exam: { name: D.exam.name, date: D.exam.date } };
+  }
+  /* today's study plan. in = {due, weak:[{tt,acc,q}], examDays|null, lessonsLeft, goal, minToday, mocks:[{date,score,max}], today:'YYYY-MM-DD'} */
+  function dailyPlan(inp) {
+    var goal = Math.max(20, inp.goal || 60), ex = inp.examDays, tasks = [], MIN = 20, left = Math.max(0, inp.lessonsLeft || 0);
+    var light = ex !== null && ex !== undefined && ex >= 0 && ex <= 1, final = ex !== null && ex !== undefined && ex >= 0 && ex <= 3;
+    if (ex !== null && ex !== undefined && ex < 0) return { over: true, tasks: [], total: 0, goal: goal };
+    if (inp.due > 0) tasks.push({ kind: 'revision', title: 'Revise ' + inp.due + ' card' + (inp.due === 1 ? '' : 's') + ' that are due', min: Math.min(30, Math.max(5, Math.ceil(inp.due * 0.7))), go: 'revision' });
+    var wk = (inp.weak || []).filter(function (x) { return x.q >= 4 && x.acc < 0.7; }).slice(0, light ? 1 : 2);
+    wk.forEach(function (x) { tasks.push({ kind: 'weak', title: 'Practise ' + x.tt + ' (' + Math.round(x.acc * 100) + '% right so far)', min: 15, go: 'mock', topic: x.tt }); });
+    var last = (inp.mocks || []).slice(-1)[0], lastPct = last && last.max ? last.score / last.max : null;
+    if (lastPct !== null && lastPct < 0.6 && !light) tasks.push({ kind: 'mistakes', title: 'Go through the mistakes from your last mock test (' + Math.round(lastPct * 100) + '%)', min: 20, go: 'mistakes' });
+    if (ex !== null && ex !== undefined && ex <= 21 && !light) {
+      var weekAgo = addDays(inp.today, -7), hasRecent = (inp.mocks || []).some(function (m) { return m.date >= weekAgo; });
+      if (!hasRecent) tasks.push({ kind: 'mock', title: 'Take a full mock test', min: 45, go: 'mock' });
+    }
+    var used = tasks.reduce(function (a, x) { return a + x.min; }, 0);
+    if (!final && left > 0) {
+      var per = (ex !== null && ex !== undefined && ex > 1) ? Math.ceil(left / (ex - 1)) : 2;
+      var room = Math.max(0, Math.floor((goal * 1.5 - used) / MIN)), k = Math.max(1, Math.min(6, per, room || 1));
+      tasks.push({ kind: 'lessons', title: 'Study ' + k + ' new lesson' + (k === 1 ? '' : 's'), min: k * MIN, go: 'learn' });
+    }
+    var total = tasks.reduce(function (a, x) { return a + x.min; }, 0);
+    if (total < goal * 0.6 && !light) { var add = Math.min(goal - total, 30); if (add >= 10) tasks.push({ kind: 'cards', title: 'Flashcards to fill your daily goal', min: add, go: 'cards' }); total += add >= 10 ? add : 0; }
+    if (light) tasks.push({ kind: 'rest', title: 'Exam tomorrow: keep it light and sleep well', min: 0, go: '' });
+    return { over: false, tasks: tasks, total: total, goal: goal, examDays: ex };
+  }
+
+  FSX.studyCore = { reminders: reminders, snapshot: snapshot, dailyPlan: dailyPlan, setOnSave: function (f) { onSave = f; }, load: load, save: save, record: record, review: review, addCard: addCard, due: due, mistakes: mistakes, remove: remove, addMin: addMin, streak: streak, weak: weak, week: week, level: level, plan: plan, mark: mark, letterIndex: letterIndex, hash: hash, today: today, addDays: addDays, diffDays: diffDays, INT: INT, shuffle: shuffle, _reset: function () { D = null; }, data: function () { return load(); } };
   if (typeof document === 'undefined') return;   /* node tests stop here */
 
   /* ================= hooks from the lessons ================= */
@@ -126,7 +181,7 @@
   FSX.routes = Object.assign(FSX.routes || {}, { study: viewStudy });
 
   var V = { tab: 'home', rev: null, mock: null, cards: null, topics: null, pomo: null, mistakeTopic: '' };
-  var TABS = [['home', 'Today'], ['revision', 'Revision'], ['mistakes', 'Mistakes'], ['mock', 'Mock test'], ['cards', 'Flashcards'], ['plan', 'Exam plan'], ['report', 'Report']];
+  var TABS = [['home', 'Today'], ['revision', 'Revision'], ['mistakes', 'Mistakes'], ['mock', 'Mock test'], ['cards', 'Flashcards'], ['plan', 'Exam plan'], ['share', 'Parent link & plan'], ['report', 'Report']];
   var timers = { mock: 0 };
 
   function css() {
@@ -151,7 +206,7 @@
   function draw() {
     var r = root(); if (!r) return;
     $$('#sttabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === V.tab); });
-    var f = { home: pHome, revision: pRevision, mistakes: pMistakes, mock: pMock, cards: pCards, plan: pPlan, report: pReport }[V.tab] || pHome;
+    var f = { home: pHome, revision: pRevision, mistakes: pMistakes, mock: pMock, cards: pCards, plan: pPlan, share: pShare, report: pReport }[V.tab] || pHome;
     Promise.resolve(f(r)).catch(function (e) { r.innerHTML = '<div class="card">' + esc(e.message || 'Something went wrong') + '</div>'; });
   }
   function viewStudy(v, r) {
@@ -184,7 +239,7 @@
     $('#pm25').onclick = function () { pomo('focus', 25); }; $('#pm50').onclick = function () { pomo('focus', 50); }; $('#pm5').onclick = function () { pomo('break', 5); };
     $('#pmx').onclick = function () { pomoStop(); pHome(r); };
     $('#stremsave').onclick = function () {
-      d.remind = $('#strem').value; save();
+      d.remind = $('#strem').value; save(); phoneSync();
       if (d.remind && window.Notification && Notification.permission === 'default') try { Notification.requestPermission(); } catch (e) { }
       toast('Saved', d.remind ? 'Reminder at ' + d.remind : 'Reminder off');
     };
@@ -363,9 +418,10 @@
   /* ---------- Exam plan ---------- */
   function pPlan(r) {
     var d = load();
-    r.innerHTML = '<div class="card"><h3>Exam countdown and plan</h3><div class="row"><input class="in" id="exn" placeholder="Exam name" value="' + esc(d.exam.name) + '" style="width:auto"><input class="in" type="date" id="exd" value="' + esc(d.exam.date) + '" style="width:auto"><button class="btn pri sm" id="exs">Save</button><button class="btn sm" id="exc">Clear</button></div></div><div id="exres"><div class="card muted">Working out your plan...</div></div>';
-    $('#exs').onclick = function () { d.exam = { name: $('#exn').value.trim(), date: $('#exd').value }; save(); pPlan(r); };
-    $('#exc').onclick = function () { d.exam = { name: '', date: '' }; save(); pPlan(r); };
+    r.innerHTML = '<div class="card"><h3>Exam countdown and plan</h3><div class="row"><input class="in" id="exn" placeholder="Exam name" value="' + esc(d.exam.name) + '" style="width:auto"><input class="in" type="date" id="exd" value="' + esc(d.exam.date) + '" style="width:auto"><button class="btn pri sm" id="exs">Save</button><button class="btn sm" id="exc">Clear</button></div></div><div class="card" id="tplan"><h3>Today\'s plan</h3><p class="muted">Working it out...</p></div><div id="exres"><div class="card muted">Working out your plan...</div></div>';
+    todayPlan();
+    $('#exs').onclick = function () { d.exam = { name: $('#exn').value.trim(), date: $('#exd').value }; save(); phoneSync(); pPlan(r); };
+    $('#exc').onclick = function () { d.exam = { name: '', date: '' }; save(); phoneSync(); pPlan(r); };
     if (!d.exam.date) { $('#exres').innerHTML = '<div class="card muted">Pick your exam date and the app works out how many lessons to finish each day.</div>'; return; }
     return topicsList().then(function (ts) {
       var left = 0, total = 0, mins = 0;
@@ -378,6 +434,107 @@
     }).catch(function () { $('#exres').innerHTML = '<div class="card">Could not read your lessons.</div>'; });
   }
 
+  /* ---------- helpers for the new features ---------- */
+  function phoneSync() { try { if (window.FSPhone && FSPhone.syncReminders) setTimeout(FSPhone.syncReminders, 200); } catch (e) { } }
+  function todayPlan() {
+    var box = $('#tplan'); if (!box) return;
+    var d = load();
+    return topicsList().then(function (ts) { var l = 0; ts.forEach(function (t) { var n = t.lessons || t.lesson_count || t.total || 0; l += Math.max(0, n - (t.done || 0)); }); return l; }, function () { return 0; }).then(function (left) {
+      var b = $('#tplan'); if (!b) return;
+      var ex = d.exam.date ? diffDays(today(), d.exam.date) : null;
+      var p = dailyPlan({ due: due().length, weak: weak(), examDays: ex, lessonsLeft: left, goal: d.goal, mocks: d.mocks, today: today() });
+      if (p.over) { b.innerHTML = '<h3>Today\'s plan</h3><p class="muted">Your exam date has passed. Set the next one above.</p>'; return; }
+      var done = day().min;
+      b.innerHTML = '<h3>Today\'s plan</h3><p class="muted" style="margin:0 0 8px">Made from your due cards, weak topics, mock scores' + (ex !== null ? ' and the ' + ex + ' days left' : '') + '. It changes as you study.</p>' +
+        (p.tasks.length ? p.tasks.map(function (x, i) { return '<div class="row" style="justify-content:space-between;margin:8px 0"><span>' + esc(x.title) + (x.min ? ' <span class="muted">~' + x.min + ' min</span>' : '') + '</span>' + (x.go ? '<button class="btn sm" data-i="' + i + '">Go</button>' : '') + '</div>'; }).join('') : '<p>You are on track. Do some flashcards or read a new lesson.</p>') +
+        '<p class="muted" style="margin:8px 0 0;font-size:13px">Planned ~' + p.total + ' min. Studied so far today: ' + Math.round(done) + ' min.</p>';
+      $$('#tplan button[data-i]').forEach(function (bt) { bt.onclick = function () { var x = p.tasks[+bt.dataset.i]; if (x.go === 'learn') { location.hash = '#/learn'; return; } V.tab = x.go; if (x.go === 'revision') V.rev = null; if (x.go === 'mistakes' && x.topic) V.mistakeTopic = x.topic; viewStudyTabs(); }; });
+    });
+  }
+  function viewStudyTabs() { $$('#sttabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === V.tab); }); draw(); }
+
+  /* ---------- Parent or teacher live link ---------- */
+  var SH = { timer: 0 };
+  function U(x) { return x && x.ok && x.data ? Object.assign({ ok: true }, x.data) : (x || { ok: false }); }
+  function siteOf() { return (window.fsApi && fsApi.acct) ? fsApi.acct('status', {}).then(function (r) { return (r && r.ok && r.data && r.data.site) || ''; }, function () { return ''; }) : Promise.resolve(''); }
+  function shareSend() {
+    var d = load(); if (!d.share.on) return Promise.resolve();
+    return window.fsApi.acct('share', { op: 'sync', snap: snapshot() }).then(function (r) { if (r && r.ok) { d.share.at = Date.now(); try { lsSet(KEY, JSON.stringify(D)); } catch (e) { } } return r; });
+  }
+  function shareLater() { if (!D || !D.share || !D.share.on || !(window.fsApi && fsApi.acct)) return; clearTimeout(SH.timer); SH.timer = setTimeout(function () { shareSend().catch(function () { }); }, 15000); }
+  onSave = shareLater;
+  function pShare(r) {
+    var d = load();
+    r.innerHTML = '<div class="card"><h3>Parent or teacher live view</h3><p class="muted">Make a private link. Anyone with the link sees your study progress (streak, minutes, accuracy, weak topics, mock scores, exam date) and nothing else: no email, no notes, no questions. It updates by itself while you use the app. You can turn it off at any time.</p><div id="shbody" class="muted">Checking...</div></div>' +
+      '<div class="card" id="plbody"><h3>Your plan</h3><p class="muted">Checking...</p></div>';
+    if (!(window.fsApi && fsApi.acct)) { $('#shbody').textContent = 'Open the app to use this.'; $('#plbody').innerHTML = ''; return; }
+    Promise.all([window.fsApi.acct('share', { op: 'status' }), siteOf()]).then(function (a) {
+      var st = U(a[0]), site = a[1], box = $('#shbody'); if (!box) return;
+      if (!st || !st.ok) { box.innerHTML = esc((st && st.error) || 'Sign in to FutureSelf to share your progress.'); return; }
+      d.share.on = !!st.active; d.share.token = st.token || ''; lsSet(KEY, JSON.stringify(D));
+      if (!st.active) { box.innerHTML = '<button class="btn pri" id="shon">Create my link</button>'; $('#shon').onclick = function () { this.disabled = true; window.fsApi.acct('share', { op: 'create' }).then(function (x) { x = U(x); if (!x || !x.ok) throw new Error((x && x.error) || 'Could not create the link.'); d.share.on = true; d.share.token = x.token; save(); return shareSend(); }).then(function () { pShare(r); }).catch(function (e) { toast('Link not created', e.message || '', true); pShare(r); }); }; return; }
+      var link = (site || '').replace(/\/+$/, '') + '/p/' + st.token;
+      box.innerHTML = '<input class="in" id="shl" readonly value="' + esc(link) + '" style="width:100%"><div class="row" style="margin-top:8px"><button class="btn pri sm" id="shc">Copy link</button><button class="btn sm" id="sho">Open</button><button class="btn sm" id="shu">Update now</button><button class="btn sm" id="shx">Turn off</button></div><p class="muted" style="font-size:13px;margin:8px 0 0">Last update: ' + (st.updatedAt ? new Date(st.updatedAt).toLocaleString() : 'not yet') + '. Turning it off stops the link at once.</p>';
+      $('#shc').onclick = function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(function () { toast('Copied', 'Send it to your parent or teacher.'); }, function () { $('#shl').select(); toast('Select the link and copy it', '', true); }); else { $('#shl').select(); toast('Select the link and copy it', '', true); } };
+      $('#sho').onclick = function () { window.open(link, '_blank', 'noopener'); };
+      $('#shu').onclick = function () { shareSend().then(function () { toast('Updated', 'The link now shows your latest progress.'); pShare(r); }, function (e) { toast('Not updated', e.message || '', true); }); };
+      $('#shx').onclick = function () { window.fsApi.acct('share', { op: 'revoke' }).then(function () { d.share = { on: false, token: '', at: 0 }; save(); toast('Link turned off', 'The old link no longer works.'); pShare(r); }); };
+    }).catch(function (e) { var b = $('#shbody'); if (b) b.textContent = (e && e.message) || 'Could not reach the server.'; });
+    window.fsApi.acct('plan', { op: 'status' }).then(function (x) {
+      x = U(x); var b = $('#plbody'); if (!b) return;
+      if (!x || !x.ok) { b.innerHTML = '<h3>Your plan</h3><p class="muted">' + esc((x && x.error) || 'Sign in to see your plan.') + '</p>'; return; }
+      b.innerHTML = '<h3>Your plan: ' + (x.plan === 'free' ? 'Free' : x.plan === 'pro' ? 'Pro' : 'School') + '</h3><p class="muted">AI tutor, AI practice questions and answer checks: <b>' + x.perDay + '</b> a day' + (x.plan === 'free' ? '' : ' (free plan: ' + x.freePerDay + ')') + '.' + (x.until ? ' Active until ' + new Date(x.until).toLocaleDateString() + '.' : '') + '</p>' +
+        '<div class="row"><input class="in" id="plc" placeholder="Licence code, like ABCD-EFGH-JKLM" maxlength="14" style="width:auto;min-width:230px"><button class="btn pri sm" id="plr">Redeem</button></div><p class="muted" style="font-size:13px;margin:8px 0 0">Schools and tutors get codes from SpinDigital. Everything else in FutureSelf stays free.</p>';
+      $('#plr').onclick = function () { var c = $('#plc').value.trim().toUpperCase(); if (c.length < 12) { toast('Check the code', 'It has 12 letters and numbers.', true); return; } this.disabled = true; window.fsApi.acct('plan', { op: 'redeem', code: c }).then(function (y) { y = U(y); if (!y || !y.ok) throw new Error((y && y.error) || 'Code not accepted.'); toast('Plan active', 'Your daily AI allowance is now ' + y.perDay + '.'); pShare(r); }).catch(function (e) { toast('Not accepted', e.message || '', true); pShare(r); }); };
+    });
+  }
+
+  /* ---------- AI practice questions from this lesson ---------- */
+  function genqCard(c, host) {
+    var el = document.createElement('div'); el.id = 'gqx'; el.className = 'card lsx'; el.style.marginTop = '14px';
+    el.innerHTML = '<h3>AI practice questions</h3><p class="muted" style="margin:0 0 8px">Five new questions made from this lesson. Wrong answers join your Revision list.</p><div class="row"><button class="btn pri sm" id="gqgo">Make 5 questions</button><span class="muted" id="gqm"></span></div><div id="gqq"></div>';
+    host.appendChild(el);
+    $('#gqgo').onclick = function () {
+      var b = this, m = $('#gqm'), q = $('#gqq'); q.innerHTML = '';
+      if (!(window.fsApi && fsApi.acct)) { m.textContent = 'Open the app and sign in.'; return; }
+      b.disabled = true; m.textContent = 'Writing questions...';
+      window.fsApi.acct('genq', { title: c.l.title, context: ctxOf(c), n: 5, lang: 'English' }).then(function (r) {
+        if (!r || !r.ok) throw new Error((r && r.error) || 'Could not make questions.');
+        m.textContent = ''; var key = 'ai/' + c.t.id + '/' + c.l.id;
+        q.innerHTML = r.data.questions.map(function (x, i) { return '<div class="gq" data-i="' + i + '" style="margin:14px 0"><b>' + (i + 1) + '. ' + esc(x.q) + '</b>' + x.o.map(function (o, j) { return '<button class="opt2" data-j="' + j + '">' + esc(o) + '</button>'; }).join('') + '<div class="why"></div></div>'; }).join('') + '<p class="muted" style="font-size:12px">Made by AI from the lesson text. It can be wrong: check with your book if unsure.</p>';
+        $$('#gqq .gq').forEach(function (g) {
+          var x = r.data.questions[+g.dataset.i], done = false;
+          $$('button', g).forEach(function (bt) { bt.onclick = function () {
+            if (done) return; done = true; var j = +bt.dataset.j, ok = j === x.a;
+            $$('button', g).forEach(function (o, k) { if (k === x.a) o.classList.add('right'); else if (k === j) o.classList.add('wrong'); });
+            if (x.why) $('.why', g).textContent = x.why;
+            record({ key: key, tt: c.t.title, lt: c.l.title, q: x.q, o: x.o, a: x.a, why: x.why || '', src: 'ai', label: 'AI practice: ' + c.l.title }, ok);
+          }; });
+        });
+      }).catch(function (e) { m.textContent = e.message || 'Try again.'; }).then(function () { b.disabled = false; });
+    };
+  }
+
+  /* ---------- crash and usage reports (anonymous, can be turned off) ---------- */
+  var RP = { n: 0, seen: {}, info: null };
+  function rinfo() { if (RP.info) return Promise.resolve(RP.info); return (window.fsApi && fsApi.info ? fsApi.info() : Promise.resolve({})).then(function (i) { RP.info = { ver: (i && i.version) || '', plat: (i && i.platform) || 'desktop' }; return RP.info; }, function () { RP.info = { ver: '', plat: '' }; return RP.info; }); }
+  function sendReport(o) {
+    try {
+      if (!(window.fsApi && fsApi.acct)) return; var d = load(); if (d.reports === false) return;
+      rinfo().then(function (i) { o.ver = i.ver; o.plat = i.plat; return fsApi.acct('report', o); }).catch(function () { });
+    } catch (e) { }
+  }
+  function onErr(msg, where, stack) {
+    try {
+      var k = String(msg).slice(0, 120) + '|' + where; if (RP.seen[k] || RP.n >= 5) return; RP.seen[k] = 1; RP.n++;
+      sendReport({ kind: 'error', msg: String(msg).slice(0, 300), where: String(where || '').slice(0, 120), stack: String(stack || '').slice(0, 1500) });
+    } catch (e) { }
+  }
+  window.addEventListener('error', function (ev) { onErr(ev.message || 'error', (ev.filename || '').split('/').pop() + ':' + (ev.lineno || 0), ev.error && ev.error.stack); });
+  window.addEventListener('unhandledrejection', function (ev) { var r = ev.reason; onErr((r && r.message) || String(r), 'promise', r && r.stack); });
+  setTimeout(function () { try { var d = load(); if (d.reports !== false && d.lastPing !== today()) { d.lastPing = today(); lsSet(KEY, JSON.stringify(D)); sendReport({ kind: 'usage', event: 'open' }); } } catch (e) { } }, 8000);
+  FSX.studyReports = { get: function () { return load().reports !== false; }, set: function (v) { var d = load(); d.reports = !!v; save(); } };
+
   /* ---------- Weekly report ---------- */
   function reportText() {
     var w = week(), q = 0, c = 0, m = 0; w.forEach(function (x) { q += x.q; c += x.c; m += x.min; });
@@ -388,7 +545,9 @@
     var w = week(), mx = Math.max.apply(null, w.map(function (x) { return x.q; }).concat([1])), q = 0, c = 0, m = 0; w.forEach(function (x) { q += x.q; c += x.c; m += x.min; });
     r.innerHTML = '<div class="card"><h3>Last 7 days</h3><div class="grid"><div class="stat"><b>' + Math.round(m) + '</b><span>study minutes</span></div><div class="stat"><b>' + q + '</b><span>questions</span></div><div class="stat"><b>' + (q ? Math.round(100 * c / q) : 0) + '%</b><span>accuracy</span></div><div class="stat"><b>' + streak() + '</b><span>day streak</span></div></div>' +
       '<div class="wk" style="margin-top:16px">' + w.map(function (x) { return '<div><i style="height:' + Math.round(100 * x.q / mx) + 'px"></i>' + x.q + '<br>' + x.date.slice(8) + '</div>'; }).join('') + '</div><p class="muted" style="font-size:13px">Bars show questions answered each day.</p></div>' +
-      '<div class="card"><h3>Share with a parent or teacher</h3><p class="muted">Copy this summary and send it on WhatsApp or email.</p><pre style="white-space:pre-wrap;margin:8px 0" id="rptxt">' + esc(reportText()) + '</pre><button class="btn pri sm" id="rpcopy">Copy report</button></div>';
+      '<div class="card"><h3>Share with a parent or teacher</h3><p class="muted">Copy this summary and send it on WhatsApp or email.</p><pre style="white-space:pre-wrap;margin:8px 0" id="rptxt">' + esc(reportText()) + '</pre><button class="btn pri sm" id="rpcopy">Copy report</button></div>' +
+      '<div class="card"><h3>Help improve FutureSelf</h3><label class="row" style="gap:8px"><input type="checkbox" id="rptog"' + (load().reports !== false ? ' checked' : '') + '> Send anonymous crash and usage reports</label><p class="muted" style="font-size:13px;margin:6px 0 0">Error messages with emails and tokens removed, and a daily "app opened" count. Never your notes, answers or lessons.</p></div>';
+    $('#rptog').onchange = function () { FSX.studyReports.set(this.checked); };
     $('#rpcopy').onclick = function () { var t = reportText(); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast('Copied', 'Paste it anywhere.'); }, function () { toast('Copy failed', 'Select the text and copy it.', true); }); else toast('Copy not available', 'Select the text and copy it.', true); };
   }
 
@@ -404,7 +563,7 @@
     var el = document.createElement('div'); el.id = 'lsx'; el.className = 'card lsx'; el.style.marginTop = '14px';
     el.innerHTML = '<h3>Ask the AI tutor</h3><textarea class="in" id="dbq" placeholder="Type your doubt about this lesson" maxlength="600" style="min-height:70px"></textarea><div class="row" style="margin-top:8px"><button class="btn pri sm" id="dbgo">Ask</button><span class="muted" id="dbmsg"></span></div><div class="ans" id="dba"></div>' +
       '<h3 style="margin-top:16px">My notes</h3><textarea class="in" id="lsn" placeholder="Your own notes for this lesson. Saved on this device." maxlength="4000">' + esc(n) + '</textarea><div class="row" style="margin-top:8px"><button class="btn sm" id="lsprint">Print revision sheet</button></div>';
-    host.appendChild(el);
+    host.appendChild(el); genqCard(c, host);
     $('#lsn').oninput = function () { var d = load(); if (this.value.trim()) d.notes[key] = this.value; else delete d.notes[key]; save(); };
     $('#dbgo').onclick = function () {
       var q = $('#dbq').value.trim(), m = $('#dbmsg'), a = $('#dba'); if (q.length < 3) { m.textContent = 'Type your doubt first.'; return; }

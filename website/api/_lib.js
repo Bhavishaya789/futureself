@@ -16,7 +16,7 @@ async function db() {
   }
   let c; try { c = await clientP; } catch (e) { fail(503, 'Could not reach the database. Check MONGODB_URI and Network Access in MongoDB Atlas.'); }
   const d = c.db(process.env.MONGODB_DB || 'futureself');
-  const out = { users: d.collection('users'), sessions: d.collection('sessions'), tickets: d.collection('tickets'), vcache: d.collection('vcache'), rl: d.collection('rl'), social: d.collection('social'), content: d.collection('content') };
+  const out = { users: d.collection('users'), sessions: d.collection('sessions'), tickets: d.collection('tickets'), vcache: d.collection('vcache'), rl: d.collection('rl'), social: d.collection('social'), content: d.collection('content'), shares: d.collection('shares'), licences: d.collection('licences'), reports: d.collection('reports') };
   if (!indexed) {
     indexed = true;
     try {
@@ -29,6 +29,11 @@ async function db() {
       await out.rl.createIndex({ key: 1 }, { unique: true });
       await out.social.createIndex({ key: 1 }, { unique: true });
       await out.social.createIndex({ uids: 1, createdAt: -1 }, { sparse: true });
+      await out.shares.createIndex({ uid: 1 }, { unique: true });
+      await out.shares.createIndex({ token: 1 }, { unique: true });
+      await out.licences.createIndex({ code: 1 }, { unique: true });
+      await out.reports.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
+      await out.reports.createIndex({ at: -1 });
     } catch (e) { indexed = false; }
   }
   return out;

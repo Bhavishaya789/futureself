@@ -703,3 +703,7 @@ body.inarena{overflow:hidden}
   .nav::-webkit-scrollbar{display:none}
   .nav a{flex:0 0 auto;min-width:62px}
 }
+
+/* lesson video pane must not push the page wider than the phone */
+.vl{grid-template-columns:minmax(0,1fr)}.vl>*{min-width:0;max-width:100%}
+.vl-card{min-width:0;max-width:100%}.vl-card pre,.vl pre{overflow-x:auto;max-width:100%}

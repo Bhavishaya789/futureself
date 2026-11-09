@@ -80,6 +80,7 @@
           if (at > now) out.push({ id: b._id + '|' + isoOf(d) + '|s', at: at, kind: 'start', title: 'Time to study ' + b.subject, body: b.minutes + ' min, ' + b.lock_mode + ' mode. Tap to begin.', subject: b.subject, minutes: b.minutes, lock: b.lock_mode, topicId: b.topic_id || '' });
         }
       });
+      try { if (window.FSX && FSX.studyCore && FSX.studyCore.reminders) out = out.concat(FSX.studyCore.reminders(now)); } catch (e) { }
       out.sort(function (a, b) { return a.at - b.at; });
       jcall('scheduleReminders', JSON.stringify(out.slice(0, 60)));
     }).catch(function () { });
@@ -119,7 +120,7 @@
   }
   /* the phone's background lock service needs the sign-in too, so it can follow the PC */
   function syncAccount(c) { var s = c.status(); jcall('accountSave', JSON.stringify({ site: s.site, token: s.signedIn ? c.token() : '' })); }
-  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, update: 1, social: 1, challenge: 1, capture: 1, run: 1, profile: 1, avatarFromPhoto: 1 };
+  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, pyqcheck: 1, doubt: 1, genq: 1, share: 1, plan: 1, report: 1, update: 1, social: 1, challenge: 1, capture: 1, run: 1, profile: 1, avatarFromPhoto: 1 };
   function acct(op, payload) {
     if (!ACCT_OPS[op]) return Promise.resolve({ ok: false, error: 'Unknown account action' });
     return getClient().then(function (c) {

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Student progress | FutureSelf</title>
+<style>
+:root{--bg:#0b0e1f;--card:#141936;--line:#2a3160;--text:#eef0ff;--muted:#9aa3d6;--cyan:#2de2e6;--violet:#7c5cff;--ok:#3ddc97;--bad:#ff5c7a;--warn:#ffc857}
+@media (prefers-color-scheme:light){:root{--bg:#f4f6ff;--card:#fff;--line:#d8dcf3;--text:#161a3a;--muted:#5a6194}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:24px;margin:8px 0 2px}.sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px}
+.card h2{font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat b{display:block;font-size:28px}.stat span{font-size:13px;color:var(--muted)}
+.bars{display:flex;gap:8px;align-items:flex-end;height:130px}.bars div{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+.bars i{display:block;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--cyan),var(--violet));min-height:3px;margin-bottom:4px}
+.row{display:flex;justify-content:space-between;gap:10px;margin:10px 0 4px}.bar{height:9px;border-radius:6px;background:rgba(127,127,160,.2);overflow:hidden}.bar i{display:block;height:100%;border-radius:6px}
+.note{color:var(--muted);font-size:13px}.err{color:var(--bad);text-align:center;padding:40px 10px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">FutureSelf &middot; read-only progress view</div>
+  <div id="app"><p class="note">Loading...</p></div>
+</div>
+<script>
+(function(){
+  var app=document.getElementById('app'),timer=0;
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+  function add(p,c){p.appendChild(c);return c}
+  function token(){var m=location.pathname.match(/\/p\/([A-Za-z0-9_-]{20,40})/);return m?m[1]:(new URLSearchParams(location.search).get('t')||'')}
+  function days(a){var p=a.split('-');return Math.round((new Date(+p[0],+p[1]-1,+p[2])-new Date(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()))/864e5)}
+  function ago(t){if(!t)return 'not yet';var s=Math.max(0,Math.round((Date.now()-t)/1000));if(s<90)return 'just now';if(s<3600)return Math.round(s/60)+' min ago';if(s<86400)return Math.round(s/3600)+' hours ago';return Math.round(s/86400)+' days ago'}
+  function stat(g,v,l){var d=add(g,el('div','stat'));add(d,el('b','',v));add(d,el('span','',l))}
+  function draw(r){
+    app.textContent='';
+    var s=r.snap;
+    if(!s){add(app,el('h1','','Waiting for the first update'));add(app,el('p','sub','The student has turned this link on. Progress will appear here after they next open FutureSelf.'));return}
+    add(app,el('h1','',s.name+"'s progress"));add(app,el('p','sub','Updated '+ago(r.updatedAt)+'. This page refreshes by itself.'));
+    var w=s.week||[],q=0,c=0,m=0;w.forEach(function(x){q+=x.q;c+=x.c;m+=x.min});
+    var k=add(app,el('div','card')),g=add(k,el('div','grid'));
+    stat(g,String(s.streak),'day streak');stat(g,Math.round(m)+' min','studied in 7 days');stat(g,q?Math.round(100*c/q)+'%':'-','answers correct ('+q+')');stat(g,String(s.today.min)+'/'+(s.goal||0)+' min','today vs daily goal');
+    if(s.exam&&s.exam.date){var dd=days(s.exam.date);stat(g,dd<0?'Done':String(dd),dd<0?'exam date passed':'days to '+(s.exam.name||'the exam'))}
+    stat(g,'Level '+s.level,s.xp+' XP');
+    var b=add(app,el('div','card'));add(b,el('h2','','Questions answered, last 7 days'));
+    var mx=Math.max.apply(null,w.map(function(x){return x.q}).concat([1])),bars=add(b,el('div','bars'));
+    w.forEach(function(x){var d=add(bars,el('div'));var i=add(d,el('i'));i.style.height=Math.round(100*x.q/mx)+'px';d.appendChild(document.createTextNode(x.q));d.appendChild(el('br'));d.appendChild(document.createTextNode((x.date||'').slice(8)))});
+    var wk=add(app,el('div','card'));add(wk,el('h2','','Topics to focus on'));
+    if(!s.weak.length)add(wk,el('p','note','Not enough answers yet to show weak topics.'));
+    s.weak.forEach(function(x){var r1=add(wk,el('div','row'));add(r1,el('span','',x.tt));add(r1,el('span','note',Math.round(x.acc*100)+'% of '+x.q));var bar=add(wk,el('div','bar'));var i=add(bar,el('i'));i.style.width=Math.round(x.acc*100)+'%';i.style.background=x.acc<.5?'var(--bad)':x.acc<.75?'var(--warn)':'var(--ok)'});
+    var mk=add(app,el('div','card'));add(mk,el('h2','','Recent mock tests'));
+    if(!s.mocks.length)add(mk,el('p','note','No mock tests taken yet.'));
+    s.mocks.slice().reverse().forEach(function(x){var r2=add(mk,el('div','row'));add(r2,el('span','',x.date));add(r2,el('b','',x.score+' / '+x.max))});
+    add(app,el('p','note','Revision cards waiting: '+s.due+'. Only study progress is shown here. The student can turn this link off at any time in FutureSelf, under Study Hub.'));
+  }
+  function load(){
+    var t=token();if(!t){app.textContent='';add(app,el('p','err','This link is not valid.'));return}
+    fetch('/api/pview?t='+encodeURIComponent(t),{cache:'no-store'}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})}).then(function(x){
+      if(!x.ok){app.textContent='';add(app,el('p','err',x.j&&x.j.error||'This link is not valid.'));clearInterval(timer);return}
+      draw(x.j)
+    }).catch(function(){if(!app.firstChild||app.textContent==='Loading...'){app.textContent='';add(app,el('p','err','Could not load. Check your internet and refresh.'))}})
+  }
+  load();timer=setInterval(load,60000);
+})();
+</script>
+</body>
+</html>
