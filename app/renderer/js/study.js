@@ -100,7 +100,7 @@
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
   FSX.studyCore = { load: load, save: save, record: record, review: review, addCard: addCard, due: due, mistakes: mistakes, remove: remove, addMin: addMin, streak: streak, weak: weak, week: week, level: level, plan: plan, mark: mark, letterIndex: letterIndex, hash: hash, today: today, addDays: addDays, diffDays: diffDays, INT: INT, shuffle: shuffle, _reset: function () { D = null; }, data: function () { return load(); } };
-  if (typeof document === 'undefined' || !FSX.h) return;   /* node tests stop here */
+  if (typeof document === 'undefined') return;   /* node tests stop here */
 
   /* ================= hooks from the lessons ================= */
   FSX.study = {
