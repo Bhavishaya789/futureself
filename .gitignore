@@ -1,3 +1,7 @@
 node_modules/
 node_modules/
 node_modules/
+FutureSelf-Setup.exe
+*.zip
+FutureSelf-Upload-*.ps1
+FutureSelf-Release-*.ps1

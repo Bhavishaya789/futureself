@@ -376,6 +376,7 @@
     }).join('');
   }
   var curLesson = null, pendingLeave = null;
+  window.__fsCur = function () { return curLesson; };
   /* ---------- videos: the app picks them, they play inside the app, nobody searches ---------- */
   var V = null;
   function ytId(u) { var m = String(u || '').match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : null; }
@@ -613,6 +614,7 @@
       var d = r.data, col = d.verdict === 'correct' ? 'ok' : (d.verdict === 'wrong' ? 'bad' : 'warn');
       $('#pqr' + i).innerHTML = '<div class="result" style="margin-top:10px"><h3><span class="badge ' + col + '">' + esc(d.verdict.toUpperCase()) + '</span> ' + (d.keyed ? '<span class="badge">Official key</span>' : '<span class="badge">AI worked answer, confidence ' + esc(d.confidence) + '</span>') + '</h3>' + (d.right ? '<p><b>Right answer:</b> ' + esc(d.right) + '</p>' : '') + '<p class="fb">' + esc(d.explanation) + '</p></div>';
       if (d.verdict === 'correct') { try { chime(); } catch (e) { } }
+      if (FSX.study) FSX.study.pyq(curLesson, q, d);
     }).catch(function (e) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', e.message || 'Try again.', true); });
   };
   actions.pai = function (el) {
@@ -760,6 +762,7 @@
     $('[data-act=grade]').textContent = 'Try again'; $('[data-act=grade]').dataset.act = 'retry';
     $$('.q', box).forEach(function (qe) { var i = +qe.dataset.q; var sel = $('.opt[data-q="' + i + '"].right', box); var chosen = $('.opt[data-q="' + i + '"].wrong', box); if (sel && !chosen) { var r = sel.getBoundingClientRect(); FX.burst(r.left + 30, r.top + r.height / 2, 14, { speed: 240, gravity: 120 }); } });
     if (score === ids.length) { chime(); FS3D.ok && FS3D.burst(); FX.confetti(innerWidth / 2, innerHeight * 0.6, 90); setTimeout(function () { FX.fireworks(3); }, 300); }
+    if (FSX.study) FSX.study.quiz(c, ids.map(function (i) { var sl = $('.opt.right[data-q="' + i + '"]', box), ch = $('.opt.wrong[data-q="' + i + '"]', box); return { i: i, ok: !ch }; }));
     api('/progress', { method: 'POST', body: { topic_id: c.t.id, lesson_id: c.l.id, quiz: { score: score, total: ids.length } } }).catch(function () { });
   };
   actions.retry = function () { S.ltab = 'quiz'; go(); };
