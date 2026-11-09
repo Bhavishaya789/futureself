@@ -707,3 +707,39 @@ body.inarena{overflow:hidden}
 /* lesson video pane must not push the page wider than the phone */
 .vl{grid-template-columns:minmax(0,1fr)}.vl>*{min-width:0;max-width:100%}
 .vl-card{min-width:0;max-width:100%}.vl-card pre,.vl pre{overflow-x:auto;max-width:100%}
+
+/* ===== phone bottom bar + More sheet: even slots, clear active state, proper scrolling ===== */
+@media (max-width:860px){
+  .side{height:calc(66px + env(safe-area-inset-bottom,0px));padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:rgba(10,13,38,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line-2);box-shadow:0 -10px 30px rgba(0,0,0,.35)}
+  .nav{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;overflow:visible;align-items:stretch}
+  .nav a{position:relative;min-width:0;flex:none;justify-content:center;align-items:center;padding:6px 2px;gap:2px;color:var(--muted);font-weight:600;-webkit-tap-highlight-color:transparent;transition:color .2s}
+  .nav a .l{font-size:11px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .nav a svg{position:relative;z-index:1;width:24px;height:24px}
+  .nav a::before{content:'';position:absolute;top:4px;left:50%;width:52px;height:30px;margin-left:-26px;border-radius:15px;background:linear-gradient(120deg,rgba(124,92,255,.5),rgba(45,226,230,.28));opacity:0;transform:scale(.6);transition:opacity .22s,transform .28s cubic-bezier(.3,1.5,.5,1)}
+  .nav a.on{color:var(--text);background:none}
+  .nav a.on::before{opacity:1;transform:none}
+  .nav a.on .l{font-weight:700}
+  .nav a:active svg{transform:scale(.88)}
+  .nav a:hover svg{transform:none}
+  .msbox{bottom:calc(74px + env(safe-area-inset-bottom,0px));max-height:min(62vh,calc(100% - 150px));display:flex;flex-direction:column;padding:8px 12px 12px;border-radius:26px;overflow:hidden;touch-action:pan-y}
+  .msgrip{flex:none;width:44px;height:5px;margin:2px auto 8px;background:rgba(255,255,255,.28)}
+  .mshead{flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 6px 10px;font-weight:700;font-size:15px}
+  .mshead small{color:var(--muted);font-weight:500;font-size:12px}
+  .msscroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 4px 6px;margin:0 -4px;scrollbar-width:thin;scrollbar-color:rgba(124,92,255,.7) transparent}
+  .msscroll::-webkit-scrollbar{width:5px}.msscroll::-webkit-scrollbar-thumb{background:rgba(124,92,255,.7);border-radius:5px}
+  .msbox.more::after{content:'';position:absolute;left:0;right:0;bottom:0;height:34px;pointer-events:none;background:linear-gradient(180deg,transparent,#0c1030);border-radius:0 0 26px 26px;transition:opacity .2s}
+  .msbox.end::after{opacity:0}
+  .msgrid{gap:10px}
+  .msgrid a{padding:14px 6px;min-height:84px;justify-content:center;transition:transform .15s,border-color .2s}
+  .msgrid a:active{transform:scale(.95)}
+  .msgrid a.on{border-color:var(--cyan)}
+  .msgrid a .l{text-align:center;line-height:1.15}
+  .msbox.drag{transition:none;animation:none}
+}
+@media (prefers-reduced-motion:reduce){.nav a::before,.msbox{transition:none;animation:none}}
+body.msheet-open{overflow:hidden}
+@media (max-width:860px){
+  .side .sidesearch{flex:0 0 44px;width:44px;min-width:44px;margin:0 0 0 4px;padding:0;justify-content:center;font-size:0;gap:0;align-self:center;height:44px}
+  .side .sidesearch kbd{display:none}.side .sidesearch svg{width:22px;height:22px}
+  .side .nav{flex:1 1 auto;min-width:0;width:auto}
+}

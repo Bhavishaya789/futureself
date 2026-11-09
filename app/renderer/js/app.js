@@ -148,6 +148,20 @@
   }
   window.addEventListener('hashchange', go);
 
+  /* More sheet: scroll fade, swipe down to close, Escape, tap a place to close */
+  function msheetWire(d) {
+    var box = d.querySelector('.msbox'), sc = d.querySelector('.msscroll'), y0 = null, dy = 0;
+    function fade() { var more = sc.scrollHeight > sc.clientHeight + 2, end = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 4; box.classList.toggle('more', more); box.classList.toggle('end', !more || end); }
+    sc.addEventListener('scroll', fade, { passive: true }); new MutationObserver(fade).observe(document.body, { attributes: true, attributeFilter: ['class'] }); setTimeout(fade, 60); window.addEventListener('resize', fade);
+    var grip = d.querySelector('.msgrip'), head = d.querySelector('.mshead');
+    [grip, head].forEach(function (h) {
+      h.addEventListener('touchstart', function (e) { y0 = e.touches[0].clientY; dy = 0; box.classList.add('drag'); }, { passive: true });
+      h.addEventListener('touchmove', function (e) { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); box.style.transform = 'translateY(' + dy + 'px)'; box.style.opacity = String(Math.max(.35, 1 - dy / 260)); }, { passive: true });
+      h.addEventListener('touchend', function () { if (y0 === null) return; y0 = null; box.classList.remove('drag'); box.style.transform = ''; box.style.opacity = ''; if (dy > 70) document.body.classList.remove('msheet-open'); });
+    });
+    d.addEventListener('click', function (e) { if (e.target.closest('.msgrid a')) document.body.classList.remove('msheet-open'); });
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.body.classList.remove('msheet-open'); });
   function ensureShell(active) {
     var nav = [['home', 'home', 'Home'], ['learn', 'book', 'Learn'], ['timetable', 'cal', 'Timetable'], ['start', 'focus', 'Focus'], ['progress', 'chart', 'Progress']].concat((window.FSX && FSX.nav) || []).concat((window.FSX && FSX.navDyn && FSX.navDyn()) || []).concat([['settings', 'gear', 'Settings']]);
     var key = active === 'topic' || active === 'lesson' ? 'learn' : active;
@@ -166,8 +180,8 @@
       $('#nav').innerHTML = nav.filter(function (n) { return main.indexOf(n[0]) > -1; }).map(link).join('') +
         '<a href="#" class="moreb' + (rest.some(function (n) { return n[0] === key; }) ? ' on' : '') + '" data-act="more">' + ic('more') + '<span class="l">More</span></a>';
       var d = document.createElement('div'); d.id = 'msheet'; d.className = 'msheet';
-      d.innerHTML = '<div class="msback" data-act="more"></div><div class="msbox"><div class="msgrip"></div><div class="msgrid">' + rest.map(link).join('') + '</div></div>';
-      document.body.appendChild(d);
+      d.innerHTML = '<div class="msback" data-act="more"></div><div class="msbox"><div class="msgrip"></div><div class="mshead"><span>More</span><small>' + rest.length + ' places</small></div><div class="msscroll"><div class="msgrid">' + rest.map(link).join('') + '</div></div></div>';
+      document.body.appendChild(d); msheetWire(d);
     } else {
       $('#nav').innerHTML = nav.map(link).join('');
     }
