@@ -28,6 +28,23 @@ jobs:
           "$SDKM" "platforms;android-34" "build-tools;34.0.0" || true
       - name: Build web layer
         run: cd mobile && npm ci && node build.js
+      - name: Get Gradle (tries several download sources, so one GitHub outage cannot stop the build)
+        run: |
+          mkdir -p "$HOME/gl"; ok=0
+          for u in https://services.gradle.org/distributions/gradle-8.9-bin.zip https://mirrors.cloud.tencent.com/gradle/gradle-8.9-bin.zip https://downloads.gradle.org/distributions/gradle-8.9-bin.zip; do
+            for i in 1 2 3; do
+              rm -f "$HOME/gl/g.zip"
+              if curl -fL --connect-timeout 20 --max-time 300 -o "$HOME/gl/g.zip" "$u" && unzip -tq "$HOME/gl/g.zip" > /dev/null 2>&1; then ok=1; break 2; fi
+              echo "Download from $u failed (try $i). Waiting..."; sleep 15
+            done
+          done
+          if [ "$ok" = 1 ]; then
+            echo "Gradle downloaded. Using the local copy."
+            sed -i "s#^distributionUrl=.*#distributionUrl=file\\://$HOME/gl/g.zip#; s#^validateDistributionUrl=.*#validateDistributionUrl=false#" android/gradle/wrapper/gradle-wrapper.properties
+            grep distributionUrl android/gradle/wrapper/gradle-wrapper.properties
+          else
+            echo "Could not pre-download Gradle. Falling back to the normal wrapper download with retries."
+          fi
       - name: Build APK
         run: |
           cd android && chmod +x gradlew
