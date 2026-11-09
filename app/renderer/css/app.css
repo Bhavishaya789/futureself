@@ -693,3 +693,13 @@ body.inarena{overflow:hidden}
 .c5tab small{opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
 .c5tab.on{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet) inset}
 .c5tab.has b::after{content:" ✓";color:var(--ok,#3ecf8e)}
+
+/* sidebar: scroll when there are more entries than the window is tall */
+.nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(124,92,255,.55) transparent}
+.nav::-webkit-scrollbar{width:6px}.nav::-webkit-scrollbar-thumb{background:rgba(124,92,255,.55);border-radius:6px}.nav::-webkit-scrollbar-track{background:transparent}
+.side .sidesearch,.side .me{flex:0 0 auto}
+@media (max-width:860px){
+  .nav{flex:1 1 auto;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav a{flex:0 0 auto;min-width:62px}
+}
