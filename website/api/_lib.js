@@ -16,7 +16,7 @@ async function db() {
   }
   let c; try { c = await clientP; } catch (e) { fail(503, 'Could not reach the database. Check MONGODB_URI and Network Access in MongoDB Atlas.'); }
   const d = c.db(process.env.MONGODB_DB || 'futureself');
-  const out = { users: d.collection('users'), sessions: d.collection('sessions'), tickets: d.collection('tickets'), vcache: d.collection('vcache'), rl: d.collection('rl'), social: d.collection('social'), content: d.collection('content'), shares: d.collection('shares'), licences: d.collection('licences'), reports: d.collection('reports') };
+  const out = { users: d.collection('users'), sessions: d.collection('sessions'), tickets: d.collection('tickets'), vcache: d.collection('vcache'), rl: d.collection('rl'), social: d.collection('social'), content: d.collection('content'), shares: d.collection('shares'), licences: d.collection('licences'), reports: d.collection('reports'), syncdocs: d.collection('syncdocs') };
   if (!indexed) {
     indexed = true;
     try {
@@ -34,6 +34,7 @@ async function db() {
       await out.licences.createIndex({ code: 1 }, { unique: true });
       await out.reports.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 });
       await out.reports.createIndex({ at: -1 });
+      await out.syncdocs.createIndex({ uid: 1, ns: 1 }, { unique: true });
     } catch (e) { indexed = false; }
   }
   return out;

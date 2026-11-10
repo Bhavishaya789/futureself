@@ -30,3 +30,22 @@ Passwords are stored as salted scrypt hashes. Tokens are HMAC-signed and expire 
 ## In-app updates (v1.9.0)
 * Updates are read from your own GitHub Release and downloaded only from `github.com` over HTTPS. The Windows installer and the APK are checked against GitHub's SHA-256 checksum when it is present, and the Windows file must be a real installer (starts with "MZ").
 * Android only installs an update that is signed with the same key as the installed app. The signing key (`android/app/futureself-signing.p12`) is in the repository so that GitHub builds always use the same key. Because the repository is public, anyone could sign an app with that key, so only install FutureSelf from your own release page. For a Play Store release, create a private key and keep it out of the repository.
+
+
+## Full review for v1.38.0 (cloud sync)
+| Area | Finding | Result |
+|---|---|---|
+| New sync endpoint | Must only serve the signed-in student's own rows | The row owner always comes from the verified sign-in token, never from the request. Tested: a second student cannot read or change the first one's data |
+| New sync endpoint | Database operator injection (`$where`, `$ne`...) | Data is stored as an opaque text string; area name and revision are validated. Tested with hostile payloads |
+| New sync endpoint | Two devices writing at once could lose data | Every write carries a revision; a stale write is refused and the app re-merges (three-way) and retries. Tested with two real app instances |
+| New sync endpoint | Size abuse | Hard size limits per area, 90 requests per minute per network |
+| Sync import on the device | Cloud data written into the local database | Every field is re-validated (ids, topics, block rules, numbers clamped). `__proto__` style keys are ignored |
+| Server | Session, video search, answer check and avatar endpoints had no per-network request limit | Added limits |
+| Server | Admin key could be guessed without limit | 10 tries per 10 minutes per network |
+| Server | `/api/misc?fn=constructor` style names reached inherited properties | Only the real handlers are reachable |
+| Privacy | No way to remove cloud data | "Delete my cloud data" button and `erase` action; privacy page updated |
+| Dependencies | `npm audit` | 0 known problems (server and app) |
+| Windows app | Sandbox, context isolation, strict content policy (no inline scripts), navigation and permission blocking | Re-checked, no change needed |
+| Android app | No backup, no cleartext traffic, no file access, system-protected services only | Re-checked, no change needed |
+
+Still true: the apps are not code-signed, the Android signing key in the repository is public, and an owner who controls their own device can end a focus lock.

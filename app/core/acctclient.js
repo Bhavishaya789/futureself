@@ -74,6 +74,11 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to share your progress.'));
         return req('/api/share', 'POST', { op: p.op, snap: p.snap }, true);
       },
+      /* cloud sync of study data between this student's devices: op = pull | push (ns, base, data) */
+      sync: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to sync your data.'));
+        p = p || {}; return req('/api/sync', 'POST', { op: p.op, ns: p.ns, base: p.base, data: p.data }, true);
+      },
       /* plan status and licence codes: op = status | redeem (with code) */
       plan: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf first.'));

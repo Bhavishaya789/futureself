@@ -114,7 +114,7 @@ const plan = L.wrap(async (req, b) => {
   if (req.method !== 'POST') fail(405, 'Use POST.');
   const op = String(b.op || 'status');
   if (op === 'mint' || op === 'list' || op === 'revokecode') {
-    adminOk(req, b); const d = await L.db();
+    await L.limit(req, 'admin', 10, 600); adminOk(req, b); const d = await L.db();
     if (op === 'mint') {
       const kind = String(b.plan || 'school'); if (!PLAN_PER_DAY[kind] || kind === 'free') fail(400, 'plan must be "pro" or "school".');
       const count = Math.floor(num(b.count || 1, 1, 200)), seats = Math.floor(num(b.seats || 1, 1, 5000)), days = Math.floor(num(b.days || 365, 1, 3660)), label = str(b.label, 80), out = [];
@@ -152,7 +152,7 @@ const dayOf = (t) => new Date(t).toISOString().slice(0, 10);
 const report = L.wrap(async (req, b) => {
   if (req.method !== 'POST') fail(405, 'Use POST.');
   if (String(b.op || '') === 'summary') {
-    adminOk(req, b); const d = await L.db(), since = Date.now() - 7 * 864e5;
+    await L.limit(req, 'admin', 10, 600); adminOk(req, b); const d = await L.db(), since = Date.now() - 7 * 864e5;
     const rows = await d.reports.find({ at: { $gt: since } }).limit(5000).toArray();
     const errs = {}, days = {}, ver = {}, plat = {}, ev = {}, dau = {};
     rows.forEach((r) => {

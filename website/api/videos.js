@@ -9,6 +9,7 @@ const PER_HOUR = 30, CACHE_MS = 6 * 3600 * 1000;
 module.exports = L.wrap(async (req, b) => {
   if (req.method !== 'POST') fail(405, 'Use POST.');
   const { d, user } = await L.authed(req);
+  await L.limit(req, 'videos', 60, 600);
   const q = String(b.q || '').replace(/\s+/g, ' ').trim(), channel = String(b.channel || '').replace(/\s+/g, ' ').trim();
   if (q.length < 2) fail(400, 'Type what you want to learn (at least 2 letters).');
   if (q.length > 120 || channel.length > 60) fail(400, 'That search is too long.');

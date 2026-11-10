@@ -1,5 +1,5 @@
 /* Study Hub: spaced revision, mistake notebook, mock tests, flashcards, exam plan, weekly report, streak/XP, pomodoro,
-   plus an AI doubt box and personal notes inside every lesson. All study data stays on this device (localStorage). */
+   plus an AI doubt box and personal notes inside every lesson. Study data is kept on this device and, when you are signed in, synced to your account so every device shows the same data. */
 (function () {
   'use strict';
   var FSX = window.FSX = window.FSX || {};
@@ -24,8 +24,9 @@
     var f = fresh(); Object.keys(f).forEach(function (k) { if (D[k] === undefined) D[k] = f[k]; });
     return D;
   }
-  var onSave = null;
-  function save() { lsSet(KEY, JSON.stringify(D || fresh())); if (onSave) try { onSave(); } catch (e) { } }
+  var onSave = [];
+  function save() { lsSet(KEY, JSON.stringify(D || fresh())); onSave.forEach(function (f) { try { f(); } catch (e) { } }); }
+  function replaceAll(o) { D = (o && typeof o === 'object' && !Array.isArray(o)) ? o : fresh(); var f = fresh(); Object.keys(f).forEach(function (k) { if (D[k] === undefined) D[k] = f[k]; }); lsSet(KEY, JSON.stringify(D)); return D; }
   function day(d) { load(); var k = d || today(); if (!D.log[k]) D.log[k] = { q: 0, c: 0, min: 0 }; return D.log[k]; }
 
   /* one answered question. it = {key, tt, lt, q, o, a, why, src, label}; ok = right or wrong */
@@ -154,7 +155,7 @@
     return { over: false, tasks: tasks, total: total, goal: goal, examDays: ex };
   }
 
-  FSX.studyCore = { reminders: reminders, snapshot: snapshot, dailyPlan: dailyPlan, setOnSave: function (f) { onSave = f; }, load: load, save: save, record: record, review: review, addCard: addCard, due: due, mistakes: mistakes, remove: remove, addMin: addMin, streak: streak, weak: weak, week: week, level: level, plan: plan, mark: mark, letterIndex: letterIndex, hash: hash, today: today, addDays: addDays, diffDays: diffDays, INT: INT, shuffle: shuffle, _reset: function () { D = null; }, data: function () { return load(); } };
+  FSX.studyCore = { reminders: reminders, snapshot: snapshot, dailyPlan: dailyPlan, setOnSave: function (f) { onSave = f ? [f] : []; }, addOnSave: function (f) { onSave.push(f); }, replace: replaceAll, load: load, save: save, record: record, review: review, addCard: addCard, due: due, mistakes: mistakes, remove: remove, addMin: addMin, streak: streak, weak: weak, week: week, level: level, plan: plan, mark: mark, letterIndex: letterIndex, hash: hash, today: today, addDays: addDays, diffDays: diffDays, INT: INT, shuffle: shuffle, _reset: function () { D = null; }, data: function () { return load(); } };
   if (typeof document === 'undefined') return;   /* node tests stop here */
 
   /* ================= hooks from the lessons ================= */
@@ -462,7 +463,7 @@
     return window.fsApi.acct('share', { op: 'sync', snap: snapshot() }).then(function (r) { if (r && r.ok) { d.share.at = Date.now(); try { lsSet(KEY, JSON.stringify(D)); } catch (e) { } } return r; });
   }
   function shareLater() { if (!D || !D.share || !D.share.on || !(window.fsApi && fsApi.acct)) return; clearTimeout(SH.timer); SH.timer = setTimeout(function () { shareSend().catch(function () { }); }, 15000); }
-  onSave = shareLater;
+  onSave.push(shareLater);
   function pShare(r) {
     var d = load();
     r.innerHTML = '<div class="card"><h3>Parent or teacher live view</h3><p class="muted">Make a private link. Anyone with the link sees your study progress (streak, minutes, accuracy, weak topics, mock scores, exam date) and nothing else: no email, no notes, no questions. It updates by itself while you use the app. You can turn it off at any time.</p><div id="shbody" class="muted">Checking...</div></div>' +

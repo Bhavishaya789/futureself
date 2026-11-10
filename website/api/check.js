@@ -9,6 +9,7 @@ const MAX_BYTES = 3.6 * 1024 * 1024;
 module.exports = L.wrap(async (req, b) => {
   if (req.method !== 'POST') fail(405, 'Use POST.');
   const { d, user } = await L.authed(req);
+  await L.limit(req, 'check', 90, 600);
   const gKey = process.env.GEMINI_API_KEY, aKey = process.env.ANTHROPIC_API_KEY;   // Google Gemini (free tier) is used first, then Anthropic
   if (!gKey && !aKey) fail(503, 'AI checking is not switched on on the server yet (GEMINI_API_KEY is missing in Vercel). You can still score yourself against the model answer.');
   if (b.mode === 'pyq') {

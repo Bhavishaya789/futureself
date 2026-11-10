@@ -11,8 +11,8 @@ android {
         applicationId = "app.futureself.mobile"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1371
-        versionName = "1.37.1"
+        versionCode = 1380
+        versionName = "1.38.0"
     }
 
     // One fixed signing key, so every new APK can be installed over the old one (in-app updates need this).

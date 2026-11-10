@@ -21,6 +21,7 @@ const PROMPT = 'You help build a cartoon 3D avatar for the person in this photo.
 module.exports = L.wrap(async (req, b) => {
   if (req.method !== 'POST') fail(405, 'Use POST.');
   const { d, user } = await L.authed(req);
+  await L.limit(req, 'avatar', 40, 600);
   const gKey = process.env.GEMINI_API_KEY, aKey = process.env.ANTHROPIC_API_KEY;
   if (!gKey && !aKey) fail(503, 'The AI is not switched on on the server yet (GEMINI_API_KEY is missing in Vercel).');
   const photo = String(b.photo || ''), m = photo.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);

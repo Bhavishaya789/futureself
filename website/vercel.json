@@ -69,6 +69,10 @@
       "destination": "/api/misc?fn=report"
     },
     {
+      "source": "/api/sync",
+      "destination": "/api/misc?fn=sync"
+    },
+    {
       "source": "/p/:t",
       "destination": "/p.html"
     }
