@@ -1,4 +1,4 @@
-/* Futu - the 3D cartoon guide and face of FutureSelf.
+/* Bhavi - the 3D cartoon guide and face of FutureSelf.
    - greets by name (voice), explains the app, asks a few questions
    - shows a looping "screen recording" style demo for every phone permission
    Needs three.js (already loaded by the app) and tour.js (voice). Falls back gracefully. */
@@ -16,100 +16,129 @@
   document.addEventListener('fs-talk', function (e) { talking = !!e.detail; });
   document.addEventListener('fs-talk-beat', function () { beat = 1; });
 
+  var AARAV = { name: 'Aarav', skin: 0xd8a073, skinD: 0xc48658, hair: 0x1b1330, iris: 0x4a2a14, top: 0x20306a, top2: 0x2de2e6, acc: 0x2de2e6, style: 'quiff', outfit: 'hoodie' };
+  function buildHuman(T, v) {
+    var P = function (c, rough, cc) { var o = { color: c, roughness: rough == null ? 0.6 : rough, metalness: 0.0 }; if (cc) { o.clearcoat = cc; o.clearcoatRoughness = 0.35; } return new T.MeshPhysicalMaterial(o); };
+    var B = function (c) { return new T.MeshBasicMaterial({ color: c }); };
+    function sph(r, m, sx, sy, sz, x, y, z, parent) { var s = new T.Mesh(new T.SphereGeometry(r, 40, 30), m); s.scale.set(sx || 1, sy || 1, sz || 1); s.position.set(x || 0, y || 0, z || 0); if (parent) parent.add(s); return s; }
+    var cap = T.CapsuleGeometry || T.CylinderGeometry;
+    var root = new T.Group(), head = new T.Group(); head.position.set(0, 0.9, 0); root.add(head);
+    var skin = P(v.skin, 0.75), hair = P(v.hair, 0.45, 0.5), top = P(v.top, 0.55, 0.3), top2 = P(v.top2, 0.5), acc = P(v.acc, 0.4, 0.4);
+    // torso + neck
+    var torso = sph(1, top, 0.98, 1.02, 0.62, 0, -1.32, 0, root);
+    var neck = new T.Mesh(new T.CylinderGeometry(0.24, 0.27, 0.4, 24), skin); neck.position.set(0, -0.26, 0); root.add(neck);
+    // head + ears + nose + cheeks
+    sph(1, skin, 1.0, 1.1, 0.97, 0, 0, 0, head);
+    [-1, 1].forEach(function (s) { sph(0.17, skin, 0.7, 1, 0.8, s * 0.99, -0.02, -0.02, head); });
+    sph(0.085, P(v.skinD, 0.6), 1, 0.9, 0.9, 0, -0.12, 0.98, head);
+    var eyes = [], brows = [];
+    [-1, 1].forEach(function (s) {
+      var g = new T.Group(); g.position.set(s * 0.37, 0.06, 0.88);
+      sph(0.19, B(0xffffff), 1, 1.12, 0.45, 0, 0, 0, g);
+      var pu = sph(0.115, B(v.iris), 1, 1.05, 0.5, 0, -0.01, 0.07, g);
+      sph(0.062, B(0x0e0a1a), 1, 1, 0.5, 0, -0.01, 0.1, pu);
+      var hl = sph(0.04, B(0xffffff), 1, 1, 1, 0.045, 0.05, 0.13, pu);
+      head.add(g); eyes.push({ g: g, pu: pu, s: s });
+      if (v.lash) { var l = new T.Mesh(new T.TorusGeometry(0.2, 0.02, 6, 20, Math.PI * 0.9), B(0x120c20)); l.position.set(0, 0.03, 0.05); l.rotation.z = Math.PI * 0.05; g.add(l); }
+      var b = new T.Mesh(new cap(0.034, 0.2, 4, 8), hair); b.rotation.z = Math.PI / 2; b.position.set(s * 0.37, 0.4, 0.93); head.add(b); brows.push({ m: b, s: s });
+      var ch = new T.Mesh(new T.SphereGeometry(0.13, 16, 12), new T.MeshBasicMaterial({ color: 0xff8f9f, transparent: true, opacity: 0.3 })); ch.scale.set(1.2, 0.7, 0.3); ch.position.set(s * 0.58, -0.2, 0.8); ch.rotation.y = s * 0.55; head.add(ch);
+    });
+    var smile = new T.Mesh(new T.TorusGeometry(0.19, 0.03, 10, 28, Math.PI * 0.85), B(0x8a2f45)); smile.rotation.z = Math.PI * 1.075; smile.position.set(0, -0.36, 0.95); head.add(smile);
+    var mouth = new T.Group(); mouth.position.set(0, -0.44, 0.93); sph(0.19, B(0x5a1830), 1, 1, 0.4, 0, 0, 0, mouth); sph(0.1, B(0xe0607a), 1.2, 0.6, 0.4, 0, -0.08, 0.04, mouth);
+    var teeth = new T.Mesh(new T.BoxGeometry(0.26, 0.05, 0.05), B(0xffffff)); teeth.position.set(0, 0.1, 0.1); mouth.add(teeth); mouth.visible = false; head.add(mouth);
+    // hair variants
+    if (v.style === 'quiff') {
+      sph(1.04, hair, 1.02, 0.86, 1.04, 0, 0.4, -0.1, head);
+      sph(0.62, hair, 1.35, 0.62, 1, 0.05, 1.0, 0.45, head).rotation.z = -0.18;
+      [-1, 1].forEach(function (s) { sph(0.2, hair, 0.7, 1.3, 0.8, s * 0.97, 0.18, 0.12, head); });
+    } else if (v.style === 'long') {
+      sph(1.04, hair, 1.03, 0.88, 1.05, 0, 0.38, -0.1, head);
+      sph(1.0, hair, 1.12, 1.55, 0.6, 0, -0.55, -0.55, head);
+      sph(0.62, hair, 1.25, 0.5, 0.9, 0.22, 0.98, 0.55, head).rotation.z = 0.28;
+      [-1, 1].forEach(function (s) { sph(0.28, hair, 0.8, 2.2, 0.8, s * 1.0, -0.62, 0.05, head); });
+    } else {
+      sph(1.02, hair, 1.0, 0.78, 1.02, 0, 0.48, -0.1, head);
+      var ps = [[-.7, .95, .2], [-.35, 1.12, .3], [0, 1.18, .35], [.35, 1.12, .3], [.7, .95, .2], [-.9, .6, 0], [.9, .6, 0], [-.55, 1.05, -.2], [.1, 1.2, -.1], [.55, 1.05, -.2], [-.2, 1.1, .6], [.25, 1.08, .6]];
+      ps.forEach(function (p) { sph(0.3, hair, 1, 1, 1, p[0], p[1], p[2], head); });
+    }
+    if (v.glasses) {
+      [-1, 1].forEach(function (s) { var r = new T.Mesh(new T.TorusGeometry(0.26, 0.026, 10, 36), P(0x1c1830, 0.3, 0.6)); r.position.set(s * 0.37, 0.06, 0.99); head.add(r); });
+      var br = new T.Mesh(new T.CylinderGeometry(0.02, 0.02, 0.14, 8), P(0x1c1830, 0.3)); br.rotation.z = Math.PI / 2; br.position.set(0, 0.1, 0.99); head.add(br);
+    }
+    // outfit details
+    if (v.outfit === 'hoodie') {
+      var hood = new T.Mesh(new T.TorusGeometry(0.5, 0.17, 16, 36), top); hood.rotation.x = Math.PI / 2 - 0.25; hood.position.set(0, -0.38, -0.05); root.add(hood);
+      var zip = new T.Mesh(new T.BoxGeometry(0.035, 1.3, 0.04), acc); zip.position.set(0, -1.38, 0.62); root.add(zip);
+      [-1, 1].forEach(function (s) { var str = new T.Mesh(new T.BoxGeometry(0.16, 1.2, 0.05), acc); str.position.set(s * 0.52, -1.1, 0.6); str.rotation.z = s * 0.1; root.add(str); });
+      var hp = new T.Mesh(new T.TorusGeometry(0.62, 0.07, 12, 40, Math.PI * 1.1), P(0x0f0b24, 0.4, 0.5)); hp.rotation.set(Math.PI / 2 + 0.2, 0, Math.PI * 0.95); hp.position.set(0, -0.45, 0.1); root.add(hp);
+      [-1, 1].forEach(function (s) { var cup = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 0.16, 28), acc); cup.rotation.z = Math.PI / 2; cup.position.set(s * 0.62, -0.5, 0.15); root.add(cup); });
+    } else if (v.outfit === 'jacket') {
+      var shirt = sph(0.5, P(0xf1eefc, 0.85), 0.9, 1.2, 0.3, 0, -0.9, 0.58, root);
+      var col = new T.Mesh(new T.TorusGeometry(0.34, 0.07, 10, 28, Math.PI), P(0xf1eefc, 0.85)); col.position.set(0, -0.5, 0.45); col.rotation.set(0.5, 0, Math.PI); root.add(col);
+      var badge = sph(0.11, acc, 1, 1, 0.4, 0.55, -1.0, 0.62, root);
+      [-1, 1].forEach(function (s) { var l = new T.Mesh(new T.BoxGeometry(0.2, 1.0, 0.06), top2); l.position.set(s * 0.32, -1.0, 0.6); l.rotation.z = s * -0.35; root.add(l); });
+    } else {
+      var sh = sph(0.55, P(0xf1eefc, 0.85), 0.85, 1.25, 0.3, 0, -0.95, 0.58, root);
+      [-1, 1].forEach(function (s) { var lanyard = new T.Mesh(new T.BoxGeometry(0.06, 1.0, 0.03), acc); lanyard.position.set(s * 0.22, -0.95, 0.63); lanyard.rotation.z = s * -0.2; root.add(lanyard); });
+      var card = new T.Mesh(new T.BoxGeometry(0.36, 0.5, 0.05), P(0xffffff, 0.4)); card.position.set(0, -1.62, 0.68); root.add(card);
+      var cs = new T.Mesh(new T.BoxGeometry(0.28, 0.1, 0.06), acc); cs.position.set(0, -1.5, 0.7); root.add(cs);
+      [-1, 1].forEach(function (s) { var l = new T.Mesh(new T.BoxGeometry(0.2, 1.0, 0.06), top2); l.position.set(s * 0.46, -0.95, 0.6); l.rotation.z = s * -0.3; root.add(l); });
+    }
+    // arms
+    var arms = [];
+    [-1, 1].forEach(function (s) {
+      var g = new T.Group(); g.position.set(s * 1.0, -0.78, 0.05);
+      var sl = new T.Mesh(new cap(0.19, 0.62, 8, 16), top); sl.position.y = -0.4; g.add(sl);
+      var cuff = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 0.08, 20), top2); cuff.position.y = -0.84; g.add(cuff);
+      var hand = sph(0.18, skin, 1, 1.1, 0.9, 0, -1.0, 0.02, g);
+      sph(0.07, skin, 1, 1.4, 1, s * -0.15, -0.94, 0.08, g);
+      g.rotation.z = s * 0.1; root.add(g); arms.push({ g: g, s: s });
+    });
+    return { root: root, head: head, eyes: eyes, brows: brows, smile: smile, mouth: mouth, arms: arms, human: true };
+  }
   function buildMascot(size) {
     var T = window.THREE; if (!T) throw new Error('no three');
     var cv = document.createElement('canvas'); cv.className = 'fu-cv'; cv.title = 'Tap me!';
     var r = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); r.setSize(size, size, false); cv.style.width = size + 'px'; cv.style.height = size + 'px';
-    var sc = new T.Scene(), cam = new T.PerspectiveCamera(30, 1, 0.1, 50); cam.position.set(0, -0.15, 8.6); cam.lookAt(0, -0.15, 0);
-    sc.add(new T.AmbientLight(0xffffff, 0.5));
-    var k = new T.DirectionalLight(0xffffff, 0.75); k.position.set(3, 4, 6); sc.add(k);
-    var rim = new T.DirectionalLight(0x8f7cff, 0.7); rim.position.set(-4, 2, -3); sc.add(rim);
-    var gm = new T.DataTexture(new Uint8Array([120, 185, 235]), 3, 1, T.RedFormat || T.LuminanceFormat);
-    gm.minFilter = gm.magFilter = T.NearestFilter; gm.needsUpdate = true;
-    function toon(c) { return new T.MeshToonMaterial({ color: c, gradientMap: gm }); }
-    function mk(geo, c, o, s) { var m = new T.Mesh(geo, toon(c)); if (o !== 0) { var ol = new T.Mesh(geo, new T.MeshBasicMaterial({ color: 0x120c33, side: T.BackSide })); ol.scale.setScalar(s || 1.06); m.add(ol); } return m; }
-    function sph(rad, c, o) { return mk(new T.SphereGeometry(rad, 36, 28), c, o); }
-    function flat(rad, c, sx, sy, sz) { var m = new T.Mesh(new T.SphereGeometry(rad, 20, 16), new T.MeshBasicMaterial({ color: c })); m.scale.set(sx, sy, sz); return m; }
-
-    var root = new T.Group(); sc.add(root);
-    // body
-    var body = sph(0.8, 0x6a47f0); body.scale.set(1, 1.1, 0.9); body.position.set(0, -1.2, 0); root.add(body);
-    var belly = sph(0.5, 0xb9a8ff, 0); belly.scale.set(0.85, 0.95, 0.3); belly.position.set(0, -1.15, 0.66); root.add(belly);
-    var badge = flat(0.16, 0x2de2e6, 1, 1, 0.4); badge.position.set(0, -0.98, 0.76); root.add(badge);
-    [-1, 1].forEach(function (s) { var f = sph(0.27, 0x5b3fe0); f.scale.set(1, 0.6, 1.25); f.position.set(s * 0.36, -1.98, 0.12); root.add(f); });
-    // arms
-    var arms = [];
-    [-1, 1].forEach(function (s) {
-      var p = new T.Group(); p.position.set(s * 0.82, -0.78, 0.08);
-      var a = mk(new (T.CapsuleGeometry || T.CylinderGeometry)(0.13, 0.36, 6, 12), 0x7c5cff); a.position.y = -0.3; p.add(a);
-      var h = sph(0.17, 0xf3efff); h.position.y = -0.66; p.add(h);
-      p.rotation.z = s * 0.28; root.add(p); arms.push({ g: p, s: s });
-    });
-    // head
-    var head = new T.Group(); head.position.set(0, 0.45, 0); root.add(head);
-    var hm = sph(1.15, 0x27c9d3); hm.scale.set(1.1, 1, 0.98); head.add(hm);
-    var shine = flat(0.17, 0xffffff, 1.3, 0.6, 0.2); shine.position.set(-0.5, 0.74, 0.7); shine.rotation.z = 0.6; shine.material.transparent = true; shine.material.opacity = 0.4; head.add(shine);
-    var eyes = [], brows = [];
-    [-1, 1].forEach(function (s) {
-      var g = new T.Group(); g.position.set(s * 0.46, 0.14, 0.9);
-      var w = mk(new T.SphereGeometry(0.29, 28, 22), 0xffffff, 0, 1); w.scale.set(1, 1.12, 0.62); g.add(w);
-      var pu = new T.Mesh(new T.SphereGeometry(0.16, 20, 16), new T.MeshBasicMaterial({ color: 0x1b1236 })); pu.position.set(0, -0.02, 0.14); g.add(pu);
-      var hl = new T.Mesh(new T.SphereGeometry(0.058, 12, 10), new T.MeshBasicMaterial({ color: 0xffffff })); hl.position.set(0.06, 0.06, 0.28); g.add(hl);
-      head.add(g); eyes.push({ g: g, pu: pu, s: s });
-      var b = new T.Mesh(new (T.CapsuleGeometry || T.CylinderGeometry)(0.042, 0.22, 4, 8), new T.MeshBasicMaterial({ color: 0x1b1236 }));
-      b.rotation.z = Math.PI / 2; b.position.set(s * 0.46, 0.56, 1.0); head.add(b); brows.push({ m: b, s: s });
-      var ch = flat(0.14, 0xff8fb1, 1, 0.7, 0.3); ch.position.set(s * 0.76, -0.14, 0.86); ch.rotation.y = s * 0.55; ch.material.transparent = true; ch.material.opacity = 0.85; head.add(ch);
-    });
-    var smile = new T.Mesh(new T.TorusGeometry(0.2, 0.038, 10, 28, Math.PI), new T.MeshBasicMaterial({ color: 0x1b1236 }));
-    smile.rotation.z = Math.PI; smile.position.set(0, -0.28, 1.08); head.add(smile);
-    var mouth = new T.Group(); mouth.position.set(0, -0.4, 1.04);
-    var mo = new T.Mesh(new T.SphereGeometry(0.2, 20, 16), new T.MeshBasicMaterial({ color: 0x2a0f3a })); mouth.add(mo);
-    var tg = new T.Mesh(new T.SphereGeometry(0.11, 14, 10), new T.MeshBasicMaterial({ color: 0xff6f96 })); tg.position.set(0, -0.08, 0.04); tg.scale.set(1.2, 0.7, 0.6); mouth.add(tg);
-    mouth.visible = false; head.add(mouth);
-    var stalk = new T.Mesh(new T.CylinderGeometry(0.035, 0.035, 0.42, 8), new T.MeshBasicMaterial({ color: 0x1b1236 })); stalk.position.set(0, 1.32, 0); head.add(stalk);
-    var spark = new T.Mesh(new T.OctahedronGeometry(0.2), new T.MeshBasicMaterial({ color: 0xffc857 })); spark.position.set(0, 1.66, 0); head.add(spark);
-    var shadow = new T.Mesh(new T.CircleGeometry(0.9, 28), new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 }));
-    shadow.rotation.x = -Math.PI / 2; shadow.position.set(0, -2.3, 0); root.add(shadow);
-
+    var sc = new T.Scene(), cam = new T.PerspectiveCamera(30, 1, 0.1, 50); cam.position.set(0, 0.3, 8.3); cam.lookAt(0, 0.2, 0);
+    sc.add(new T.HemisphereLight(0xcfe8ff, 0x3a2a6a, 0.55));
+    var key = new T.DirectionalLight(0xffffff, 0.75); key.position.set(3, 5, 7); sc.add(key);
+    var rim = new T.DirectionalLight(0x2de2e6, 0.7); rim.position.set(-5, 2, -3); sc.add(rim);
+    var fill = new T.DirectionalLight(0x8f7cff, 0.45); fill.position.set(4, -1, 3); sc.add(fill);
+    var rig = buildHuman(T, AARAV), root = rig.root, head = rig.head, eyes = rig.eyes, brows = rig.brows, smile = rig.smile, mouth = rig.mouth, arms = rig.arms;
+    sc.add(root);
     var cur = { brow: 0, rot: 0, eye: 1, look: 0 }, nextBlink = 1.5, blink = 0, t0 = performance.now(), open = 0;
     function target() {
-      return { happy: { brow: 0, rot: 0.1, eye: 1, look: 0 }, excited: { brow: 0.12, rot: 0.25, eye: 1.18, look: 0 }, think: { brow: 0.08, rot: -0.3, eye: 1, look: 1 }, oops: { brow: 0.04, rot: -0.45, eye: 1.05, look: 0 } }[mood] || { brow: 0, rot: 0, eye: 1, look: 0 };
+      return { happy: { brow: 0, rot: 0.1, eye: 1, look: 0 }, excited: { brow: 0.1, rot: 0.25, eye: 1.12, look: 0 }, think: { brow: 0.06, rot: -0.3, eye: 1, look: 1 }, oops: { brow: 0.03, rot: -0.45, eye: 1.05, look: 0 } }[mood] || { brow: 0, rot: 0, eye: 1, look: 0 };
     }
     function frame(now) {
       requestAnimationFrame(frame);
       if (document.hidden || !cv.isConnected || !cv.offsetWidth) return;
       var t = (now - t0) / 1000, tg2 = target();
       ['brow', 'rot', 'eye', 'look'].forEach(function (q) { cur[q] += (tg2[q] - cur[q]) * 0.12; });
-      // float + jump
       var jy = 0, sq = 1;
-      if (jumpT > 0) { jumpT -= 0.045; var u = 1 - jumpT; jy = Math.sin(u * Math.PI) * 0.7; sq = 1 + Math.sin(u * Math.PI * 2) * 0.06; if (jumpT < 0) jumpT = 0; }
-      root.position.y = Math.sin(t * 1.7) * 0.1 + jy; root.scale.set(1 / sq, sq, 1 / sq); root.rotation.z = Math.sin(t * 0.9) * 0.03;
-      shadow.scale.setScalar(1 - Math.sin(t * 1.7) * 0.06 - jy * 0.25);
-      // look at pointer
+      if (jumpT > 0) { jumpT -= 0.045; var u = 1 - jumpT; jy = Math.sin(u * Math.PI) * 0.45; sq = 1 + Math.sin(u * Math.PI * 2) * 0.03; if (jumpT < 0) jumpT = 0; }
+      root.position.y = Math.sin(t * 1.5) * 0.04 + jy; root.scale.set(1 / sq, sq, 1 / sq); root.rotation.z = Math.sin(t * 0.8) * 0.012;
       var rc = cv.getBoundingClientRect(), dx = ptr.on ? (ptr.x - (rc.left + rc.width / 2)) / Math.max(innerWidth, 1) * 2.4 : 0, dy = ptr.on ? (ptr.y - (rc.top + rc.height / 2)) / Math.max(innerHeight, 1) * 2.4 : 0;
       dx = Math.max(-0.5, Math.min(0.5, dx)); dy = Math.max(-0.35, Math.min(0.35, dy));
-      var thinkTurn = cur.look * 0.35;
-      head.rotation.y += ((dx * 0.55 + thinkTurn) - head.rotation.y) * 0.1; head.rotation.x += ((dy * 0.6) + (talking ? Math.sin(t * 7) * 0.03 : 0) - head.rotation.x) * 0.1;
-      head.rotation.z = Math.sin(t * 1.1) * 0.025 + (mood === 'think' ? -0.12 : 0) + (mood === 'oops' ? 0.1 : 0);
-      eyes.forEach(function (e) { e.pu.position.x = dx * 0.14 + 0; e.pu.position.y = -0.02 - dy * 0.12 + cur.look * 0.05; });
-      // blink
+      head.rotation.y += ((dx * 0.5 + cur.look * 0.25) - head.rotation.y) * 0.1;
+      head.rotation.x += ((dy * 0.5) + (talking ? Math.sin(t * 7) * 0.025 : 0) - head.rotation.x) * 0.1;
+      head.rotation.z = Math.sin(t * 1.1) * 0.02 + (mood === 'think' ? -0.1 : 0) + (mood === 'oops' ? 0.08 : 0);
+      eyes.forEach(function (e) { e.pu.position.x = dx * 0.08; e.pu.position.y = -0.01 - dy * 0.06 + cur.look * 0.03; });
       nextBlink -= 0.016; if (nextBlink < 0 && blink <= 0) { blink = 1; nextBlink = 2 + Math.random() * 3; }
       var bl = 1; if (blink > 0) { blink -= 0.12; bl = Math.max(0.08, Math.abs(blink - 0.5) * 2); if (blink <= 0) { blink = 0; bl = 1; } }
       eyes.forEach(function (e) { e.g.scale.set(cur.eye, cur.eye * bl, cur.eye); });
-      brows.forEach(function (b) { b.m.position.y = 0.56 + cur.brow; b.m.rotation.z = Math.PI / 2 + b.s * cur.rot * -0.6; });
-      // mouth (talk)
-      beat *= 0.86; var want = talking ? 0.35 + 0.3 * Math.abs(Math.sin(t * 13)) + beat * 0.5 : (mood === 'excited' ? 0.35 : 0);
+      brows.forEach(function (b) { b.m.position.y = 0.4 + cur.brow * 0.5; b.m.rotation.z = Math.PI / 2 + b.s * cur.rot * -0.5; });
+      beat *= 0.86; var want = talking ? 0.3 + 0.35 * Math.abs(Math.sin(t * 13)) + beat * 0.4 : (mood === 'excited' ? 0.3 : 0);
       open += (want - open) * 0.35; var show = open > 0.09; mouth.visible = show; smile.visible = !show;
-      if (show) mouth.scale.set(1.0 + open * 0.2, 0.25 + open * 1.1, 1);
-      // arms
+      if (show) mouth.scale.set(1.0 + open * 0.15, 0.3 + open * 1.0, 1);
       var wv = waveT > 0; if (wv) waveT -= 0.012;
       arms.forEach(function (a) {
-        var rest = a.s * (0.28 + Math.sin(t * 1.7 + a.s) * 0.04) + (talking ? a.s * Math.sin(t * 6 + a.s) * 0.12 : 0);
-        var tgt = (a.s === 1 && wv) ? 2.45 + Math.sin(t * 11) * 0.32 : rest;
+        var rest = a.s * (0.1 + Math.sin(t * 1.5 + a.s) * 0.025) + (talking ? a.s * Math.sin(t * 6 + a.s) * 0.07 : 0);
+        var tgt = (a.s === 1 && wv) ? 2.5 + Math.sin(t * 11) * 0.28 : rest;
         a.g.rotation.z += (tgt - a.g.rotation.z) * 0.2;
       });
-      spark.rotation.y = t * 2; spark.rotation.z = Math.sin(t * 2) * 0.3; spark.scale.setScalar(1 + Math.sin(t * 4) * 0.12);
       r.render(sc, cam);
     }
     requestAnimationFrame(frame);
@@ -130,8 +159,8 @@
     '.fu-ov{position:fixed;inset:0;z-index:9200;background:rgba(4,5,14,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:12px;animation:ftF .3s}' +
     '.fu-card{width:min(540px,100%);max-height:96vh;overflow:auto;background:linear-gradient(165deg,#191d40,#0b0e2b);border:1px solid rgba(124,92,255,.4);border-radius:30px;padding:14px 22px 20px;box-shadow:0 24px 90px rgba(0,0,0,.7),0 0 70px rgba(124,92,255,.2);animation:ftU .45s cubic-bezier(.2,.8,.2,1);position:relative}' +
     '.fu-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#9aa0c8}' +
-    '.fu-stage{display:flex;justify-content:center;margin-top:-2px;min-height:210px}' +
-    '.fu-cv{display:block;cursor:pointer;filter:drop-shadow(0 14px 24px rgba(124,92,255,.35))}.fu-fb{font-size:90px;text-align:center;animation:ftBob 2s ease-in-out infinite}' +
+    '.fu-stage{display:flex;justify-content:center;margin-top:-2px;min-height:240px}' +
+    '.fu-cv{display:block;cursor:pointer;-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent)}.fu-fb{font-size:90px;text-align:center;animation:ftBob 2s ease-in-out infinite}' +
     '@keyframes ftBob{50%{transform:translateY(-8px)}}' +
     '.fu-bub{position:relative;background:#fff;color:#1b1236;border-radius:20px;padding:14px 16px;font-size:15px;line-height:1.5;font-weight:600;margin:6px 0 12px;min-height:64px;animation:ftU .35s both}' +
     '.fu-bub:before{content:"";position:absolute;top:-9px;left:50%;margin-left:-9px;border:9px solid transparent;border-top:0;border-bottom-color:#fff}' +
@@ -173,7 +202,7 @@
     try { saved = JSON.parse(ls('fs_onb') || 'null'); } catch (e) { }
     var nm = n ? esc(n) : 'there';
     var S = [
-      { say: 'Hi ' + nm + '! I am Futu, your study buddy, and the face of FutureSelf. I am so happy to meet you!', mood: 'excited', wave: 1 },
+      { say: 'Hi ' + nm + '! I am Bhavi, your study guide and the face of FutureSelf. I am so happy to meet you!', mood: 'excited', wave: 1 },
       { say: 'FutureSelf helps you study one topic at a time, without distractions. You choose your goal, make a timetable, and start a focus session. Your phone and other apps stay quiet until the session ends.', mood: 'happy' },
       { f: ['📚', 'Learn topic by topic', 'Every lesson is full of pictures and 3D visuals, with formulas and over a hundred practice questions.'], say: 'First, you learn topic by topic. Every lesson is full of pictures and three D visuals, with formulas and over a hundred practice questions.' },
       { f: ['⏰', 'Timetable and reminders', 'Plan the subject, the day and the minutes. I will remind you on your phone.'], say: 'Next, a timetable. Plan the subject, the day and the minutes, and I will remind you on your phone.' },
@@ -189,10 +218,10 @@
       { key: 'lang', q: 'Which language do you like for explanations?', ch: ['English', 'हिन्दी', 'Both'], rep: function () { return 'Noted. Hindi and English content are both there for you.'; } }
     ]);
     S.push({ end: 1, say: 'All done, ' + nm + '! Thank you. Now, let me show you around.', mood: 'excited', wave: 1 });
-    var i = 0, o = el('<div class="fu-ov"><div class="fu-card"><div class="fu-top"><span>Meet Futu</span><button id="fuSk">Skip</button></div><div class="fu-stage"></div><div class="fu-bub"></div><div class="fu-body"></div><div class="fu-foot"><div class="fu-dots"></div><button id="fuB">Back</button><button class="pri" id="fuN">Next</button></div></div></div>');
+    var i = 0, o = el('<div class="fu-ov"><div class="fu-card"><div class="fu-top"><span>Meet Bhavi</span><button id="fuSk">Skip</button></div><div class="fu-stage"></div><div class="fu-bub"></div><div class="fu-body"></div><div class="fu-foot"><div class="fu-dots"></div><button id="fuB">Back</button><button class="pri" id="fuN">Next</button></div></div></div>');
     document.body.appendChild(o);
     var stage = $('.fu-stage', o), bub = $('.fu-bub', o), body = $('.fu-body', o), dots = $('.fu-dots', o), bN = $('#fuN', o), bB = $('#fuB', o);
-    stage.appendChild(getMascot(210).el);
+    stage.appendChild(getMascot(240).el);
     function close(tour) { clearInterval(typer); v.hush && v.hush(); talking = false; if (ans.goal || Object.keys(ans).length) { ans.at = Date.now(); ls('fs_onb', JSON.stringify(ans)); document.dispatchEvent(new CustomEvent('fs-onboarding', { detail: ans })); } ls('fs_tour_v1', '1'); o.remove(); if (tour && opts.onTour) opts.onTour(); }
     function show(k) {
       i = k; var s = S[k]; body.innerHTML = '';
