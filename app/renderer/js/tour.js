@@ -40,25 +40,48 @@
     '@keyframes ftPop{from{transform:scale(.5);opacity:.5}to{transform:scale(1.15);opacity:1}}' +
     '#ft-net{position:fixed;left:14px;bottom:14px;z-index:60;display:flex;gap:6px;align-items:center;font-size:12px;padding:5px 11px;border-radius:20px;background:rgba(18,22,58,.92);border:1px solid rgba(255,255,255,.1);cursor:pointer}' +
     '#ft-net i{width:8px;height:8px;border-radius:50%;background:#3DDC97}#ft-net.slow i{background:#FFC857}#ft-net.bad i{background:#FF5C7A}' +
+    '#ft-vo{position:fixed;right:62px;bottom:16px;z-index:60;width:38px;height:38px;border-radius:50%;border:1px solid rgba(124,92,255,.5);background:rgba(18,22,58,.92);color:#fff;cursor:pointer}' +
     '#ft-help{position:fixed;right:16px;bottom:16px;z-index:60;width:38px;height:38px;border-radius:50%;border:1px solid rgba(124,92,255,.5);background:rgba(18,22,58,.92);color:#fff;font-weight:700;cursor:pointer}' +
-    '@media (max-width:860px){#ft-net{bottom:78px}#ft-help{bottom:78px}}' +
+    '@media (max-width:860px){#ft-net{bottom:78px}#ft-help{bottom:78px}#ft-vo{bottom:78px}}' +
     '#ft-toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:9100;width:min(520px,92vw);background:#2a2110;border:1px solid rgba(255,200,87,.5);color:#ffe2a6;padding:11px 14px;border-radius:16px;font-size:12.5px;line-height:1.5;animation:ftU .3s}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   var $ = function (s) { return document.querySelector(s); };
+  /* ---- voice: free built-in text-to-speech, polite and slow; can be muted (remembered) ---- */
+  var TTS = ('speechSynthesis' in window) && window.SpeechSynthesisUtterance;
+  function voiceOn() { return ls('fs_voice') !== '0'; }
+  function pickVoice() {
+    var v = []; try { v = speechSynthesis.getVoices() || []; } catch (e) { }
+    return v.filter(function (x) { return /en[-_]IN/i.test(x.lang); })[0] || v.filter(function (x) { return /^en/i.test(x.lang); })[0] || null;
+  }
+  function say(text) {
+    if (!TTS || !voiceOn() || !text) return;
+    try {
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(text).replace(/\s+/g, ' ').trim());
+      var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-IN';
+      u.rate = 0.93; u.pitch = 1.02; u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch (e) { }
+  }
+  function hush() { try { if (TTS) speechSynthesis.cancel(); } catch (e) { } }
+  function userName() {
+    var e = $('.side .me b') || $('.me b'); var n = e ? e.textContent.trim().split(/\s+/)[0] : '';
+    return /^(local|me|\?)$/i.test(n) ? '' : n;
+  }
   function el(h) { var d = document.createElement('div'); d.innerHTML = h; return d.firstChild; }
   var STEPS = [
-    { s: '#nav a[href="#/"],#nav a:first-child', t: 'Home', p: 'Your day at a glance — today’s plan, streak and what to study next.', c: 'pop' },
-    { s: '#nav a[href="#/learn"]', t: 'Learn topic by topic', p: 'Pick your subject and topic. Lessons are visual with 3D, formulas, 100+ questions and quizzes.', c: 'bar' },
-    { s: '#nav a[href="#/timetable"],.moreb', t: 'Timetable', p: 'Plan subject, day and minutes. Reminders reach your phone.', c: 'cal' },
-    { s: '#nav a[href="#/start"]', t: 'Focus session', p: 'Start a session: other apps are locked, and the other device locks too. Stay on one topic.', c: 'ring' },
-    { s: '#nav a[href="#/progress"]', t: 'Progress', p: 'See streaks, scores and weak topics grow.', c: 'bar' },
-    { s: '[data-act="gsearch"],.sidesearch', t: 'Search anything', p: 'Jump to any topic instantly (Ctrl + K on PC).', c: 'pop' },
-    { s: '#bellwrap', t: 'Notifications', p: 'Reminders, challenges from friends and updates appear here.', c: 'pop' },
-    { s: '.side .me,.me', t: 'Your profile', p: 'Class / exam choice, language and devices. Sign in with one email on both devices to link them.', c: 'ring' }
+    { s: '#nav a[href="#/"],#nav a:first-child', t: 'Home', v: 'Step one. This is Home. Here you can see your plan for today, your streak, and what to study next.', p: 'Your day at a glance — today’s plan, streak and what to study next.', c: 'pop' },
+    { s: '#nav a[href="#/learn"]', t: 'Learn topic by topic', v: 'Step two. Learn. Please pick a subject and then one topic. Each lesson is full of pictures, three D visuals, formulas and practice questions.', p: 'Pick your subject and topic. Lessons are visual with 3D, formulas, 100+ questions and quizzes.', c: 'bar' },
+    { s: '#nav a[href="#/timetable"],.moreb', t: 'Timetable', v: 'Step three. Timetable. Please add the subject, the day and the minutes you want to study. We will send reminders to your phone.', p: 'Plan subject, day and minutes. Reminders reach your phone.', c: 'cal' },
+    { s: '#nav a[href="#/start"]', t: 'Focus session', v: 'Step four. Focus. When you start a session, other apps are locked so you can concentrate on one topic. Your other device is locked too.', p: 'Start a session: other apps are locked, and the other device locks too. Stay on one topic.', c: 'ring' },
+    { s: '#nav a[href="#/progress"]', t: 'Progress', v: 'Step five. Progress. Here you can watch your streaks, your scores and your weak topics improve.', p: 'See streaks, scores and weak topics grow.', c: 'bar' },
+    { s: '[data-act="gsearch"],.sidesearch', t: 'Search anything', v: 'Step six. Search. You can jump to any topic in a moment. On a computer, press Control and K.', p: 'Jump to any topic instantly (Ctrl + K on PC).', c: 'pop' },
+    { s: '#bellwrap', t: 'Notifications', v: 'Step seven. Notifications. Your reminders, friend challenges and updates will appear here.', p: 'Reminders, challenges from friends and updates appear here.', c: 'pop' },
+    { s: '.side .me,.me', t: 'Your profile', v: 'Last step. Your profile. Here you can choose your class or exam and your language. Sign in with the same email on both devices to link them. Thank you for taking the tour.', p: 'Class / exam choice, language and devices. Sign in with one email on both devices to link them.', c: 'ring' }
   ];
   var spot, tip;
-  function done() { if (spot) spot.remove(); if (tip) tip.remove(); spot = tip = null; }
+  function done() { hush(); if (spot) spot.remove(); if (tip) tip.remove(); spot = tip = null; }
   function find(sel) { var l = sel.split(','); for (var i = 0; i < l.length; i++) { var e = $(l[i].trim()); if (e && e.getBoundingClientRect().width > 0) return e; } return null; }
   function tour(i) {
     while (i < STEPS.length && !find(STEPS[i].s)) i++;
@@ -74,17 +97,20 @@
     if (x + tw > W - 10) x = Math.max(10, W - tw - 10);
     if (r.top > H / 2 || y < 10) y = Math.max(10, Math.min(H - 270, r.top - 250 > 10 && r.top > H / 2 ? r.top - 250 : r.bottom + 14));
     tip.style.left = x + 'px'; tip.style.top = Math.max(10, Math.min(y, H - 270)) + 'px';
+    say(s.v);
     $('#ftN').onclick = function () { tour(i + 1); };
     if ($('#ftB')) $('#ftB').onclick = function () { tour(i - 1); };
     if ($('#ftX')) $('#ftX').onclick = done;
   }
   function welcome() {
-    var o = el('<div class="ft-ov"><div class="ft-card"><h2>Welcome to FutureSelf ✨</h2><p>Your focused study space — quick tour in under a minute.</p>' +
+    var nm = userName();
+    var o = el('<div class="ft-ov"><div class="ft-card"><h2>' + (nm ? 'Welcome, ' + nm.replace(/[<>&]/g, '') + '! ✨' : 'Welcome to FutureSelf ✨') + '</h2><p>Your focused study space — quick tour in under a minute.</p>' +
       '<div class="ft-g"><div class="ft-t"><b>📚</b>Learn topic-wise</div><div class="ft-t"><b>🔒</b>Lock in &amp; focus</div><div class="ft-t"><b>📈</b>Track progress</div></div>' +
       '<div class="ft-r"><button class="btn primary" id="ftGo">Start guided tour</button><button class="btn ghost" id="ftSk">Skip</button></div>' +
       '<div class="ft-note">📶 ' + NET_SYNC + '<br>📖 ' + NET_STUDY + '</div></div></div>');
     document.body.appendChild(o); ls(KEY, '1');
-    o.querySelector('#ftSk').onclick = function () { o.remove(); };
+    say((nm ? 'Hello ' + nm + ', and a very warm welcome to FutureSelf. ' : 'A very warm welcome to FutureSelf. ') + 'I am glad you are here. I will show you around in less than a minute. Please press Start guided tour. And please remember: if you use your laptop and phone together, connect both to a good, stable internet connection. Study content and videos also need good internet quality.');
+    o.querySelector('#ftSk').onclick = function () { hush(); o.remove(); };
     o.querySelector('#ftGo').onclick = function () { o.remove(); setTimeout(function () { tour(0); }, 150); };
   }
   function toast(m) { var o = $('#ft-toast'); if (o) o.remove(); var t = el('<div id="ft-toast">⚠ ' + m + '</div>'); document.body.appendChild(t); t.onclick = function () { t.remove(); }; setTimeout(function () { t.remove(); }, 10000); }
@@ -107,11 +133,26 @@
     if (navigator.connection && navigator.connection.addEventListener) navigator.connection.addEventListener('change', upd);
     upd();
   }
+  /* phone permission set-up: read each step aloud, simply and politely */
+  var lastWz = '';
+  function wizSpeak() {
+    var w = $('.fswiz-in'); if (!w) { lastWz = ''; return; }
+    var g = function (q) { var e = w.querySelector(q); return e ? e.textContent.trim() : ''; };
+    var eb = g('.eyebrow'), h = g('h1'), p = g('p'), key = eb + '|' + h;
+    if (key === lastWz) return; lastWz = key;
+    var nm = userName(), tail = /needed/i.test(eb) ? ' This one is needed, so please allow it. Tap the big button, and then come back here.' : ' This one is optional. You can allow it, or skip it if you prefer.';
+    var intro = /Step 1 /.test(eb) ? (nm ? 'Hello ' + nm + '. ' : '') + 'Let us set up your phone, one small step at a time. ' : '';
+    say(intro + (/All set|Almost/.test(eb) ? h + '. ' + p : eb.replace('·', '.') + '. ' + h + '. ' + p + tail));
+  }
   function boot() {
+    try { if (TTS) { speechSynthesis.getVoices(); new MutationObserver(function () { clearTimeout(boot.t); boot.t = setTimeout(wizSpeak, 450); }).observe(document.body, { childList: true, subtree: true }); } } catch (e) { }
     var t = 0, iv = setInterval(function () { // wait until the signed-in shell exists
       if ($('#nav a') && !$('#ft-help')) {
         clearInterval(iv);
         var h = el('<button id="ft-help" title="Guided tour" aria-label="Guided tour">?</button>'); document.body.appendChild(h); h.onclick = welcome;
+        if (TTS) { var vb = el('<button id="ft-vo" title="Voice guide on/off" aria-label="Voice guide"></button>'); document.body.appendChild(vb);
+          var paint = function () { vb.textContent = voiceOn() ? '🔊' : '🔇'; }; paint();
+          vb.onclick = function () { if (voiceOn()) { hush(); ls('fs_voice', '0'); } else { ls('fs_voice', '1'); say('Voice guide is on.'); } paint(); }; }
         net(); if (!ls(KEY)) setTimeout(welcome, 700);
       } else if (++t > 600) clearInterval(iv);
     }, 500);
