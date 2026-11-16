@@ -61,15 +61,19 @@
       var u = new SpeechSynthesisUtterance(String(text).replace(/\s+/g, ' ').trim());
       var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-IN';
       u.rate = 0.93; u.pitch = 1.02; u.volume = 1;
+      var tk = function (on) { try { document.dispatchEvent(new CustomEvent('fs-talk', { detail: on })); } catch (e) { } };
+      u.onstart = function () { tk(1); }; u.onend = u.onerror = function () { tk(0); };
+      u.onboundary = function () { try { document.dispatchEvent(new CustomEvent('fs-talk-beat')); } catch (e) { } };
       speechSynthesis.speak(u);
     } catch (e) { }
   }
-  function hush() { try { if (TTS) speechSynthesis.cancel(); } catch (e) { } }
+  function hush() { try { if (TTS) speechSynthesis.cancel(); document.dispatchEvent(new CustomEvent('fs-talk', { detail: 0 })); } catch (e) { } }
   function userName() {
     var e = $('.side .me b') || $('.me b'); var n = e ? e.textContent.trim().split(/\s+/)[0] : '';
     return /^(local|me|\?)$/i.test(n) ? '' : n;
   }
   function el(h) { var d = document.createElement('div'); d.innerHTML = h; return d.firstChild; }
+  window.FSVoice = { say: say, hush: hush, userName: userName, on: voiceOn, ok: !!TTS };
   var STEPS = [
     { s: '#nav a[href="#/"],#nav a:first-child', t: 'Home', v: 'Step one. This is Home. Here you can see your plan for today, your streak, and what to study next.', p: 'Your day at a glance — today’s plan, streak and what to study next.', c: 'pop' },
     { s: '#nav a[href="#/learn"]', t: 'Learn topic by topic', v: 'Step two. Learn. Please pick a subject and then one topic. Each lesson is full of pictures, three D visuals, formulas and practice questions.', p: 'Pick your subject and topic. Lessons are visual with 3D, formulas, 100+ questions and quizzes.', c: 'bar' },
@@ -103,6 +107,7 @@
     if ($('#ftX')) $('#ftX').onclick = done;
   }
   function welcome() {
+    if (window.FSFutu && FSFutu.intro) { ls(KEY, '1'); return FSFutu.intro({ onTour: function () { setTimeout(function () { tour(0); }, 150); } }); }
     var nm = userName();
     var o = el('<div class="ft-ov"><div class="ft-card"><h2>' + (nm ? 'Welcome, ' + nm.replace(/[<>&]/g, '') + '! ✨' : 'Welcome to FutureSelf ✨') + '</h2><p>Your focused study space — quick tour in under a minute.</p>' +
       '<div class="ft-g"><div class="ft-t"><b>📚</b>Learn topic-wise</div><div class="ft-t"><b>🔒</b>Lock in &amp; focus</div><div class="ft-t"><b>📈</b>Track progress</div></div>' +
