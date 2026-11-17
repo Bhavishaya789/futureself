@@ -16,6 +16,7 @@ import java.lang.ref.WeakReference
 
 /** The FutureSelf app itself: the same screens as the PC app inside a WebView, plus the phone bridge. */
 class MainActivity : AppCompatActivity() {
+    private var bridge: AndroidBridge? = null
     lateinit var web: WebView
     private var fileCb: ValueCallback<Array<Uri>>? = null
 
@@ -66,7 +67,8 @@ class MainActivity : AppCompatActivity() {
                 return try { chooser.launch(params.createIntent()); true } catch (e: Exception) { fileCb = null; false }
             }
         }
-        web.addJavascriptInterface(AndroidBridge(this, web), "AndroidBridge")
+        bridge = AndroidBridge(this, web)
+        web.addJavascriptInterface(bridge!!, "AndroidBridge")
         setContentView(web)
         current = WeakReference(this)
         if (savedInstanceState == null) web.loadUrl(Web.HOME) else web.restoreState(savedInstanceState)
@@ -113,6 +115,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        bridge?.ttsShutdown()
         if (current?.get() === this) current = null
         super.onDestroy()
     }
