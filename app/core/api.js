@@ -339,6 +339,56 @@ function createApi(opts) {
   });
   add('DELETE', /^\/blocks\/(\w+)$/, async (m) => { await store.remove('blocks', { _id: m[1] }); return { ok: true }; });
 
+  /* ---- cross-device sync: export / import this device's study data (no photos, no secrets) ---- */
+  const strId = (x) => typeof x === 'string' && /^[\w-]{1,64}$/.test(x);
+  add('GET', /^\/sync\/export$/, async () => {
+    const u = await user();
+    const strip = (r) => { const o = Object.assign({}, r); delete o.created_at; return o; };
+    return {
+      progress: (await store.find('progress', {})).map((r) => { const o = { topic_id: r.topic_id, lesson_id: r.lesson_id }; if (r.done !== undefined) o.done = !!r.done; if (r.quiz) o.quiz = r.quiz; if (r.practice) o.practice = r.practice; return o; }),
+      sessions: (await store.find('sessions', {}, { sort: { started_at: -1 }, limit: 4000 })).map(strip),
+      blocks: (await store.find('blocks', {})).map(strip),
+      settings: { daily_goal: u.settings.daily_goal, default_lock: u.settings.default_lock }
+    };
+  });
+  add('POST', /^\/sync\/import$/, async (m, d) => {
+    d = d || {};
+    const prog = Array.isArray(d.progress) ? d.progress.slice(0, 5000) : [], sess = Array.isArray(d.sessions) ? d.sessions.slice(0, 4000) : [], blks = Array.isArray(d.blocks) ? d.blocks.slice(0, 500) : [];
+    if (d.replace) { await store.remove('progress', {}); await store.remove('sessions', {}); await store.remove('blocks', {}); }
+    let n = 0;
+    for (const p of prog) {
+      if (!p || !strId(p.topic_id) || !strId(p.lesson_id) || !topics[p.topic_id]) continue;
+      const patch = {};
+      if (p.done !== undefined) patch.done = !!p.done;
+      if (p.quiz && typeof p.quiz === 'object') patch.quiz = { score: Math.max(0, +p.quiz.score || 0), total: Math.max(0, +p.quiz.total || 0) };
+      if (p.practice && typeof p.practice === 'object') patch.practice = { best: p.practice.best && typeof p.practice.best === 'object' ? JSON.parse(JSON.stringify(p.practice.best)) : {}, score: +p.practice.score || 0, max: +p.practice.max || 0, problems: +p.practice.problems || 0 };
+      const row = await store.findOne('progress', { topic_id: p.topic_id, lesson_id: p.lesson_id });
+      if (row) await store.update('progress', row._id, patch); else await store.insert('progress', Object.assign({ topic_id: p.topic_id, lesson_id: p.lesson_id }, patch));
+      n++;
+    }
+    for (const b of blks) {
+      if (!b || !strId(b._id)) continue;
+      let c; try { c = cleanBlock(b); } catch (e) { continue; }
+      const row = await store.findOne('blocks', { _id: b._id });
+      if (row) await store.update('blocks', b._id, c); else await store.insert('blocks', Object.assign({ _id: b._id }, c));
+      n++;
+    }
+    const have = new Set((await store.find('sessions', {})).map((x) => x._id));
+    for (const s of sess) {
+      if (!s || !strId(s._id) || have.has(s._id)) continue;
+      const dt = new Date(s.started_at); if (isNaN(dt)) continue;
+      await store.insert('sessions', { _id: s._id, topic_id: strId(s.topic_id) ? s.topic_id : null, lesson_id: strId(s.lesson_id) ? s.lesson_id : null, subject: String(s.subject || 'Study').slice(0, 60), planned_min: Math.max(0, parseInt(s.planned_min, 10) || 0), actual_sec: Math.max(0, Math.min(parseInt(s.actual_sec, 10) || 0, 8 * 3600)), completed: !!s.completed, distractions: Math.max(0, parseInt(s.distractions, 10) || 0), blocked: Math.max(0, parseInt(s.blocked, 10) || 0), lock_mode: ['gentle', 'focus', 'strict'].indexOf(s.lock_mode) > -1 ? s.lock_mode : 'focus', block_id: strId(s.block_id) ? s.block_id : null, started_at: s.started_at, local_date: /^\d{4}-\d{2}-\d{2}$/.test(s.local_date || '') ? s.local_date : String(s.started_at).slice(0, 10) });
+      n++;
+    }
+    if (d.settings && typeof d.settings === 'object') {
+      const u = await user(), s2 = Object.assign({}, u.settings);
+      if (d.settings.daily_goal !== undefined) s2.daily_goal = Math.max(5, Math.min(600, parseInt(d.settings.daily_goal, 10) || 60));
+      if (['gentle', 'focus', 'strict'].indexOf(d.settings.default_lock) > -1) s2.default_lock = d.settings.default_lock;
+      await store.update('users', 'local', { settings: s2 });
+    }
+    return { ok: true, n };
+  });
+
   add('POST', /^\/sessions$/, async (m, d) => {
     const u = await user();
     const started = d.started_at || new Date().toISOString();

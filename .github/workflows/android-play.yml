@@ -1,0 +1,38 @@
+name: Android Play Store bundle
+# Builds the signed .aab you upload to Google Play. Run by hand: Actions > this workflow > Run workflow.
+# Needs 4 repository secrets (see PLAY-STORE-GUIDE): PLAY_KEYSTORE_B64, PLAY_KEYSTORE_PASSWORD, PLAY_KEY_ALIAS, PLAY_KEY_PASSWORD
+on:
+  workflow_dispatch:
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Check the signing secrets exist
+        env:
+          K: ${{ secrets.PLAY_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$K" ]; then echo "Secret PLAY_KEYSTORE_B64 is missing. Follow PLAY-STORE-GUIDE.md step 3."; exit 1; fi
+      - name: Build the web layer
+        run: cd mobile && npm ci && node build.js
+      - name: Restore the upload key
+        env:
+          K: ${{ secrets.PLAY_KEYSTORE_B64 }}
+        run: echo "$K" | base64 -d > "$RUNNER_TEMP/upload.jks"
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.9" }
+      - name: Build the bundle
+        env:
+          PLAY_KEYSTORE_FILE: ${{ runner.temp }}/upload.jks
+          PLAY_KEYSTORE_PASSWORD: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
+          PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: cd android && gradle bundleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FutureSelf-play-aab
+          path: android/app/build/outputs/bundle/release/*.aab

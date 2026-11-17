@@ -64,7 +64,8 @@
     return acct('status').then(function (s) {
       A.st = s;
       var prof = (s.signedIn || s.skip) && FSX.profileCard ? FSX.profileCard(s) : '';
-      v.innerHTML = '<div class="phead"><h1>Profile</h1><p class="muted">' + (s.signedIn ? 'Your name, photo and avatar, on every device.' : 'Sign in to link your PC and phone.') + '</p></div><div class="stack" style="max-width:520px;margin:0 auto">' + prof + (s.signedIn ? signedCard() : formCard()) + '</div>';
+      v.innerHTML = '<div class="phead"><h1>Profile</h1><p class="muted">' + (s.signedIn ? 'Your name, photo and avatar, on every device.' : 'Sign in to link your PC and phone.') + '</p></div><div class="stack" style="max-width:520px;margin:0 auto">' + prof + (s.signedIn ? signedCard() + (FSX.syncCard ? FSX.syncCard() : '') : formCard()) + '</div>';
+      if (FSX.syncWire) FSX.syncWire();
       if (FSX.afterAccount) FSX.afterAccount();
     }).catch(function (e) { v.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
@@ -72,7 +73,7 @@
   function redraw() { A.busy = false; var v = $('#view'); if (v) viewAccount(v); }
   function err(m) { A.err = m; var e = $('#acerr'); if (e) e.textContent = m; }
   function busy(on, label) { A.busy = on; document.querySelectorAll('#acbox .btn').forEach(function (b) { b.disabled = on; }); if (on && label) err(label); }
-  function done() { A.busy = false; A.err = ''; A.step = 'form'; acct('status').then(function (s) { A.st = s; H().toast('Signed in', s.email); if (FSX.askTrack) FSX.askTrack(); if (FSX.profileSync) FSX.profileSync(); location.hash = '#/'; setTimeout(function () { H().go(); }, 50); }); }
+  function done() { A.busy = false; A.err = ''; A.step = 'form'; acct('status').then(function (s) { A.st = s; H().toast('Signed in', s.email); if (FSX.askTrack) FSX.askTrack(); if (FSX.profileSync) FSX.profileSync(); if (FSX.syncOnSignIn) FSX.syncOnSignIn(); location.hash = '#/'; setTimeout(function () { H().go(); }, 50); }); }
 
   FSX.actions = Object.assign(FSX.actions || {}, {
     acmode: function () { A.mode = A.mode === 'signup' ? 'login' : 'signup'; A.err = ''; redraw(); },

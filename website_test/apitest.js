@@ -134,7 +134,7 @@ let bad = 0; const T = (n, ok, x) => { console.log((ok ? 'PASS ' : 'FAIL ') + n 
   const chk = require('../website/api/check.js');
   const savedFetch = global.__FS_FETCH, body0 = { question: 'What is deadlock?', model: 'm', rubric: rub, images: [img] };
   r = await call(chk, 'POST', body0, null); T('check needs sign-in', r.s === 401, r);
-  r = await call(chk, 'POST', body0, tok); T('check says so when the server has no AI key', r.s === 503 && /ANTHROPIC_API_KEY/.test(r.j.error), r);
+  r = await call(chk, 'POST', body0, tok); T('check says so when the server has no AI key', r.s === 503 && /GEMINI_API_KEY/.test(r.j.error), r);
   process.env.ANTHROPIC_API_KEY = 'sk-test'; let sent = null;
   global.__FS_FETCH = async (u, o) => { sent = { u, o }; return { ok: true, json: async () => ({ content: [{ text: 'Here: {"awarded":[2,9],"feedback":"Good definition. List all four conditions."}' }] }) }; };
   r = await call(chk, 'POST', body0, tok); T('check returns clamped marks and feedback', r.s === 200 && r.j.awarded[0] === 2 && r.j.awarded[1] === 3 && /Good/.test(r.j.feedback), r);

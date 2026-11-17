@@ -148,6 +148,20 @@
   }
   window.addEventListener('hashchange', go);
 
+  /* More sheet: scroll fade, swipe down to close, Escape, tap a place to close */
+  function msheetWire(d) {
+    var box = d.querySelector('.msbox'), sc = d.querySelector('.msscroll'), y0 = null, dy = 0;
+    function fade() { var more = sc.scrollHeight > sc.clientHeight + 2, end = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 4; box.classList.toggle('more', more); box.classList.toggle('end', !more || end); }
+    sc.addEventListener('scroll', fade, { passive: true }); new MutationObserver(fade).observe(document.body, { attributes: true, attributeFilter: ['class'] }); setTimeout(fade, 60); window.addEventListener('resize', fade);
+    var grip = d.querySelector('.msgrip'), head = d.querySelector('.mshead');
+    [grip, head].forEach(function (h) {
+      h.addEventListener('touchstart', function (e) { y0 = e.touches[0].clientY; dy = 0; box.classList.add('drag'); }, { passive: true });
+      h.addEventListener('touchmove', function (e) { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); box.style.transform = 'translateY(' + dy + 'px)'; box.style.opacity = String(Math.max(.35, 1 - dy / 260)); }, { passive: true });
+      h.addEventListener('touchend', function () { if (y0 === null) return; y0 = null; box.classList.remove('drag'); box.style.transform = ''; box.style.opacity = ''; if (dy > 70) document.body.classList.remove('msheet-open'); });
+    });
+    d.addEventListener('click', function (e) { if (e.target.closest('.msgrid a')) document.body.classList.remove('msheet-open'); });
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.body.classList.remove('msheet-open'); });
   function ensureShell(active) {
     var nav = [['home', 'home', 'Home'], ['learn', 'book', 'Learn'], ['timetable', 'cal', 'Timetable'], ['start', 'focus', 'Focus'], ['progress', 'chart', 'Progress']].concat((window.FSX && FSX.nav) || []).concat((window.FSX && FSX.navDyn && FSX.navDyn()) || []).concat([['settings', 'gear', 'Settings']]);
     var key = active === 'topic' || active === 'lesson' ? 'learn' : active;
@@ -166,8 +180,8 @@
       $('#nav').innerHTML = nav.filter(function (n) { return main.indexOf(n[0]) > -1; }).map(link).join('') +
         '<a href="#" class="moreb' + (rest.some(function (n) { return n[0] === key; }) ? ' on' : '') + '" data-act="more">' + ic('more') + '<span class="l">More</span></a>';
       var d = document.createElement('div'); d.id = 'msheet'; d.className = 'msheet';
-      d.innerHTML = '<div class="msback" data-act="more"></div><div class="msbox"><div class="msgrip"></div><div class="msgrid">' + rest.map(link).join('') + '</div></div>';
-      document.body.appendChild(d);
+      d.innerHTML = '<div class="msback" data-act="more"></div><div class="msbox"><div class="msgrip"></div><div class="mshead"><span>More</span><small>' + rest.length + ' places</small></div><div class="msscroll"><div class="msgrid">' + rest.map(link).join('') + '</div></div></div>';
+      document.body.appendChild(d); msheetWire(d);
     } else {
       $('#nav').innerHTML = nav.map(link).join('');
     }
@@ -376,6 +390,7 @@
     }).join('');
   }
   var curLesson = null, pendingLeave = null;
+  window.__fsCur = function () { return curLesson; };
   /* ---------- videos: the app picks them, they play inside the app, nobody searches ---------- */
   var V = null;
   function ytId(u) { var m = String(u || '').match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : null; }
@@ -613,6 +628,7 @@
       var d = r.data, col = d.verdict === 'correct' ? 'ok' : (d.verdict === 'wrong' ? 'bad' : 'warn');
       $('#pqr' + i).innerHTML = '<div class="result" style="margin-top:10px"><h3><span class="badge ' + col + '">' + esc(d.verdict.toUpperCase()) + '</span> ' + (d.keyed ? '<span class="badge">Official key</span>' : '<span class="badge">AI worked answer, confidence ' + esc(d.confidence) + '</span>') + '</h3>' + (d.right ? '<p><b>Right answer:</b> ' + esc(d.right) + '</p>' : '') + '<p class="fb">' + esc(d.explanation) + '</p></div>';
       if (d.verdict === 'correct') { try { chime(); } catch (e) { } }
+      if (FSX.study) FSX.study.pyq(curLesson, q, d);
     }).catch(function (e) { el.disabled = false; el.textContent = 'Check with AI'; toast('AI check failed', e.message || 'Try again.', true); });
   };
   actions.pai = function (el) {
@@ -760,6 +776,7 @@
     $('[data-act=grade]').textContent = 'Try again'; $('[data-act=grade]').dataset.act = 'retry';
     $$('.q', box).forEach(function (qe) { var i = +qe.dataset.q; var sel = $('.opt[data-q="' + i + '"].right', box); var chosen = $('.opt[data-q="' + i + '"].wrong', box); if (sel && !chosen) { var r = sel.getBoundingClientRect(); FX.burst(r.left + 30, r.top + r.height / 2, 14, { speed: 240, gravity: 120 }); } });
     if (score === ids.length) { chime(); FS3D.ok && FS3D.burst(); FX.confetti(innerWidth / 2, innerHeight * 0.6, 90); setTimeout(function () { FX.fireworks(3); }, 300); }
+    if (FSX.study) FSX.study.quiz(c, ids.map(function (i) { var sl = $('.opt.right[data-q="' + i + '"]', box), ch = $('.opt.wrong[data-q="' + i + '"]', box); return { i: i, ok: !ch }; }));
     api('/progress', { method: 'POST', body: { topic_id: c.t.id, lesson_id: c.l.id, quiz: { score: score, total: ids.length } } }).catch(function () { });
   };
   actions.retry = function () { S.ltab = 'quiz'; go(); };

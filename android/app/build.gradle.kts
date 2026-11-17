@@ -11,8 +11,8 @@ android {
         applicationId = "app.futureself.mobile"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1340
-        versionName = "1.34.0"
+        versionCode = 1390
+        versionName = "1.39.0"
     }
 
     // One fixed signing key, so every new APK can be installed over the old one (in-app updates need this).
@@ -24,6 +24,15 @@ android {
             keyAlias = "futureself"
             keyPassword = "futureself"
         }
+        // Play Store upload key: only used when the Play workflow supplies it (never stored in the repo)
+        if (System.getenv("PLAY_KEYSTORE_FILE") != null) {
+            create("play") {
+                storeFile = file(System.getenv("PLAY_KEYSTORE_FILE"))
+                storePassword = System.getenv("PLAY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("PLAY_KEY_ALIAS")
+                keyPassword = System.getenv("PLAY_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -32,7 +41,7 @@ android {
         }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("fs")
+            signingConfig = if (System.getenv("PLAY_KEYSTORE_FILE") != null) signingConfigs.getByName("play") else signingConfigs.getByName("fs")
         }
     }
     compileOptions {
