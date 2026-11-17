@@ -1,4 +1,3 @@
-[SECURITY.md](https://github.com/user-attachments/files/34964738/SECURITY.md)
 # Security Policy
 
 FutureSelf takes the safety of students' accounts, study data and devices seriously.
