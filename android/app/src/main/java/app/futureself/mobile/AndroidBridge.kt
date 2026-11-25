@@ -9,6 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.core.app.ActivityCompat
@@ -26,6 +28,53 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
     private fun reply(id: Int, json: JSONObject) {
         act.runOnUiThread { web.evaluateJavascript("window.__fsCb&&window.__fsCb($id," + JSONObject.quote(json.toString()) + ")", null) }
     }
+
+    /* ---- the guide's voice: the phone's own text-to-speech, so Bhavi can talk on Android too ---- */
+    private var tts: TextToSpeech? = null
+    private var ttsOk = false
+    private var ttsWaiting: String? = null
+    private fun talk(on: Int) { act.runOnUiThread { web.evaluateJavascript("document.dispatchEvent(new CustomEvent('fs-talk',{detail:$on}))", null) } }
+    private fun ttsInit() {
+        if (tts != null) return
+        tts = TextToSpeech(act) { st ->
+            act.runOnUiThread {
+                val t = tts
+                if (st == TextToSpeech.SUCCESS && t != null) {
+                    if (t.setLanguage(java.util.Locale("en", "IN")) < 0) t.setLanguage(java.util.Locale.US)
+                    t.setSpeechRate(0.93f)
+                    t.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(id: String?) { talk(1) }
+                        override fun onDone(id: String?) { talk(0) }
+                        @Deprecated("old callback") override fun onError(id: String?) { talk(0) }
+                        override fun onError(id: String?, code: Int) { talk(0) }
+                        override fun onRangeStart(id: String?, s0: Int, e0: Int, f0: Int) {
+                            act.runOnUiThread { web.evaluateJavascript("document.dispatchEvent(new CustomEvent('fs-talk-beat'))", null) }
+                        }
+                    })
+                    ttsOk = true
+                    ttsWaiting?.let { t.speak(it, TextToSpeech.QUEUE_FLUSH, null, "fs") }
+                    ttsWaiting = null
+                }
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun speak(text: String): String {
+        act.runOnUiThread {
+            ttsInit()
+            if (ttsOk) tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "fs") else ttsWaiting = text
+        }
+        return okJson().toString()
+    }
+
+    @JavascriptInterface
+    fun hush(): String {
+        act.runOnUiThread { ttsWaiting = null; if (ttsOk) tts?.stop(); talk(0) }
+        return okJson().toString()
+    }
+
+    fun ttsShutdown() { try { ttsWaiting = null; tts?.stop(); tts?.shutdown(); tts = null; ttsOk = false } catch (e: Exception) { } }
 
     private fun later(id: Int, work: () -> JSONObject) {
         Thread {
