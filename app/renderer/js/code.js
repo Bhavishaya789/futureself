@@ -41,7 +41,7 @@
   function localInfo() {
     if (INFO) return Promise.resolve(INFO);
     if (!(window.fsApi && window.fsApi.codeInfo)) return Promise.resolve(INFO = { local: [], desktop: false });
-    return window.fsApi.codeInfo().then(function (i) { INFO = { local: (i && i.local) || [], desktop: true, cwd: i && i.cwd, platform: i && i.platform }; return INFO; }).catch(function () { return INFO = { local: [], desktop: false }; });
+    return window.fsApi.codeInfo().then(function (i) { INFO = { local: (i && i.local) || [], installable: (i && i.installable) || [], catalogue: (i && i.catalogue) || {}, runtimes: (i && i.runtimes) || {}, mysql: (i && i.mysql) || {}, desktop: true, cwd: i && i.cwd, platform: i && i.platform }; return INFO; }).catch(function () { return INFO = { local: [], desktop: false }; });
   }
   var W = { js: null, py: null, sql: null };
   function worker(kind, file) {
@@ -70,7 +70,10 @@
     stdin = stdin || '';
     if (lang === 'sql' && stdin.trim()) { code = stdin.replace(/\s*$/, '\n') + code; stdin = ''; } /* SQL questions ship their table setup as the test input */
     return localInfo().then(function (inf) {
-      if (inf.local.indexOf(lang) >= 0) return window.fsApi.codeRun({ lang: lang, code: code, stdin: stdin }).then(function (r) {
+      /* On the Windows app: run on the PC if the language is ready, or if the app can download its runtime
+         (Java, Python, Node, C/C++). codeRun fetches the runtime, the libraries and starts MySQL as needed. */
+      var canPC = inf.desktop && (inf.local.indexOf(lang) >= 0 || (inf.installable || []).indexOf(lang) >= 0);
+      if (canPC) return window.fsApi.codeRun({ lang: lang, code: code, stdin: stdin }).then(function (r) {
         if (r && r.ok === false) throw new Error(r.error || 'Could not run');
         return { stdout: r.stdout || '', stderr: r.stderr || '', code: r.code, phase: r.phase, timedOut: r.timedOut, ms: r.ms, via: 'pc' };
       });
@@ -88,6 +91,17 @@
     });
   }
   function viaLabel(v) { return v === 'pc' ? 'on this PC' : v === 'app' ? 'inside the app' : 'on the FutureSelf server'; }
+
+  /* live progress from the app while it downloads a runtime, a library, or starts MySQL */
+  var PROG = { hooked: false, text: '' };
+  function progHook() {
+    if (PROG.hooked || !(window.fsApi && window.fsApi.onCodeProgress)) return; PROG.hooked = true;
+    window.fsApi.onCodeProgress(function (p) {
+      if (!p) return;
+      PROG.text = p.text || (p.phase === 'runtime' ? 'Setting up the language…' : p.phase === 'mysql' ? 'Starting the MySQL server…' : p.phase === 'libs' ? 'Getting a library…' : '');
+      var o = document.getElementById('cout'); if (o && P.busy) o.innerHTML = '<span class="muted">' + esc(PROG.text) + (p.pct >= 0 ? ' (' + p.pct + '%)' : '') + '</span>';
+    });
+  }
   /* SQL: sqlite prints a whole-number REAL as 80.0, so 80 and 80.0 are the same answer here */
   function eqOut(lang, a, b) { var A = norm(a), B = norm(b); if (lang === 'sql') { var f = function (t) { return t.replace(/(^|[|\s])(-?\d+)\.0+(?=$|[|\s])/gm, '$1$2'); }; A = f(A); B = f(B); } return A === B; }
   function norm(s) { return String(s || '').replace(/\r/g, '').split('\n').map(function (l) { return l.replace(/\s+$/, ''); }).join('\n').replace(/\s+$/, ''); }
@@ -204,15 +218,71 @@
     });
   };
   function go2() {
-    var vw = $('#cviews'); if (vw) vw.innerHTML = (isBtech() ? [['dash', 'Dashboard'], ['topics', 'Topics'], ['practice', 'Practice & Terminal']] : [['topics', 'Topics'], ['practice', 'Practice & Terminal']]).map(function (x) { return '<button class="segb' + ((P.view === x[0] || (P.view === 'session' && x[0] === 'topics')) ? ' on' : '') + '" data-act="cdview" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('');
-    var g = $('#cgrid'); if (g) g.className = P.view === 'dash' ? 'cdash' : P.view === 'topics' ? 'ctwrap' : 'cgrid';
-    if (P.view === 'dash') dash(); else if (P.view === 'topics') topicsView(); else if (P.view === 'session') tdraw(); else draw();
+    var tabs = isBtech() ? [['dash', 'Dashboard'], ['topics', 'Topics'], ['practice', 'Practice & Terminal']] : [['topics', 'Topics'], ['practice', 'Practice & Terminal']];
+    if (INFO && INFO.desktop) tabs = tabs.concat([['tools', 'Tools & Libraries']]);
+    var vw = $('#cviews'); if (vw) vw.innerHTML = tabs.map(function (x) { return '<button class="segb' + ((P.view === x[0] || (P.view === 'session' && x[0] === 'topics')) ? ' on' : '') + '" data-act="cdview" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('');
+    var g = $('#cgrid'); if (g) g.className = P.view === 'dash' ? 'cdash' : P.view === 'topics' ? 'ctwrap' : P.view === 'tools' ? 'cdash' : 'cgrid';
+    if (P.view === 'dash') dash(); else if (P.view === 'topics') topicsView(); else if (P.view === 'tools') toolsView(); else if (P.view === 'session') tdraw(); else draw();
   }
   function runnersLine() {
     var inf = INFO || { local: [] };
-    var s = inf.desktop ? 'This PC runs <b>' + (inf.local.map(langName).join(', ') || 'no languages yet') + '</b> directly. Python and JavaScript also run inside the app with no install. Everything else runs on the FutureSelf server.' : 'Python and JavaScript run inside the app, with or without internet. C, C++, Java, Go, Rust and the rest run on the FutureSelf server (needs internet). The Windows app can also run anything you have installed.';
+    var s = inf.desktop ? 'This PC runs <b>' + (inf.local.map(langName).join(', ') || 'no languages yet') + '</b> directly. Java, Python, Node.js and C/C++ install themselves the first time you run them, and libraries (such as the MySQL connector) download on their own. A local MySQL server starts when your code needs one.' : 'Python and JavaScript run inside the app, with or without internet. C, C++, Java, Go, Rust and the rest run on the FutureSelf server (needs internet). The Windows app can also run anything you have installed.';
     return s;
   }
+
+  /* ================= Tools & Libraries (Windows app) ================= */
+  var RUNTIMES = [['java', 'Java (JDK)'], ['python', 'Python'], ['node', 'Node.js & npm'], ['cc', 'C / C++ (gcc)']];
+  var TOOLS = { lang: 'java', busy: false };
+  function toolsView() {
+    var g = $('#cgrid'); if (!g) return;
+    g.innerHTML = '<div class="card"><p class="muted">Loading…</p></div>';
+    localInfo().then(function (inf) {
+      var rt = inf.runtimes || {}, my = inf.mysql || {};
+      var rtHTML = RUNTIMES.map(function (r) {
+        var st = rt[r[0]] || {}, ready = st.system || st.managed;
+        var tag = st.system ? '<span class="lv easy">Installed on this PC</span>' : st.managed ? '<span class="lv easy">Ready</span>' : (st.canInstall ? '<span class="lv medium">Not installed</span>' : '<span class="lv hard">Install it yourself</span>');
+        var right = ready ? '<span class="muted" style="font-size:13px">' + (st.managed ? 'Downloaded by FutureSelf' + (st.version ? ' · ' + esc(st.version) : '') : 'Ready to use') + '</span>' : (st.canInstall ? '<button class="btn sm pri" data-act="cdrt" data-k="' + r[0] + '">Install' + (st.size ? ' (' + st.size + ')' : '') + '</button>' : '');
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid rgba(255,255,255,.07)"><div style="display:flex;align-items:center;gap:10px;min-width:0"><b>' + esc(r[1]) + '</b>' + tag + '</div><div>' + right + '</div></div>';
+      }).join('');
+      var langSel = '<select class="in csel" id="tllang" aria-label="Library language"><option value="java"' + (TOOLS.lang === 'java' ? ' selected' : '') + '>Java (Maven)</option><option value="python"' + (TOOLS.lang === 'python' ? ' selected' : '') + '>Python (pip)</option><option value="node"' + (TOOLS.lang === 'node' ? ' selected' : '') + '>Node.js (npm)</option></select>';
+      var ph = TOOLS.lang === 'java' ? 'e.g. com.mysql:mysql-connector-j' : TOOLS.lang === 'python' ? 'e.g. mysql-connector-python' : 'e.g. mysql2';
+      g.innerHTML =
+        '<div class="card"><div class="eyebrow">Languages</div><p class="muted" style="margin:6px 0 10px;font-size:14px">These install automatically the first time you run a program. You can also install them here in advance.</p>' + rtHTML + '</div>' +
+        '<div class="card"><div class="eyebrow">MySQL database</div>' +
+        (my.running ? '<p style="margin:8px 0"><span class="lv easy">running</span> ' + (my.system ? 'Using the MySQL already installed on your PC. Connect with your own MySQL username and password.' : 'A local MySQL server is running.') + '</p>' + (my.system ? '' : mysqlCreds()) : '<p class="muted" style="margin:8px 0;font-size:14px">A local MySQL server starts by itself when your code connects to MySQL. You can also start it now to copy the connection details.</p><button class="btn sm pri" data-act="cdmysql"' + (TOOLS.busy ? ' disabled' : '') + '>Start MySQL server</button>') +
+        '<p class="muted" id="tlmsg" style="font-size:13px;margin-top:8px"></p></div>' +
+        '<div class="card" style="grid-column:1/-1"><div class="eyebrow">Libraries</div><p class="muted" style="margin:6px 0 10px;font-size:14px">You usually do not need this: FutureSelf reads your <code>import</code> lines and downloads what is needed. Add a library here to have it ready in advance, or write <code>// @dep name</code> in your code.</p>' +
+        '<div class="row wrap" style="gap:8px;align-items:center">' + langSel + '<input class="in" id="tllibname" placeholder="' + ph + '" style="flex:1;min-width:200px" autocomplete="off"><button class="btn sm pri" data-act="cdlib">Add library</button></div>' +
+        '<div id="tllist" style="margin-top:12px"></div></div>';
+      refreshLibs();
+    }).catch(function (e) { g.innerHTML = '<div class="card"><p class="cerr">' + esc(e.message) + '</p></div>'; });
+  }
+  function mysqlCreds() {
+    return '<div class="cpsamp" style="margin-top:8px"><div><small>Connection (JDBC)</small><pre>jdbc:mysql://127.0.0.1:3306/futureself</pre></div><div><small>User / Password / Database</small><pre>root / any password / futureself</pre></div></div>';
+  }
+  function refreshLibs() {
+    if (!window.fsApi.codeListLibraries) return;
+    window.fsApi.codeListLibraries(TOOLS.lang).then(function (r) {
+      var el = $('#tllist'); if (!el) return; var list = (r && r.list) || [];
+      el.innerHTML = '<small class="muted">Installed for ' + (TOOLS.lang === 'java' ? 'Java' : TOOLS.lang === 'python' ? 'Python' : 'Node.js') + ':</small> ' + (list.length ? list.map(function (x) { return '<span class="lv easy" style="margin:2px">' + esc(x) + '</span>'; }).join(' ') : '<span class="muted">none yet</span>');
+    });
+  }
+  function tlMsg(t, err) { var el = $('#tlmsg'); if (el) { el.textContent = t; el.className = 'muted' + (err ? ' cerr' : ''); el.style.fontSize = '13px'; } }
+  function doInstallRuntime(kind) {
+    progHook(); tlMsg('Installing ' + (RUNTIMES.filter(function (r) { return r[0] === kind; })[0] || ['', kind])[1] + '… this downloads once and may take a minute.');
+    if (window.fsApi.onCodeProgress) window.fsApi.onCodeProgress(function (p) { if (p && p.phase === 'runtime') tlMsg(p.text + (p.pct >= 0 ? ' (' + p.pct + '%)' : '')); });
+    window.fsApi.codeInstallRuntime(kind).then(function (r) { if (r && r.ok === false) { tlMsg(r.error || 'Could not install', true); } else { INFO = null; tlMsg('Installed.'); toolsView(); } });
+  }
+  function doStartMysql() {
+    progHook(); TOOLS.busy = true; tlMsg('Starting the MySQL server… the first time this downloads the server.');
+    window.fsApi.codeMysqlStart().then(function (r) { TOOLS.busy = false; if (r && r.ok === false) tlMsg(r.error || 'Could not start MySQL', true); else { INFO = null; toolsView(); } });
+  }
+  function doAddLib() {
+    var name = ($('#tllibname') && $('#tllibname').value || '').trim(); if (!name) return tlMsg('Type a library name first.', true);
+    progHook(); tlMsg('Getting ' + name + '…');
+    window.fsApi.codeAddLibrary({ lang: TOOLS.lang, name: name }).then(function (r) { if (r && r.ok === false) tlMsg(r.error || 'Could not add that library', true); else { tlMsg(name + ' is ready.'); var i = $('#tllibname'); if (i) i.value = ''; refreshLibs(); } });
+  }
+
   function probListHTML() {
     var lv = P.filter, rows = (P.problems || []).filter(function (p) { return lv === 'all' || p.level === lv; });
     return '<div class="seg" role="tablist">' + ['all', 'Easy', 'Medium', 'Hard'].map(function (l) { return '<button class="segb' + (lv === l ? ' on' : '') + '" data-act="cdfilter" data-l="' + l + '">' + (l === 'all' ? 'All' : l) + '</button>'; }).join('') + '</div>' +
@@ -287,7 +357,7 @@
   }
   function doRun() {
     if (P.busy) return; var code = P.ed.get(); if (!code.trim()) return H().toast('Nothing to run', 'Write some code first.', true);
-    P.busy = true; var b = $('#cdrb'); if (b) { b.disabled = true; b.textContent = 'Running…'; }
+    progHook(); P.busy = true; var b = $('#cdrb'); if (b) { b.disabled = true; b.textContent = 'Running…'; }
     P.tab = 'out'; pane(); var o = $('#cout'); if (o) o.innerHTML = '<span class="muted">Running…' + (P.lang === 'python' ? ' (the first Python run takes a few seconds to start)' : '') + '</span>';
     runCode(P.lang, code, P.stdin).then(function (r) { recRun(P.lang, 'run', P.cur, r.code === 0); P.out = outHTML(r); }).catch(function (e) { P.out = '<span class="cerr">' + esc(e.message) + '</span>'; })
       .then(function () { P.busy = false; var b2 = $('#cdrb'); if (b2) { b2.disabled = false; b2.textContent = '▶ Run'; } if (P.tab === 'out') pane(); });
@@ -675,6 +745,7 @@
     },
     cdtab: function (el) { P.tab = el.dataset.t; pane(); },
     cdrun: doRun, cdsamples: doSamples,
+    cdrt: function (el) { doInstallRuntime(el.dataset.k); }, cdmysql: doStartMysql, cdlib: doAddLib,
     cdreset: function () { if (P.ed) { ls(draftKey(P.cur && P.cur.id, P.lang), ''); P.ed.set(TPL[P.lang] || ''); } },
     cdstop: stopTerm,
     ctsub: function (el) { TS.subj = el.dataset.id; topicsView(); },
@@ -697,6 +768,7 @@
   });
   document.addEventListener('change', function (e) {
     if (e.target && e.target.id === 'clang' && P.ed) setLang(e.target.value);
+    else if (e.target && e.target.id === 'tllang') { TOOLS.lang = e.target.value; toolsView(); }
     else if (e.target && e.target.id === 'c5lang' && A5) a5langChange(e.target.value);
     else if (e.target && e.target.id === 'c5s' && N5) { N5.sid = e.target.value; N5.tid = ''; c5paint(); }
     else if (e.target && e.target.id === 'c5t' && N5) { N5.tid = e.target.value; }

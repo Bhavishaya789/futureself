@@ -205,11 +205,21 @@ app.whenReady().then(async () => {
       applyLock(true, cfg);
       return Object.assign({ ok: true }, r);
     });
-    const coder = require('./core/coderun').create({ dir: dataDir, log });
+    const netFetch = (u) => net.fetch(u, { redirect: 'follow' });
+    const toolchain = require('./core/toolchain').create({ dir: dataDir, log, fetch: netFetch });
+    const libs = require('./core/libs').create({ dir: dataDir, log, fetch: netFetch, toolchain });
+    const mysql = require('./core/mysqlserver').create({ dir: dataDir, log, fetch: netFetch, toolchain });
+    const coder = require('./core/coderun').create({ dir: dataDir, log, toolchain, libs, mysql, onProgress: (p) => send('code:progress', p) });
     ipcMain.handle('code:info', () => coder.info());
-    ipcMain.handle('code:run', (_e, p) => coder.run(p).catch((e) => ({ ok: false, error: e.message })));
+    ipcMain.handle('code:run', (_e, p) => coder.run(Object.assign({}, p, { onStep: (s) => send('code:progress', s) })).catch((e) => ({ ok: false, error: e.message })));
     ipcMain.handle('code:shell', (_e, p) => { const id = String(p && p.id || '').slice(0, 40); return coder.shell(id, p && p.cmd, (chunk, kind) => send('code:out', { id, chunk, kind })).catch((e) => ({ ok: false, error: e.message })); });
     ipcMain.handle('code:kill', (_e, id) => ({ ok: coder.kill(String(id || '')) }));
+    ipcMain.handle('code:installRuntime', (_e, kind) => coder.installRuntime(String(kind || '')).catch((e) => ({ ok: false, error: e.message })));
+    ipcMain.handle('code:addLibrary', (_e, p) => coder.addLibrary(String(p && p.lang || ''), String(p && p.name || '')).catch((e) => ({ ok: false, error: e.message })));
+    ipcMain.handle('code:listLibraries', (_e, lang) => coder.listLibraries(String(lang || '')));
+    ipcMain.handle('code:mysqlStart', () => coder.mysqlStart().catch((e) => ({ ok: false, error: e.message })));
+    ipcMain.handle('code:mysqlInfo', () => coder.mysqlInfo());
+    app.on('before-quit', () => { try { mysql.stop(); } catch (e) { } });
     ipcMain.handle('lock:stop', () => { blocker.stop(); applyLock(false); return { ok: true }; });
 
     createWindow(process.argv.includes('--hidden'));
