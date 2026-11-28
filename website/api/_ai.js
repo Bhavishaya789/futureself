@@ -5,16 +5,18 @@ const L = require('./_lib');
 
 const available = () => !!(process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY);
 
-async function askJSON(prompt, maxTokens) {
+/* o.fast: answer at once, without Gemini's "thinking" step (which alone takes 10-30 s), for replies the student waits for */
+async function askJSON(prompt, maxTokens, o) {
+  o = o || {};
   const gKey = process.env.GEMINI_API_KEY, aKey = process.env.ANTHROPIC_API_KEY;
   if (!gKey && !aKey) L.fail(503, 'AI marking is not switched on on the server (GEMINI_API_KEY is missing).');
   const f = global.__FS_FETCH || fetch;
   let resp, txt;
   try {
     if (gKey) {
-      resp = await f('https://generativelanguage.googleapis.com/v1beta/models/' + (process.env.FS_GEMINI_MODEL || 'gemini-2.5-flash') + ':generateContent', { method: 'POST', headers: { 'x-goog-api-key': gKey, 'content-type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens || 900, temperature: 0.1, responseMimeType: 'application/json' } }) });
+      resp = await f('https://generativelanguage.googleapis.com/v1beta/models/' + (process.env.FS_GEMINI_MODEL || 'gemini-2.5-flash') + ':generateContent', { method: 'POST', headers: { 'x-goog-api-key': gKey, 'content-type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: Object.assign({ maxOutputTokens: maxTokens || 900, temperature: 0.1, responseMimeType: 'application/json' }, o.fast ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }) });
     } else {
-      resp = await f('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': aKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: process.env.FS_AI_MODEL || 'claude-sonnet-5-5', max_tokens: maxTokens || 900, messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] }) });
+      resp = await f('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': aKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: (o.fast && process.env.FS_AI_FAST_MODEL) || process.env.FS_AI_MODEL || 'claude-sonnet-5-5', max_tokens: maxTokens || 900, messages: [{ role: 'user', content: [{ type: 'text', text: prompt }] }] }) });
     }
   } catch (e) { L.fail(502, 'Could not reach the AI service.'); }
   const j = await resp.json().catch(() => ({}));

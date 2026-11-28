@@ -21,6 +21,10 @@
       if (!st.site) return Promise.reject(new Error('Enter your FutureSelf server address first (the Vercel link of your website).'));
       return deps.http(method, st.site + path, body, auth ? st.token : null).then(function (r) {
         var j = r && r.json || {};
+        if (r && r.status < 400 && r.status !== 204 && (!r.json || typeof r.json !== 'object')) {   // a success code but no readable answer: say exactly what came back
+          var snip = String(r.text || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+          throw new Error('The server answered (HTTP ' + r.status + ') but not with data the app can read' + (snip ? ': "' + snip + '"' : '') + '. Check that your website on Vercel is up to date.');
+        }
         if (r.status >= 400) { var m = j.error; if (m && typeof m === 'object') m = m.message || m.code || ''; var e = new Error(m ? String(m) : ('Server error ' + r.status + '. The server did not give a reason. Check the Vercel logs.')); e.status = r.status; e.needsVerify = !!j.needsVerify; throw e; }
         return j;
       }, function () { throw new Error('Could not reach the server. Check your internet and the server address.'); });

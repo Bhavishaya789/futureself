@@ -37,6 +37,9 @@
   "functions": {
     "api/challenge.js": {
       "maxDuration": 60
+    },
+    "api/check.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

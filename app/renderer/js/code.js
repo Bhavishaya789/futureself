@@ -939,12 +939,13 @@
           function (e) { return { ran: false, text: '', status: 'could not run here: ' + e.message, stdin: stdin }; });
     outP.then(function (o) {
       if (tok !== SV.busyTok) return;
-      repStep('Writing the explanation of the concepts, the reason and every step… this takes about 20 to 40 seconds.');
+      var t0 = Date.now(), tick = setInterval(function () { if (tok !== SV.busyTok || !$('#crpstep')) return clearInterval(tick); repStep('Writing the explanation of the concepts, the reason and every step… ' + Math.round((Date.now() - t0) / 1000) + ' s (usually about 10 s)'); }, 1000);
+      repStep('Writing the explanation of the concepts, the reason and every step… usually about 10 seconds.');
       var task = P.cur ? { title: P.cur.title || '', statement: [P.cur.statement, P.cur.input ? 'Input: ' + P.cur.input : '', P.cur.output ? 'Output: ' + P.cur.output : ''].filter(Boolean).join('\n') } : { title: '', statement: '' };
       var body = o.text.replace(/\n?—[^\n]*$/, '').replace(/\s+$/, '');
       return acct('codereport', { code: code, language: langName(lang), output: body, stdin: o.stdin, ran: o.ran, status: o.status, title: task.title, statement: task.statement, lang: uiLang() }).then(function (d) {
         if (tok !== SV.busyTok) return;
-        if (!d || !d.report) throw new Error('The AI did not send a report. Try again.');
+        if (!d || !d.report) throw new Error('The server answered without a report' + (d && d.error ? ': ' + d.error : d ? ' (it sent: ' + JSON.stringify(d).slice(0, 160) + ')' : '') + '. Your website on Vercel may be an older version: redeploy it, then try again.');
         var u = (H().S && H().S.user) || {};
         var R = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: Date.now(), name: d.report.title || (SV.file && SV.file.name) || task.title || langName(lang) + ' program', lang: lang, code: code, out: body, ran: o.ran, status: o.status, stdin: o.stdin, task: task, student: u.name || '', file: SV.file ? SV.file.name : '', ai: d.report };
         R.kept = repKeep(R); H().closeModal(); repShow(R);

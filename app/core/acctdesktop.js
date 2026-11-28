@@ -17,8 +17,9 @@ function create(opts) {
     sha256: (s) => crypto.createHash('sha256').update(s).digest('hex'),
     http: async (method, url, body, token) => {
       const r = await fetch(url, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body || {}), signal: AbortSignal.timeout(75000) });
-      let j = null; try { j = await r.json(); } catch (e) { /* not json */ }
-      return { status: r.status, json: j };
+      const t = await r.text().catch(() => '');
+      let j = null; try { j = JSON.parse(t); } catch (e) { /* not json */ }
+      return { status: r.status, json: j, text: j ? '' : t.slice(0, 300) };   // the start of a reply that is not JSON, to say what went wrong
     },
     /* opens the sign-in page in the real browser; the page sends the browser back to 127.0.0.1 on this PC with a one-time ticket */
     browserLogin: (makeUrl) => new Promise((resolve, reject) => {
