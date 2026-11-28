@@ -14,8 +14,14 @@ const { pipeline } = require('stream/promises');
 const { Writable } = require('stream');
 
 const PREFIX = 'mingw-w64-ucrt-x86_64-';
-const MIRRORS = ['https://mirror.msys2.org/mingw/ucrt64/', 'https://repo.msys2.org/mingw/ucrt64/'];
-const DB_NAMES = ['ucrt64.db', 'ucrt64.db.tar.zst', 'ucrt64.db.tar.gz'];
+/* two official MSYS2 package collections: UCRT64 (native Windows programs: gcc, libraries, Lua)
+   and MSYS (the Unix tools: Bash, coreutils, grep, sed, awk, Perl), which unpack into the same folder */
+const REPOS = {
+  ucrt64: { prefix: PREFIX, mirrors: ['https://mirror.msys2.org/mingw/ucrt64/', 'https://repo.msys2.org/mingw/ucrt64/'], dbs: ['ucrt64.db', 'ucrt64.db.tar.zst', 'ucrt64.db.tar.gz'], bin: path.join('ucrt64', 'bin'), state: 'installed.json', cache: 'ucrt64.db.json' },
+  msys: { prefix: '', mirrors: ['https://mirror.msys2.org/msys/x86_64/', 'https://repo.msys2.org/msys/x86_64/'], dbs: ['msys.db', 'msys.db.tar.zst', 'msys.db.tar.gz'], bin: path.join('usr', 'bin'), state: 'installed-msys.json', cache: 'msys.db.json' }
+};
+const MIRRORS = REPOS.ucrt64.mirrors;
+const DB_NAMES = REPOS.ucrt64.dbs;
 
 /* ---------- tar reading (ustar + GNU long names + pax), used for the package list and the packages ---------- */
 function octal(b, s, l) { const t = b.toString('latin1', s, s + l).replace(/\0.*$/, '').trim(); return t ? parseInt(t, 8) : 0; }
@@ -86,16 +92,18 @@ function parseDesc(text) {
 const bare = (d) => String(d).split(/[<>=:]/)[0].trim();
 
 function create(opts) {
-  const root = opts.root;                                   // tools/msys  (packages unpack to root/ucrt64/...)
+  const root = opts.root;                                   // tools/msys  (packages unpack to root/ucrt64/... or root/usr/...)
+  const R = REPOS[opts.repo || 'ucrt64'];
+  if (!R) throw new Error('unknown MSYS2 repository ' + opts.repo);
   const log = opts.log || (() => { });
   const fetchFn = opts.fetch || ((u) => fetch(u, { redirect: 'follow' }));
-  const mirrors = opts.mirrors || MIRRORS;
+  const mirrors = opts.mirrors || R.mirrors;
   fs.mkdirSync(root, { recursive: true });
-  const stateFile = path.join(root, 'installed.json');
+  const stateFile = path.join(root, R.state);
   let installed = {}; try { installed = JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch (e) { }
   const save = () => fs.writeFileSync(stateFile, JSON.stringify(installed));
   let db = null, dbAt = 0;
-  const dbCache = path.join(root, 'ucrt64.db.json');
+  const dbCache = path.join(root, R.cache);
 
   async function get(rel) {
     let last = null;
@@ -116,7 +124,7 @@ function create(opts) {
     if (db && !force && Date.now() - dbAt < 864e5) return db;
     if (!force) { try { const c = JSON.parse(fs.readFileSync(dbCache, 'utf8')); if (Date.now() - c.at < 864e5) { db = c.db; dbAt = c.at; return db; } } catch (e) { } }
     let res = null, lastErr = null;
-    for (const n of DB_NAMES) { try { res = await get(n); break; } catch (e) { lastErr = e; } }
+    for (const n of R.dbs) { try { res = await get(n); break; } catch (e) { lastErr = e; } }
     if (!res) throw new Error('could not read the MSYS2 package list (' + (lastErr ? lastErr.message : '') + ')');
     const pk = {};
     await streamToTar(res, (e, data) => { if (/\/desc$/.test(e.name)) { const d = parseDesc(data.toString('utf8')); if (d.name) pk[d.name] = d; } });
@@ -126,13 +134,13 @@ function create(opts) {
     try { fs.writeFileSync(dbCache, JSON.stringify({ at: dbAt, db })); } catch (e) { }
     return db;
   }
-  const full = (n) => (n.startsWith(PREFIX) || /^(msys2-|mingw-w64-)/.test(n) ? n : PREFIX + n);
+  const full = (n) => (!R.prefix || n.startsWith(R.prefix) || /^(msys2-|mingw-w64-)/.test(n) ? n : R.prefix + n);
   /* every package needed for these, in install order (dependencies first) */
   function closure(names) {
     const order = [], seen = {};
     const visit = (raw) => {
       let n = bare(raw); if (!db.pk[n] && db.provides[n]) n = db.provides[n];
-      if (!db.pk[n]) { if (!/^(sh|bash|perl|python|msys2-runtime)$/.test(n)) log('[msys] unknown package ' + n); return; }
+      if (!db.pk[n]) { if (R.prefix && /^(sh|bash|perl|python|msys2-runtime)$/.test(n)) return; log('[msys] unknown package ' + n); return; }
       if (seen[n]) return; seen[n] = 1;
       db.pk[n].depends.forEach(visit);
       order.push(n);
@@ -169,7 +177,7 @@ function create(opts) {
     await loadDb();
     let order = closure(names);
     const missing = names.map(full).filter((n) => !db.pk[bare(n)] && !db.provides[bare(n)]);
-    if (missing.length) throw new Error('MSYS2 has no package called ' + missing.map((m) => m.replace(PREFIX, '')).join(', '));
+    if (missing.length) throw new Error('MSYS2 has no package called ' + missing.map((m) => (R.prefix ? m.replace(R.prefix, '') : m)).join(', '));
     const todo = order.filter((n) => !installed[n] || installed[n].version !== db.pk[n].version);
     let i = 0;
     for (const n of todo) {
@@ -181,13 +189,14 @@ function create(opts) {
         await loadDb(true); const d = db.pk[n]; if (!d) throw e; await installOne(d, say);
       }
     }
+    if (!R.prefix) { ['tmp', 'etc', 'home'].forEach((d) => { try { fs.mkdirSync(path.join(root, d), { recursive: true }); } catch (e) { } }); }   // Bash needs /tmp (here-documents)
     return order;
   }
   function isInstalled(name) { return !!installed[full(name)]; }
   /* pkg-config module names (.pc files) a package installed */
   function pcModules(name) { const it = installed[full(name)]; return it ? it.files.filter((f) => /\/lib\/pkgconfig\/[^/]+\.pc$/.test(f)).map((f) => path.basename(f, '.pc')) : []; }
-  function list() { return Object.keys(installed).map((n) => n.replace(PREFIX, '')); }
-  const binDir = () => path.join(root, 'ucrt64', 'bin');
-  return { install, loadDb, closure, isInstalled, pcModules, list, binDir, root, PREFIX };
+  function list() { return Object.keys(installed).map((n) => (R.prefix ? n.replace(R.prefix, '') : n)); }
+  const binDir = () => path.join(root, R.bin);
+  return { install, loadDb, closure, isInstalled, pcModules, list, binDir, root, PREFIX: R.prefix, repo: opts.repo || 'ucrt64' };
 }
-module.exports = { create, tarParser, parseDesc, PREFIX };
+module.exports = { create, tarParser, parseDesc, PREFIX, REPOS };

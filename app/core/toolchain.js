@@ -16,7 +16,12 @@
      php    -> PHP NTS x64 (windows.php.net) + Composer (getcomposer.org)     sha256
      ruby   -> RubyInstaller (github.com/oneclick/rubyinstaller2), per-user    GitHub digest
      r      -> R for Windows (cloud.r-project.org), per-user                  Authenticode signature
-     dart   -> Dart SDK (storage.googleapis.com/dart-archive)                 sha256                              */
+     dart   -> Dart SDK (storage.googleapis.com/dart-archive)                 sha256
+     bash   -> Bash + coreutils, grep, sed, awk from MSYS2 (MSYS)              sha256 per package
+     perl   -> Perl from MSYS2 (MSYS)                                         sha256 per package
+     lua    -> Lua from MSYS2 UCRT64                                          sha256 per package
+     swift  -> Swift for Windows (swift.org) through winget, with the Microsoft C++ build tools it needs
+               (Windows asks once for administrator approval)                                                    */
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
@@ -33,7 +38,8 @@ function which(name, extraDirs) {
   try {
     const r = cp.spawnSync(WIN ? 'where' : 'which', [name], { encoding: 'utf8', timeout: 4000, windowsHide: true });
     if (r.status === 0) {
-      const all = String(r.stdout).split(/\r?\n/).map((s) => s.trim()).filter(Boolean).filter((p) => !/\\WindowsApps\\/i.test(p));
+      const all = String(r.stdout).split(/\r?\n/).map((s) => s.trim()).filter(Boolean).filter((p) => !/\\WindowsApps\\/i.test(p))
+        .filter((p) => !(WIN && name === 'bash' && /\\System32\\bash\.exe$/i.test(p)));   // the WSL launcher, not a Bash (fails when WSL is not set up)
       if (!WIN) return all[0] || null;
       return all.find((p) => /\.(exe|cmd|bat)$/i.test(p)) || null;
     }
@@ -123,7 +129,17 @@ function defaultSpecs(platform, arch) {
     dart: {
       name: 'Dart', exe: 'dart', size: '210 MB', check: ['dart'],
       sources: [{ url: `https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-${win ? 'windows' : platform === 'darwin' ? 'macos' : 'linux'}-${arch === 'arm64' ? 'arm64' : 'x64'}-release.zip`, file: 'dartsdk.zip', shaFile: `https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-${win ? 'windows' : platform === 'darwin' ? 'macos' : 'linux'}-${arch === 'arm64' ? 'arm64' : 'x64'}-release.zip.sha256sum` }]
-    }
+    },
+    bash: win ? { name: 'Bash (with grep, sed, awk)', exe: 'bash', size: '25 MB', check: ['bash'], sources: [{ msys: ['bash', 'coreutils', 'grep', 'sed', 'gawk', 'findutils', 'diffutils', 'which', 'bc'], repo: 'msys', exeName: 'bash.exe' }] } : null,
+    perl: win ? { name: 'Perl', exe: 'perl', size: '45 MB', check: ['perl'], sources: [{ msys: ['perl'], repo: 'msys', exeName: 'perl.exe' }] } : null,
+    lua: win ? { name: 'Lua', exe: 'lua', size: '2 MB', check: ['lua'], sources: [{ msys: ['lua'], exeName: 'lua.exe' }] } : null,
+    swift: win ? {
+      name: 'Swift', exe: 'swiftc', size: 'about 5 GB with the Microsoft C++ build tools', check: ['swiftc'],
+      sources: [{ winget: [
+        { id: 'Microsoft.VisualStudio.2022.BuildTools', skip: 'vc', say: 'Installing the Microsoft C++ build tools Swift needs (large; Windows asks once for approval) …', override: '--wait --passive --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621' },
+        { id: 'Swift.Toolchain', say: 'Installing Swift …' }
+      ] }]
+    } : null
   };
 }
 /* newest stable 3.13.x (best library support), else the newest stable 3.x */
@@ -133,7 +149,7 @@ function pickPython(vs) {
   const t13 = sorted.filter((v) => /^3\.13\./.test(v));
   return t13.length ? t13[t13.length - 1] : sorted[sorted.length - 1] || null;
 }
-const KINDS = ['java', 'python', 'node', 'cc', 'go', 'rust', 'dotnet', 'kotlin', 'scala', 'php', 'ruby', 'r', 'dart'];
+const KINDS = ['java', 'python', 'node', 'cc', 'go', 'rust', 'dotnet', 'kotlin', 'scala', 'php', 'ruby', 'r', 'dart', 'bash', 'perl', 'lua', 'swift'];
 
 function create(opts) {
   const root = path.join(opts.dir, 'tools');
@@ -147,12 +163,26 @@ function create(opts) {
   const saveMan = () => { try { fs.writeFileSync(manFile, JSON.stringify(man, null, 1)); } catch (e) { log('[tools] ' + e.message); } };
   const busy = {};
   const msys = opts.msys || (WIN ? require('./msys').create({ root: path.join(root, 'msys'), fetch: fetchFn, log }) : null);
+  const msysBase = opts.msysBase || (WIN ? require('./msys').create({ root: path.join(root, 'msys'), repo: 'msys', fetch: fetchFn, log }) : null);
+  const exec = opts.exec || run;   // tests replace it
 
-  /* bin folders of the runtimes FutureSelf installed (put first on PATH for programs and the terminal) */
-  function binDirs() {
+  /* bin folders of the runtimes FutureSelf installed (put first on PATH for programs and the terminal).
+     "private" ones (Bash/Perl's Unix tools, Swift's clang) are NOT put on PATH for everything, so they never hide
+     Windows' own find/sort/link; they are added only when a Bash, Perl or Swift program runs (see runEnv). */
+  function binDirs(all) {
     const out = [];
-    Object.keys(man).forEach((k) => { const m = man[k]; if (m && m.bin && fs.existsSync(m.bin)) { out.push(m.bin); (m.extra || []).forEach((x) => { if (fs.existsSync(x)) out.push(x); }); } });
+    Object.keys(man).forEach((k) => { const m = man[k]; if (m && m.bin && fs.existsSync(m.bin) && (all || !m.private)) { out.push(m.bin); (m.extra || []).forEach((x) => { if (fs.existsSync(x)) out.push(x); }); } });
     return out;
+  }
+  /* PATH and variables for running one language's program (adds that runtime's private folders) */
+  function runEnv(kind, base) {
+    const e = Object.assign({}, base || env()), m = managed(kind);
+    if (!m || !m.private) return e;
+    const key = Object.keys(e).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
+    e[key] = [m.bin].concat((m.extra || []).filter((x) => fs.existsSync(x)), [e[key] || '']).join(path.delimiter);
+    if (m.env) Object.assign(e, m.env);
+    if (kind === 'bash' || kind === 'perl') { e.MSYSTEM = e.MSYSTEM || 'MSYS'; e.CHERE_INVOKING = '1'; }
+    return e;
   }
   function env(base) {
     const e = Object.assign({}, base || process.env);
@@ -179,7 +209,7 @@ function create(opts) {
   function has(kind) { return systemHas(kind) || !!managed(kind); }
   function canInstall(kind) { return !!specs[kind]; }
   /* full path of a tool: FutureSelf's copies first, then the PC's own */
-  function tool(name) { return which(name, binDirs()); }
+  function tool(name) { return which(name, binDirs(true)); }
   function status() {
     const s = {};
     KINDS.forEach((k) => { s[k] = { system: systemHas(k), managed: !!managed(k), version: managed(k) ? man[k].version || '' : '', canInstall: canInstall(k), name: specs[k] ? specs[k].name : k, size: specs[k] ? specs[k].size : '' }; });
@@ -219,7 +249,7 @@ function create(opts) {
       ch.stderr && ch.stderr.on('data', (d) => { err += d; if (err.length > 20000) err = err.slice(-20000); });
       ch.stdout && ch.stdout.on('data', (d) => { if (o && o.onOut) o.onOut(String(d)); });
       ch.on('error', reject);
-      ch.on('close', (c) => (c === 0 ? resolve() : reject(new Error((path.basename(cmd) + ' failed (' + c + '): ' + err.trim().split(/\r?\n/).slice(-3).join(' ')).slice(0, 400)))));
+      ch.on('close', (c) => (c === 0 || (o && o.okCodes && o.okCodes.indexOf(c >>> 0) >= 0) ? resolve() : reject(new Error((path.basename(cmd) + ' failed (' + c + '): ' + err.trim().split(/\r?\n/).slice(-3).join(' ')).slice(0, 400)))));
     });
   }
   async function extract(file, dest, src) {
@@ -271,13 +301,30 @@ function create(opts) {
     for (const s of spec.sources) {
       let src = s;
       try {
-        if (s.msys) {                                                   // gcc & friends from MSYS2
-          if (!msys) throw new Error('MSYS2 is only used on Windows');
-          say('Getting the C/C++ compiler (gcc) …');
-          await msys.install(s.msys, (p) => say(p.text, p.pct));
-          const bin = msys.binDir();
-          if (!fs.existsSync(path.join(bin, 'gcc.exe'))) throw new Error('gcc was not installed');
-          man[kind] = { bin, version: 'MSYS2 UCRT64', at: Date.now(), extra: [] }; saveMan();
+        if (s.msys) {                                                   // gcc, Lua (UCRT64) and Bash, Perl (MSYS) from MSYS2
+          const ms = s.repo === 'msys' ? msysBase : msys;
+          if (!ms) throw new Error('MSYS2 is only used on Windows');
+          say(kind === 'cc' ? 'Getting the C/C++ compiler (gcc) …' : 'Getting ' + spec.name + ' …');
+          await ms.install(s.msys, (p) => say(p.text, p.pct));
+          const bin = ms.binDir();
+          if (!fs.existsSync(path.join(bin, s.exeName || 'gcc.exe'))) throw new Error(spec.exe + ' was not installed');
+          man[kind] = { bin, version: s.repo === 'msys' ? 'MSYS2' : 'MSYS2 UCRT64', at: Date.now(), extra: [], private: s.repo === 'msys' }; saveMan();
+          say(spec.name + ' is ready.', 100);
+          return man[kind];
+        }
+        if (s.winget) {                                                 // Swift: Windows' own package manager, official packages
+          if (!WIN) throw new Error('winget is only on Windows');
+          const wg = which('winget');
+          if (!wg) throw new Error('Windows Package Manager (winget) is missing: update "App Installer" from the Microsoft Store');
+          for (const w of s.winget) {
+            if (w.skip === 'vc' && vcToolsInstalled()) continue;
+            say(w.say);
+            const args = ['install', '--id', w.id, '-e', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity'].concat(w.override ? ['--override', w.override] : ['--silent']);
+            await exec(wg, args, { okCodes: [0x8A15002B, 0x8A150061, 3010] });   // "already installed", "no newer version", "restart later"
+          }
+          const f = findSwift();
+          if (!f) throw new Error('Swift was installed, but swiftc.exe was not found. Restart the PC and try again');
+          man[kind] = Object.assign({ at: Date.now(), private: true }, f); saveMan();
           say(spec.name + ' is ready.', 100);
           return man[kind];
         }
@@ -382,9 +429,33 @@ function create(opts) {
   }
   function remove(kind) {
     if (!man[kind]) return false;
-    if (kind !== 'cc') fs.rmSync(path.join(root, kind), { recursive: true, force: true });
+    if (['cc', 'bash', 'perl', 'lua', 'swift'].indexOf(kind) < 0) fs.rmSync(path.join(root, kind), { recursive: true, force: true });
     delete man[kind]; saveMan(); return true;
   }
-  return { ensure, has, status, tool, env, binDirs, remove, systemHas, managed, root, msys, KINDS };
+  /* Visual Studio / Build Tools with the C++ compiler already on this PC? */
+  function vcToolsInstalled() {
+    const vw = path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Microsoft Visual Studio', 'Installer', 'vswhere.exe');
+    if (!fs.existsSync(vw)) return false;
+    const r = cp.spawnSync(vw, ['-products', '*', '-requires', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64', '-property', 'installationPath'], { encoding: 'utf8', timeout: 30000, windowsHide: true });
+    return !!String(r.stdout || '').trim();
+  }
+  /* where the Swift installer put swiftc, its Windows SDK (SDKROOT) and the runtime DLLs (newest version first) */
+  function findSwift() {
+    const la = process.env.LOCALAPPDATA || '', pf = process.env.ProgramFiles || 'C:\\Program Files', sd = process.env.SystemDrive || 'C:';
+    const newest = (dir) => { try { return fs.readdirSync(dir).filter((n) => !n.startsWith('.')).sort((a, b) => (vkey(b.replace(/[^\d.]/g, '') || '0') > vkey(a.replace(/[^\d.]/g, '') || '0') ? 1 : -1)).map((n) => path.join(dir, n)); } catch (e) { return []; } };
+    const bases = [path.join(la, 'Programs', 'Swift'), path.join(pf, 'Swift'), path.join(sd + '\\', 'Library')];
+    for (const b of bases) {
+      const tcs = newest(path.join(b, 'Toolchains')).concat(newest(path.join(b, 'Developer', 'Toolchains')));
+      const tc = tcs.find((t) => fs.existsSync(path.join(t, 'usr', 'bin', 'swiftc.exe')));
+      if (!tc) continue;
+      const plats = newest(path.join(b, 'Platforms')).concat([path.join(b, 'Platforms'), path.join(b, 'Developer', 'Platforms')]);
+      let sdk = '';
+      for (const p of plats) { const c = path.join(p, 'Windows.platform', 'Developer', 'SDKs', 'Windows.sdk'); if (fs.existsSync(c)) { sdk = c; break; } }
+      const rts = newest(path.join(b, 'Runtimes')).map((r) => path.join(r, 'usr', 'bin')).concat([path.join(sd + '\\', 'Library', 'Swift-development', 'bin')]).filter((x) => fs.existsSync(x));
+      return { bin: path.join(tc, 'usr', 'bin'), extra: rts.slice(0, 1), env: sdk ? { SDKROOT: sdk } : {}, version: path.basename(tc) };
+    }
+    return null;
+  }
+  return { ensure, has, status, tool, env, runEnv, binDirs, remove, systemHas, managed, root, msys, msysBase, KINDS, findSwift };
 }
 module.exports = { create, defaultSpecs, pickPython, which, spawnAny, KINDS };

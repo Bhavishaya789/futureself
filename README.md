@@ -5,7 +5,7 @@
 <br>
 
 <a href="https://futureself-website-e984.vercel.app"><img src="https://img.shields.io/badge/Download-FutureSelf-6a5be0?style=for-the-badge&logo=rocket&logoColor=white" alt="Download"></a>
-<a href="../../releases"><img src="https://img.shields.io/badge/Releases-v1.42.0-22d3ee?style=for-the-badge&logo=github&logoColor=white" alt="Releases"></a>
+<a href="../../releases"><img src="https://img.shields.io/badge/Releases-v1.42.1-22d3ee?style=for-the-badge&logo=github&logoColor=white" alt="Releases"></a>
 <a href="../../issues/new"><img src="https://img.shields.io/badge/Report-a%20bug-ff5c7a?style=for-the-badge&logo=bugatlas&logoColor=white" alt="Report a bug"></a>
 
 <br>

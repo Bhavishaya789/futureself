@@ -232,7 +232,7 @@
   }
 
   /* ================= Tools & Libraries (Windows app) ================= */
-  var RUNTIMES = [['java', 'Java (JDK)'], ['python', 'Python'], ['node', 'Node.js & npm'], ['cc', 'C / C++ (gcc)'], ['go', 'Go'], ['rust', 'Rust'], ['dotnet', 'C# (.NET 10)'], ['kotlin', 'Kotlin'], ['scala', 'Scala'], ['php', 'PHP + Composer'], ['ruby', 'Ruby'], ['r', 'R'], ['dart', 'Dart']];
+  var RUNTIMES = [['java', 'Java (JDK)'], ['python', 'Python'], ['node', 'Node.js & npm'], ['cc', 'C / C++ (gcc)'], ['go', 'Go'], ['rust', 'Rust'], ['dotnet', 'C# (.NET 10)'], ['kotlin', 'Kotlin'], ['scala', 'Scala'], ['php', 'PHP + Composer'], ['ruby', 'Ruby'], ['r', 'R'], ['dart', 'Dart'], ['bash', 'Bash'], ['perl', 'Perl'], ['lua', 'Lua'], ['swift', 'Swift']];
   var LIBSYS = [['java', 'Java (Maven)', 'com.mysql:mysql-connector-j'], ['python', 'Python (pip)', 'mysql-connector-python'], ['node', 'Node.js (npm)', 'mysql2'], ['c', 'C / C++ (MSYS2)', 'SDL2'], ['php', 'PHP (Composer)', 'monolog/monolog'], ['ruby', 'Ruby (gems)', 'sinatra'], ['r', 'R (CRAN)', 'ggplot2']];
   var TOOLS = { lang: 'java', busy: false };
   function toolsView() {

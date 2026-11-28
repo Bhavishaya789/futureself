@@ -39,10 +39,10 @@ const LANGS = {
   ruby: { label: 'Ruby', manage: 'ruby', libs: 'ruby' },
   r: { label: 'R', manage: 'r', libs: 'r' },
   dart: { label: 'Dart', manage: 'dart' },
-  bash: { label: 'Bash', tools: ['bash'] },
-  lua: { label: 'Lua', tools: ['lua'] },
-  perl: { label: 'Perl', tools: ['perl'] },
-  swift: { label: 'Swift', tools: ['swiftc'] }
+  bash: { label: 'Bash', tools: ['bash'], manage: 'bash' },
+  lua: { label: 'Lua', tools: ['lua'], manage: 'lua' },
+  perl: { label: 'Perl', tools: ['perl'], manage: 'perl' },
+  swift: { label: 'Swift', tools: ['swiftc'], manage: 'swift' }
 };
 /* what must exist on PATH for each language to run without downloading anything */
 const NEEDS = {
@@ -90,7 +90,7 @@ function create(opts) {
   const emit = opts.onProgress || (() => { });
   const junitSub = {};
 
-  const extraBins = () => (toolchain ? toolchain.binDirs() : []);
+  const extraBins = () => (toolchain ? toolchain.binDirs(true) : []);   // finding a tool may use every folder; PATH gets only the shared ones
   /* environment for programs AND the terminal: our tools on PATH, every library folder visible */
   function baseEnv() {
     const e = toolchain ? toolchain.env() : Object.assign({}, process.env);
@@ -189,7 +189,9 @@ function create(opts) {
         const f = write(path.join(d, 'main.py'), code);
         if (extra.pythonpath) env.PYTHONPATH = [extra.pythonpath, env.PYTHONPATH || ''].join(path.delimiter);
         const pytest = /^\s*def\s+test_\w*\s*\(/m.test(code) && !/__name__\s*==\s*['"]__main__['"]/.test(code);
+        const streamlit = /^\s*(import\s+streamlit|from\s+streamlit\b)/m.test(code);
         if (pytest) { if (libs.pyMissing(['pytest']).length) await libs.installPython(['pytest'], (x) => p(Object.assign({ phase: 'libs' }, x))); out.run = cmd(R('@py'), ['-m', 'pytest', '-q', '-p', 'no:cacheprovider', f]); }
+        else if (streamlit) { env.STREAMLIT_BROWSER_GATHER_USAGE_STATS = 'false'; out.run = cmd(R('@py'), ['-m', 'streamlit', 'run', f, '--global.developmentMode', 'false', '--server.headless', 'true', '--browser.gatherUsageStats', 'false']); }   // a Streamlit app is a web page: it opens in the Browser tab
         else out.run = cmd(R('@py'), [f]);
         return out;
       }
@@ -299,10 +301,17 @@ function create(opts) {
         out.run = cmd(R('dart'), ['run', f]);
         return out;
       }
-      case 'bash': { const d = dirIn(tmp()); const f = write(path.join(d, 'main.sh'), code); out.run = cmd(R('bash'), [f]); return out; }
+      case 'bash': case 'perl': {   // on Windows these are MSYS2 programs: their Unix tools join PATH only for this run, and paths use /
+        const d = dirIn(tmp()); const f = write(path.join(d, id === 'bash' ? 'main.sh' : 'main.pl'), code.replace(/\r\n/g, '\n'));
+        const e = toolchain && toolchain.runEnv ? toolchain.runEnv(id, env) : env;
+        out.run = Object.assign(cmd(R(id), [WIN ? f.replace(/\\/g, '/') : f]), { env: e }); return out;
+      }
       case 'lua': { const d = dirIn(tmp()); const f = write(path.join(d, 'main.lua'), code); out.run = cmd(R('lua'), [f]); return out; }
-      case 'perl': { const d = dirIn(tmp()); const f = write(path.join(d, 'main.pl'), code); out.run = cmd(R('perl'), [f]); return out; }
-      case 'swift': { const d = dirIn(tmp()); const f = write(path.join(d, 'main.swift'), code), o = path.join(d, exe('prog')); out.steps.push(cmd(R('swiftc'), ['-O', '-o', o, f])); out.run = { cmd: o, args: [], env, cwd: d }; return out; }
+      case 'swift': {
+        const d = dirIn(tmp()); const f = write(path.join(d, 'main.swift'), code), o = path.join(d, exe('prog'));
+        const e = toolchain && toolchain.runEnv ? toolchain.runEnv('swift', env) : env;
+        out.steps.push(Object.assign(cmd(R('swiftc'), ['-O', '-o', o, f]), { env: e })); out.run = { cmd: o, args: [], env: e, cwd: d }; return out;
+      }
     }
     throw new Error('This platform cannot run that language.');
   }
