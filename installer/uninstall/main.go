@@ -34,7 +34,7 @@ func main() {
 	// step 2: running from a temporary copy, so the install folder (and the original Uninstall.exe in it) can be deleted
 	if len(args) >= 3 && args[0] == "--from-temp" {
 		dir, keep := args[1], args[2] == "keep"
-		o := flow.Options{KeepData: keep, Say: func(s string) { fmt.Println(s) }}
+		o := flow.Options{KeepData: keep, KeepTools: args[2] != "delete-all", Say: func(s string) { fmt.Println(s) }}
 		if err := flow.Uninstall(plat.New(), o, dir); err != nil {
 			plat.Error("FutureSelf uninstall", "Could not remove everything:\n\n"+err.Error())
 			os.Exit(1)
@@ -51,6 +51,10 @@ func main() {
 	keep := "keep"
 	if plat.Ask("Uninstall FutureSelf", "Also delete your saved notes, progress and settings?\n\nChoose No to keep them in case you install FutureSelf again.") {
 		keep = "delete"
+		// the languages and libraries can be several GB and slow to download again: they go only when asked for separately
+		if plat.Ask("Uninstall FutureSelf", "Also delete the programming languages and libraries FutureSelf downloaded (Java, Python, C/C++, libraries, MySQL ...)?\n\nChoose No to keep them, so they do not have to be downloaded again.") {
+			keep = "delete-all"
+		}
 	}
 	tmp := filepath.Join(os.TempDir(), "futureself-uninstall.exe")
 	if err := copyFile(self, tmp); err != nil {

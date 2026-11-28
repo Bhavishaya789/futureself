@@ -85,9 +85,27 @@ func TestInstallUpdateUninstall(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(f.UserDataDir(), "data.json")); err != nil {
 		t.Fatal("data deleted despite KeepData")
 	}
-	// reinstall then uninstall and delete data
+	// delete notes and progress but keep the downloaded languages and libraries
 	dir, _ = Install(f, o, payload(true), []byte("un"))
-	o.KeepData = false
+	for _, t := range []string{"tools/java/bin/java.exe", "libs/java/x.jar", "mysql/bin/mysqld.exe"} {
+		os.MkdirAll(filepath.Dir(filepath.Join(f.UserDataDir(), t)), 0o755)
+		os.WriteFile(filepath.Join(f.UserDataDir(), t), []byte("x"), 0o644)
+	}
+	o.KeepData, o.KeepTools = false, true
+	if err := Uninstall(f, o, dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(f.UserDataDir(), "data.json")); err == nil {
+		t.Fatal("notes and progress should be gone")
+	}
+	for _, t2 := range []string{"tools/java/bin/java.exe", "libs/java/x.jar", "mysql/bin/mysqld.exe"} {
+		if _, err := os.Stat(filepath.Join(f.UserDataDir(), t2)); err != nil {
+			t.Fatal("download deleted despite KeepTools:", t2)
+		}
+	}
+	// reinstall then uninstall and delete everything
+	dir, _ = Install(f, o, payload(true), []byte("un"))
+	o.KeepData, o.KeepTools = false, false
 	if err := Uninstall(f, o, dir); err != nil {
 		t.Fatal(err)
 	}

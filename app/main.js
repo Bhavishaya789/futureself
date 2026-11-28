@@ -24,6 +24,7 @@ function log(m) {
   if (!app.isPackaged || process.env.FS_DEBUG) console.log(m);
 }
 env.load([path.join(exeDir, '.env'), path.join(dataDir, '.env'), path.join(__dirname, '.env')]);
+const gpu = require('./core/gpusafe').apply(app, dataDir, log);   // before "ready": safe graphics settings (see gpusafe.js)
 
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 
@@ -45,6 +46,7 @@ function createWindow(hidden) {
   win.removeMenu();
   win.once('ready-to-show', () => { if (!hidden) win.show(); });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  gpu.watch(win, { delay: process.env.FS_GPU_CHECK_MS ? +process.env.FS_GPU_CHECK_MS : undefined });   // white page -> restart once in software graphics
 
   const YT_HOST = /^https:\/\/([a-z0-9-]+\.)*(youtube\.com|youtube-nocookie\.com|youtu\.be|google\.com|googlevideo\.com)(\/|$)/;
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url) && !YT_HOST.test(url)) shell.openExternal(url); return { action: 'deny' }; });

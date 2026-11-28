@@ -28,6 +28,7 @@ type Options struct {
 	NoDesktop bool
 	NoLaunch  bool
 	KeepData  bool // uninstall: keep the student's notes and progress
+	KeepTools bool // uninstall with KeepData false: still keep the downloaded languages, libraries and MySQL
 	Say       func(string)
 }
 
@@ -108,6 +109,9 @@ func Install(p Platform, o Options, payload []byte, uninstallExe []byte) (string
 	return dir, nil
 }
 
+// ToolFolders are the downloads in the data folder: languages (tools), libraries (libs) and MySQL.
+var ToolFolders = map[string]bool{"tools": true, "libs": true, "mysql": true}
+
 // Uninstall removes the app, shortcuts and registry entry. The student's data stays unless KeepData is false.
 func Uninstall(p Platform, o Options, dir string) error {
 	if !core.Ours(dir) {
@@ -124,9 +128,19 @@ func Uninstall(p Platform, o Options, dir string) error {
 		return err
 	}
 	if !o.KeepData {
-		o.say("Removing your saved data...")
 		if d := p.UserDataDir(); filepath.Base(d) == core.AppName {
-			os.RemoveAll(d)
+			if o.KeepTools {
+				o.say("Removing your saved data (keeping the downloaded languages and libraries)...")
+				ents, _ := os.ReadDir(d)
+				for _, e := range ents {
+					if !ToolFolders[e.Name()] {
+						os.RemoveAll(filepath.Join(d, e.Name()))
+					}
+				}
+			} else {
+				o.say("Removing your saved data and downloads...")
+				os.RemoveAll(d)
+			}
 		}
 	}
 	return nil
