@@ -29,7 +29,8 @@ function create(d) {
       if (head.toString() !== 'MZ' || got < 5e6) { busy = false; return { ok: false, error: 'The downloaded file is not a valid installer.' }; }
       if (want && h.digest('hex') !== want) { fs.rmSync(file, { force: true }); busy = false; return { ok: false, error: 'The download did not match its checksum, so it was thrown away. Try again.' }; }
       /* start the installer through cmd "start" so it is NOT a child of this app (otherwise closing the app can kill it half-way) */
-      d.spawn('cmd.exe', ['/d', '/s', '/c', 'start "" "' + file + '" /silent'], { detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true }).unref();
+      // its working folder is the download folder (/D and cwd), never the install folder it has to replace
+      d.spawn('cmd.exe', ['/d', '/s', '/c', 'start "" /D "' + dir + '" "' + file + '" /silent'], { cwd: dir, detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true }).unref();
       setTimeout(d.quit, 1500);
       return { ok: true };
     } catch (e) { busy = false; return { ok: false, error: 'The update could not be installed: ' + e.message }; }

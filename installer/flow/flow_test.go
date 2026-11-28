@@ -149,3 +149,121 @@ func TestRepairsHalfInstalledFolder(t *testing.T) {
 		t.Fatal("marker missing after repair")
 	}
 }
+
+func payloadV(v string) []byte {
+	var b bytes.Buffer
+	w := zip.NewWriter(&b)
+	f, _ := w.Create("FutureSelf.exe")
+	f.Write([]byte("exe " + v))
+	f, _ = w.Create("resources/app/main.js")
+	f.Write([]byte("main " + v))
+	w.Close()
+	return b.Bytes()
+}
+
+func read(t *testing.T, p string) string {
+	b, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+func TestUpdateSwapsInNewVersion(t *testing.T) {
+	f := &fake{root: t.TempDir()}
+	o := Options{Version: "1.0.0", NoLaunch: true}
+	dir, err := Install(f, o, payloadV("1"), []byte("un"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	o.Version = "2.0.0"
+	if _, err := Install(f, o, payloadV("2"), []byte("un")); err != nil {
+		t.Fatal(err)
+	}
+	if read(t, filepath.Join(dir, "resources/app/main.js")) != "main 2" || read(t, filepath.Join(dir, ".futureself-install")) != "2.0.0" {
+		t.Fatal("new version not in place")
+	}
+	if olds, _ := filepath.Glob(dir + ".*"); len(olds) != 0 {
+		t.Fatal("left-overs remain:", olds)
+	}
+}
+
+func TestDamagedUpdateKeepsOldApp(t *testing.T) {
+	f := &fake{root: t.TempDir()}
+	o := Options{Version: "1.0.0", NoLaunch: true}
+	dir, _ := Install(f, o, payloadV("1"), []byte("un"))
+	if _, err := Install(f, o, []byte("not a zip"), []byte("un")); err == nil {
+		t.Fatal("damaged package accepted")
+	}
+	if read(t, filepath.Join(dir, "FutureSelf.exe")) != "exe 1" {
+		t.Fatal("old app was damaged by a failed update")
+	}
+	if _, err := Install(f, o, payload(false), []byte("un")); err == nil {
+		t.Fatal("package without the exe accepted")
+	}
+	if read(t, filepath.Join(dir, "FutureSelf.exe")) != "exe 1" {
+		t.Fatal("old app was damaged by a package without exe")
+	}
+}
+
+func TestFolderInUseIsUpdatedInPlace(t *testing.T) {
+	f := &fake{root: t.TempDir()}
+	o := Options{Version: "1.0.0", NoLaunch: true}
+	dir, _ := Install(f, o, payloadV("1"), []byte("un"))
+	os.WriteFile(filepath.Join(dir, "extra.dll"), []byte("old"), 0o644)
+	rename = func(a, b string) error {
+		if a == dir {
+			return os.ErrPermission // Windows: "the folder is in use"
+		}
+		return os.Rename(a, b)
+	}
+	defer func() { rename = os.Rename }()
+	o.Version = "2.0.0"
+	if _, err := Install(f, o, payloadV("2"), []byte("un")); err != nil {
+		t.Fatal(err)
+	}
+	if read(t, filepath.Join(dir, "resources/app/main.js")) != "main 2" || read(t, filepath.Join(dir, "FutureSelf.exe")) != "exe 2" {
+		t.Fatal("files not copied over")
+	}
+	if _, err := os.Stat(dir + ".new"); err == nil {
+		t.Fatal("staging folder left behind")
+	}
+}
+
+func TestRepairsHalfDeletedFolder(t *testing.T) {
+	f := &fake{root: t.TempDir()}
+	dir := filepath.Join(f.ProgramsDir(), "FutureSelf")
+	// what the old Setup left: marker and exe gone, some files still there
+	os.MkdirAll(filepath.Join(dir, "locales"), 0o755)
+	os.WriteFile(filepath.Join(dir, "ffmpeg.dll"), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(dir, "resources.pak"), []byte("x"), 0o644)
+	if _, err := Install(f, Options{Version: "2.0.0", NoLaunch: true}, payloadV("2"), []byte("un")); err != nil {
+		t.Fatal("half-deleted folder not repaired:", err)
+	}
+	if read(t, filepath.Join(dir, "FutureSelf.exe")) != "exe 2" {
+		t.Fatal("not installed")
+	}
+	// but a folder with someone else's files is still refused
+	f2 := &fake{root: t.TempDir()}
+	d2 := filepath.Join(f2.ProgramsDir(), "FutureSelf")
+	os.MkdirAll(d2, 0o755)
+	os.WriteFile(filepath.Join(d2, "my-notes.txt"), []byte("x"), 0o644)
+	if _, err := Install(f2, Options{Version: "2.0.0", NoLaunch: true}, payloadV("2"), []byte("un")); err == nil {
+		t.Fatal("foreign folder was taken over")
+	}
+}
+
+func TestCleansOldCopies(t *testing.T) {
+	f := &fake{root: t.TempDir()}
+	o := Options{Version: "1.0.0", NoLaunch: true}
+	dir, _ := Install(f, o, payloadV("1"), []byte("un"))
+	stale := dir + ".old-123"
+	os.MkdirAll(stale, 0o755)
+	core.WriteMarker(stale, "0.9")
+	if _, err := Install(f, o, payloadV("2"), []byte("un")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(stale); err == nil {
+		t.Fatal("old copy from an earlier update not removed")
+	}
+}

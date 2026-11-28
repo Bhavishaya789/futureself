@@ -17,6 +17,9 @@ const exeDir = path.dirname(process.execPath);
 if (process.env.FS_USER_DATA) app.setPath('userData', process.env.FS_USER_DATA);
 const dataDir = app.getPath('userData');
 fs.mkdirSync(dataDir, { recursive: true });
+// Work from the data folder, never the install folder: Windows cannot replace a folder that a running program
+// (this app, MySQL, a student's program) has as its working folder, and that broke in-app updates.
+try { process.chdir(dataDir); } catch (e) { /* keep the default */ }
 const logFile = path.join(dataDir, 'futureself.log');
 function log(m) {
   const line = new Date().toISOString() + ' ' + m + '\n';

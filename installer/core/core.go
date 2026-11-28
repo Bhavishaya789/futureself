@@ -117,5 +117,24 @@ func Ours(dir string) bool {
 	if es, err := os.ReadDir(dir); err == nil && len(es) == 0 {
 		return true
 	}
-	return false
+	return OnlyAppFiles(dir)
+}
+
+// OnlyAppFiles: everything left in the folder is a file or folder an Electron app like ours has.
+// It recognises a folder that an older Setup emptied only part of (its marker already gone), so a new Setup can repair it.
+func OnlyAppFiles(dir string) bool {
+	es, err := os.ReadDir(dir)
+	if err != nil || len(es) == 0 {
+		return false
+	}
+	known := map[string]bool{"resources": true, "locales": true, "Content": true, "LICENSE": true, "LICENSES.chromium.html": true, "version": true, "vk_swiftshader_icd.json": true}
+	for _, e := range es {
+		n := e.Name()
+		low := strings.ToLower(n)
+		if known[n] || strings.HasSuffix(low, ".dll") || strings.HasSuffix(low, ".pak") || strings.HasSuffix(low, ".bin") || strings.HasSuffix(low, ".dat") || low == "futureself.exe" || low == "uninstall.exe" || low == strings.ToLower(Marker) {
+			continue
+		}
+		return false
+	}
+	return true
 }
