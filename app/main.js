@@ -48,7 +48,7 @@ function createWindow(hidden) {
 
   const YT_HOST = /^https:\/\/([a-z0-9-]+\.)*(youtube\.com|youtube-nocookie\.com|youtu\.be|google\.com|googlevideo\.com)(\/|$)/;
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url) && !YT_HOST.test(url)) shell.openExternal(url); return { action: 'deny' }; });
-  win.webContents.on('will-frame-navigate', (e) => { try { if (!e.isMainFrame && e.frame && e.frame.parent === win.webContents.mainFrame && !/^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}/.test(e.url) && !/^about:/.test(e.url)) e.preventDefault(); } catch (x) { } });
+  win.webContents.on('will-frame-navigate', (e) => { try { if (!e.isMainFrame && e.frame && e.frame.parent === win.webContents.mainFrame && !/^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}/.test(e.url) && !/^about:/.test(e.url) && !/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(e.url)) e.preventDefault(); } catch (x) { } });
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('file://')) { e.preventDefault(); if (/^https:\/\//.test(url)) shell.openExternal(url); } });
   win.webContents.on('before-input-event', (e, input) => {
     if (input.type !== 'keyDown' || !app.isPackaged) return;
@@ -209,7 +209,20 @@ app.whenReady().then(async () => {
     const toolchain = require('./core/toolchain').create({ dir: dataDir, log, fetch: netFetch });
     const libs = require('./core/libs').create({ dir: dataDir, log, fetch: netFetch, toolchain });
     const mysql = require('./core/mysqlserver').create({ dir: dataDir, log, fetch: netFetch, toolchain });
-    const coder = require('./core/coderun').create({ dir: dataDir, log, toolchain, libs, mysql, onProgress: (p) => send('code:progress', p) });
+    const preview = require('./core/preview').create({ dir: dataDir });
+    const coder = require('./core/coderun').create({ dir: dataDir, log, toolchain, libs, mysql, preview, onProgress: (p) => send('code:progress', p) });
+    // the editor's Run: live output, typing input, Stop, and web addresses for the built-in browser
+    ipcMain.handle('code:runLive', (_e, p) => coder.runLive(p || {}, {
+      out: (chunk, kind, id) => send('code:live', { type: 'out', id, chunk, kind }),
+      step: (pr) => send('code:progress', pr),
+      url: (u, id) => send('code:live', { type: 'url', id, url: u }),
+      exit: (r) => send('code:live', Object.assign({ type: 'exit' }, r))
+    }));
+    ipcMain.handle('code:input', (_e, p) => coder.input(String(p && p.id || ''), String(p && p.text || '')));
+    ipcMain.handle('code:endInput', (_e, id) => coder.endInput(String(id || '')));
+    ipcMain.handle('code:stop', (_e, id) => coder.stop(String(id || '')));
+    ipcMain.handle('code:preview', (_e, p) => preview.publish(String(p && p.html || ''), 'index.html').then((r) => ({ ok: true, url: r.url })).catch((e) => ({ ok: false, error: e.message })));
+    app.on('before-quit', () => { try { coder.stopAll(); preview.stop(); } catch (e) { } });
     ipcMain.handle('code:info', () => coder.info());
     ipcMain.handle('code:run', (_e, p) => coder.run(Object.assign({}, p, { onStep: (s) => send('code:progress', s) })).catch((e) => ({ ok: false, error: e.message })));
     ipcMain.handle('code:shell', (_e, p) => { const id = String(p && p.id || '').slice(0, 40); return coder.shell(id, p && p.cmd, (chunk, kind) => send('code:out', { id, chunk, kind })).catch((e) => ({ ok: false, error: e.message })); });

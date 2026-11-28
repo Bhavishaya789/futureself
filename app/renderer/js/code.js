@@ -10,8 +10,9 @@
   function isBtech() { var u = H().S && H().S.user; return !!(u && /btech\d/.test(u.track || '')); }
 
   /* ================= languages ================= */
-  var LANGS = [['python', 'Python', 'py'], ['javascript', 'JavaScript', 'js'], ['java', 'Java', 'java'], ['c', 'C', 'c'], ['cpp', 'C++', 'cpp'], ['csharp', 'C#', 'cs'], ['go', 'Go', 'go'], ['rust', 'Rust', 'rs'], ['kotlin', 'Kotlin', 'kt'], ['typescript', 'TypeScript', 'ts'], ['swift', 'Swift', 'swift'], ['php', 'PHP', 'php'], ['ruby', 'Ruby', 'rb'], ['dart', 'Dart', 'dart'], ['r', 'R', 'r'], ['bash', 'Bash', 'sh'], ['sql', 'SQL', 'sql'], ['lua', 'Lua', 'lua'], ['perl', 'Perl', 'pl'], ['haskell', 'Haskell', 'hs'], ['scala', 'Scala', 'scala']];
+  var LANGS = [['python', 'Python', 'py'], ['javascript', 'JavaScript', 'js'], ['html', 'Web page (HTML/CSS/JS)', 'html'], ['java', 'Java', 'java'], ['c', 'C', 'c'], ['cpp', 'C++', 'cpp'], ['csharp', 'C#', 'cs'], ['go', 'Go', 'go'], ['rust', 'Rust', 'rs'], ['kotlin', 'Kotlin', 'kt'], ['typescript', 'TypeScript', 'ts'], ['swift', 'Swift', 'swift'], ['php', 'PHP', 'php'], ['ruby', 'Ruby', 'rb'], ['dart', 'Dart', 'dart'], ['r', 'R', 'r'], ['bash', 'Bash', 'sh'], ['sql', 'SQL', 'sql'], ['lua', 'Lua', 'lua'], ['perl', 'Perl', 'pl'], ['haskell', 'Haskell', 'hs'], ['scala', 'Scala', 'scala']];
   var TPL = {
+    html: '<!doctype html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <title>My page</title>\n  <style>\n    body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6fb; }\n    .card { background: #fff; padding: 24px; border-radius: 12px; max-width: 420px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }\n    button { padding: 10px 18px; border: 0; border-radius: 8px; background: #4f46e5; color: #fff; cursor: pointer; }\n  </style>\n</head>\n<body>\n  <div class="card">\n    <h1>Hello!</h1>\n    <p>You clicked <b id="n">0</b> times.</p>\n    <button onclick="document.getElementById(\'n\').textContent++">Click me</button>\n  </div>\n  <!-- Libraries from a CDN work too, e.g. <script src="https://unpkg.com/react@18/umd/react.development.js"></script> -->\n</body>\n</html>\n',
     python: 'n = int(input())\nnums = list(map(int, input().split()))\nprint(sum(nums))\n',
     javascript: 'const lines = require("fs").readFileSync(0, "utf8").split("\\n");\nconst n = parseInt(lines[0]);\nconst nums = lines[1].split(" ").map(Number);\nconsole.log(nums.reduce((a, b) => a + b, 0));\n',
     java: 'import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt(), sum = 0;\n        for (int i = 0; i < n; i++) sum += sc.nextInt();\n        System.out.println(sum);\n    }\n}\n',
@@ -226,12 +227,13 @@
   }
   function runnersLine() {
     var inf = INFO || { local: [] };
-    var s = inf.desktop ? 'This PC runs <b>' + (inf.local.map(langName).join(', ') || 'no languages yet') + '</b> directly. Java, Python, Node.js and C/C++ install themselves the first time you run them, and libraries (such as the MySQL connector) download on their own. A local MySQL server starts when your code needs one.' : 'Python and JavaScript run inside the app, with or without internet. C, C++, Java, Go, Rust and the rest run on the FutureSelf server (needs internet). The Windows app can also run anything you have installed.';
+    var s = inf.desktop ? 'Runs on this PC with no time limit (use ■ Stop). Every language installs itself the first time you run it, libraries download from your import lines, a local MySQL server starts when your code needs one, and web pages and servers open in the <b>Browser</b> tab.' : 'Python and JavaScript run inside the app, with or without internet. C, C++, Java, Go, Rust and the rest run on the FutureSelf server (needs internet). The Windows app can also run anything you have installed.';
     return s;
   }
 
   /* ================= Tools & Libraries (Windows app) ================= */
-  var RUNTIMES = [['java', 'Java (JDK)'], ['python', 'Python'], ['node', 'Node.js & npm'], ['cc', 'C / C++ (gcc)']];
+  var RUNTIMES = [['java', 'Java (JDK)'], ['python', 'Python'], ['node', 'Node.js & npm'], ['cc', 'C / C++ (gcc)'], ['go', 'Go'], ['rust', 'Rust'], ['dotnet', 'C# (.NET 10)'], ['kotlin', 'Kotlin'], ['scala', 'Scala'], ['php', 'PHP + Composer'], ['ruby', 'Ruby'], ['r', 'R'], ['dart', 'Dart']];
+  var LIBSYS = [['java', 'Java (Maven)', 'com.mysql:mysql-connector-j'], ['python', 'Python (pip)', 'mysql-connector-python'], ['node', 'Node.js (npm)', 'mysql2'], ['c', 'C / C++ (MSYS2)', 'SDL2'], ['php', 'PHP (Composer)', 'monolog/monolog'], ['ruby', 'Ruby (gems)', 'sinatra'], ['r', 'R (CRAN)', 'ggplot2']];
   var TOOLS = { lang: 'java', busy: false };
   function toolsView() {
     var g = $('#cgrid'); if (!g) return;
@@ -244,14 +246,14 @@
         var right = ready ? '<span class="muted" style="font-size:13px">' + (st.managed ? 'Downloaded by FutureSelf' + (st.version ? ' · ' + esc(st.version) : '') : 'Ready to use') + '</span>' : (st.canInstall ? '<button class="btn sm pri" data-act="cdrt" data-k="' + r[0] + '">Install' + (st.size ? ' (' + st.size + ')' : '') + '</button>' : '');
         return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid rgba(255,255,255,.07)"><div style="display:flex;align-items:center;gap:10px;min-width:0"><b>' + esc(r[1]) + '</b>' + tag + '</div><div>' + right + '</div></div>';
       }).join('');
-      var langSel = '<select class="in csel" id="tllang" aria-label="Library language"><option value="java"' + (TOOLS.lang === 'java' ? ' selected' : '') + '>Java (Maven)</option><option value="python"' + (TOOLS.lang === 'python' ? ' selected' : '') + '>Python (pip)</option><option value="node"' + (TOOLS.lang === 'node' ? ' selected' : '') + '>Node.js (npm)</option></select>';
-      var ph = TOOLS.lang === 'java' ? 'e.g. com.mysql:mysql-connector-j' : TOOLS.lang === 'python' ? 'e.g. mysql-connector-python' : 'e.g. mysql2';
+      var langSel = '<select class="in csel" id="tllang" aria-label="Library language">' + LIBSYS.map(function (x) { return '<option value="' + x[0] + '"' + (TOOLS.lang === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select>';
+      var ph = 'e.g. ' + (LIBSYS.filter(function (x) { return x[0] === TOOLS.lang; })[0] || LIBSYS[0])[2];
       g.innerHTML =
         '<div class="card"><div class="eyebrow">Languages</div><p class="muted" style="margin:6px 0 10px;font-size:14px">These install automatically the first time you run a program. You can also install them here in advance.</p>' + rtHTML + '</div>' +
         '<div class="card"><div class="eyebrow">MySQL database</div>' +
         (my.running ? '<p style="margin:8px 0"><span class="lv easy">running</span> ' + (my.system ? 'Using the MySQL already installed on your PC. Connect with your own MySQL username and password.' : 'A local MySQL server is running.') + '</p>' + (my.system ? '' : mysqlCreds()) : '<p class="muted" style="margin:8px 0;font-size:14px">A local MySQL server starts by itself when your code connects to MySQL. You can also start it now to copy the connection details.</p><button class="btn sm pri" data-act="cdmysql"' + (TOOLS.busy ? ' disabled' : '') + '>Start MySQL server</button>') +
         '<p class="muted" id="tlmsg" style="font-size:13px;margin-top:8px"></p></div>' +
-        '<div class="card" style="grid-column:1/-1"><div class="eyebrow">Libraries</div><p class="muted" style="margin:6px 0 10px;font-size:14px">You usually do not need this: FutureSelf reads your <code>import</code> lines and downloads what is needed. Add a library here to have it ready in advance, or write <code>// @dep name</code> in your code.</p>' +
+        '<div class="card" style="grid-column:1/-1"><div class="eyebrow">Libraries</div><p class="muted" style="margin:6px 0 10px;font-size:14px">You usually do not need this: FutureSelf reads your <code>import</code>, <code>#include</code>, <code>using</code> and <code>require</code> lines and downloads what is needed. Add a library here to have it ready in advance, or write <code>// @dep name</code> in your code. Go, Rust (crates), C# (NuGet), Dart (pub) and Scala libraries come from your code by themselves.</p>' +
         '<div class="row wrap" style="gap:8px;align-items:center">' + langSel + '<input class="in" id="tllibname" placeholder="' + ph + '" style="flex:1;min-width:200px" autocomplete="off"><button class="btn sm pri" data-act="cdlib">Add library</button></div>' +
         '<div id="tllist" style="margin-top:12px"></div></div>';
       refreshLibs();
@@ -264,7 +266,7 @@
     if (!window.fsApi.codeListLibraries) return;
     window.fsApi.codeListLibraries(TOOLS.lang).then(function (r) {
       var el = $('#tllist'); if (!el) return; var list = (r && r.list) || [];
-      el.innerHTML = '<small class="muted">Installed for ' + (TOOLS.lang === 'java' ? 'Java' : TOOLS.lang === 'python' ? 'Python' : 'Node.js') + ':</small> ' + (list.length ? list.map(function (x) { return '<span class="lv easy" style="margin:2px">' + esc(x) + '</span>'; }).join(' ') : '<span class="muted">none yet</span>');
+      el.innerHTML = '<small class="muted">Installed for ' + esc((LIBSYS.filter(function (x) { return x[0] === TOOLS.lang; })[0] || ['', TOOLS.lang])[1]) + ':</small> ' + (list.length ? list.map(function (x) { return '<span class="lv easy" style="margin:2px">' + esc(x) + '</span>'; }).join(' ') : '<span class="muted">none yet</span>');
     });
   }
   function tlMsg(t, err) { var el = $('#tlmsg'); if (el) { el.textContent = t; el.className = 'muted' + (err ? ' cerr' : ''); el.style.fontSize = '13px'; } }
@@ -296,13 +298,13 @@
   }
   function draw() {
     var g = $('#cgrid'); if (!g) return;
-    var lopts = LANGS.filter(function (l) { return isBtech() || l[0] === 'python'; }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
+    var lopts = LANGS.filter(function (l) { return (isBtech() || l[0] === 'python') && (l[0] !== 'html' || (INFO && INFO.desktop)); }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
     g.innerHTML = '<aside class="card cpside"><div class="eyebrow">Questions</div>' + probListHTML() + '</aside>' +
       '<section class="cmain"><div class="card" id="cprob">' + problemHTML(P.cur) + '</div>' +
       '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language">' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button></div>' +
       '<div class="row wrap" style="gap:10px">' + (P.cur ? '<button class="btn sm" data-act="cdsamples" id="cdsb">Check samples</button>' : '') + '<button class="btn sm pri" data-act="cdrun" id="cdrb">▶ Run</button></div></div>' +
       '<div id="ced" class="cedwrap"></div>' +
-      '<div class="ctabs" role="tablist"><button class="ctab' + (P.tab === 'out' ? ' on' : '') + '" data-act="cdtab" data-t="out">Output</button><button class="ctab' + (P.tab === 'in' ? ' on' : '') + '" data-act="cdtab" data-t="in">Input</button><button class="ctab' + (P.tab === 'term' ? ' on' : '') + '" data-act="cdtab" data-t="term">Terminal</button></div>' +
+      tabsHTML() +
       '<div id="cpane" class="cpane"></div><p class="muted" style="font-size:13px;margin-top:8px">' + runnersLine() + '</p></div></section>';
     P.ed = mountEditor($('#ced'), { lang: P.lang, value: loadDraft(), onChange: function (v) { ls(draftKey(P.cur && P.cur.id, P.lang), v); } });
     pane();
@@ -336,6 +338,11 @@
     }).catch(function (e) { var el = $('#cchstat'); if (el) el.innerHTML = '<b>-</b><span>Challenge points</span><small>sign in to see</small>'; var l = $('#cchlist'); if (l) l.innerHTML = '<p class="muted" style="margin-top:6px">' + esc(e.message) + '</p>'; });
   }
   function loadDraft() { var d = ls(draftKey(P.cur && P.cur.id, P.lang)); return d != null && d !== '' ? d : (TPL[P.lang] || ''); }
+  function tabsHTML() {
+    var t = [['out', 'Output'], ['in', 'Input'], ['term', 'Terminal']];
+    if (INFO && INFO.desktop) t.push(['web', 'Browser']);
+    return '<div class="ctabs" role="tablist">' + t.map(function (x) { return '<button class="ctab' + (P.tab === x[0] ? ' on' : '') + '" data-act="cdtab" data-t="' + x[0] + '">' + x[1] + (x[0] === 'web' && WEB.url ? ' <span class="cdot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;vertical-align:middle"></span>' : '') + '</button>'; }).join('') + '</div>';
+  }
   function setLang(l) {
     ls(draftKey(P.cur && P.cur.id, P.lang), P.ed.get()); P.lang = l; ls('fs_code_lang', l);
     P.ed.setLang(l); P.ed.set(loadDraft());
@@ -345,8 +352,70 @@
     $$('.ctab').forEach(function (b) { b.classList.toggle('on', b.dataset.t === P.tab); });
     if (P.tab === 'in') { p.innerHTML = '<textarea class="in cstdin" id="cstdin" placeholder="Type the input your program reads (what a user would type). One value per line, or as the question says." spellcheck="false"></textarea>'; $('#cstdin').value = P.stdin; $('#cstdin').addEventListener('input', function (e) { P.stdin = e.target.value; }); }
     else if (P.tab === 'term') termMount(p);
-    else p.innerHTML = '<pre class="cout" id="cout">' + (P.out || '<span class="muted">Press Run to see the output here.</span>') + '</pre>';
+    else if (P.tab === 'web') webMount(p);
+    else {
+      p.innerHTML = '<pre class="cout" id="cout">' + (LV.id ? LV.html + '<span class="muted">' + (LV.step ? esc(LV.step) : '') + '</span>' : (P.out || '<span class="muted">Press Run to see the output here.</span>')) + '</pre>' +
+        (LV.id ? '<div class="tin"><span class="muted" style="font-size:13px">Input ›</span><input id="cinput" class="tcmd" autocomplete="off" spellcheck="false" placeholder="Type input for your program and press Enter" aria-label="Program input"><button class="btn sm ghost" data-act="cdlivestop">■ Stop</button></div>' : '');
+      var o = $('#cout'); if (o) o.scrollTop = o.scrollHeight;
+      var ci = $('#cinput'); if (ci) ci.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var t = e.target.value; e.target.value = ''; liveType(t); } else if (e.key === 'c' && e.ctrlKey && !e.target.value) liveStop(); else if (e.key === 'z' && e.ctrlKey) { window.fsApi.codeEndInput(LV.id); } });
+    }
   }
+  /* ================= built-in browser ================= */
+  var WEB = { url: '', full: false };
+  function webOk(u) { return /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$|\?)/i.test(u); }
+  function webMount(p) {
+    p.innerHTML = '<div class="cweb' + (WEB.full ? ' full' : '') + '" id="cweb" style="' + (WEB.full ? 'position:fixed;inset:0;z-index:9999;background:var(--bg,#0b0f17);padding:10px;display:flex;flex-direction:column' : 'display:flex;flex-direction:column') + '">' +
+      '<div class="row" style="gap:6px;margin-bottom:8px;align-items:center"><button class="btn sm ghost" data-act="cdwebreload" title="Reload" aria-label="Reload">⟳</button>' +
+      '<input id="cweburl" class="in" style="flex:1;min-width:0;font-family:monospace;font-size:13px" spellcheck="false" placeholder="http://127.0.0.1:5000/  —  run a web page or a server to see it here" value="' + esc(WEB.url) + '" aria-label="Address">' +
+      '<button class="btn sm ghost" data-act="cdwebgo">Go</button><button class="btn sm ghost" data-act="cdwebfull">' + (WEB.full ? '✕ Close full screen' : '⤢ Full screen') + '</button></div>' +
+      (WEB.url ? '<iframe id="cwebframe" title="Your page" src="' + esc(WEB.url) + '" style="flex:1;width:100%;min-height:' + (WEB.full ? '0' : '460px') + ';border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#fff" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-downloads"></iframe>'
+        : '<div class="muted" style="padding:40px 16px;text-align:center;border:1px dashed rgba(255,255,255,.15);border-radius:10px">Your web pages and apps appear here.<br><small>Choose <b>Web page (HTML/CSS/JS)</b> and press Run, or run a Flask, Django, Express, Spring Boot, PHP or other web server: it opens here by itself.</small></div>') + '</div>';
+    var u = $('#cweburl'); if (u) u.addEventListener('keydown', function (e) { if (e.key === 'Enter') webGo(e.target.value); });
+  }
+  function webGo(u) {
+    u = String(u || '').trim(); if (!u) return; if (!/^https?:\/\//.test(u)) u = 'http://' + u;
+    if (!webOk(u)) return H().toast('Only your own pages', 'The built-in browser opens pages running on this PC (127.0.0.1 or localhost), so it stays focused on your work.', true);
+    WEB.url = u; if (P.tab === 'web') pane(); else { P.tab = 'web'; pane(); $$('.ctab').forEach(function (b) { b.classList.toggle('on', b.dataset.t === 'web'); }); }
+  }
+  function webShow(u) { var same = WEB.url === u && P.tab === 'web' && $('#cwebframe'); WEB.url = u; P.tab = 'web'; var t = document.querySelector('.ctabs'); if (t) t.outerHTML = tabsHTML(); if (!same) pane(); var w = $('#cweb'); if (w && w.scrollIntoView) w.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  /* ================= live run (no time limit) ================= */
+  var LV = { id: '', html: '', step: '', hooked: false, lang: '', t0: 0, starting: false, early: [] };
+  function liveHook() {
+    if (LV.hooked || !(window.fsApi && window.fsApi.onCodeLive)) return; LV.hooked = true;
+    window.fsApi.onCodeLive(function (d) {
+      if (!d) return;
+      if (LV.starting && !LV.id) { LV.early.push(d); return; }          // a fast program can answer before its id arrives
+      if (d.id !== LV.id) return;
+      liveEvent(d);
+    });
+    function liveEvent(d) {
+      if (d.type === 'out') { LV.step = ''; LV.html += d.kind === 'err' ? '<span class="cerr">' + esc(d.chunk) + '</span>' : esc(d.chunk); if (LV.html.length > 300000) LV.html = LV.html.slice(-200000); var o = $('#cout'); if (o && P.tab === 'out') { o.innerHTML = LV.html; o.scrollTop = o.scrollHeight; } }
+      else if (d.type === 'url') { webShow(d.url); H().toast('Opened in the Browser tab', d.url); }
+      else if (d.type === 'exit') liveDone(d);
+    }
+    LV.replay = function () { var e = LV.early; LV.early = []; e.forEach(function (d) { if (d.id === LV.id) liveEvent(d); }); };
+    window.fsApi.onCodeProgress(function (p) { if (!LV.id || !p || (p.id && p.id !== LV.id)) return; LV.step = (p.text || '') + (p.pct >= 0 ? ' (' + p.pct + '%)' : ''); var o = $('#cout'); if (o && P.tab === 'out') o.innerHTML = LV.html + '<span class="muted">' + esc(LV.step) + '</span>'; });
+  }
+  function liveStart(code) {
+    liveHook(); LV.html = ''; LV.step = 'Starting…'; LV.lang = P.lang; LV.t0 = Date.now();
+    setRunBtn(true);
+    LV.starting = true; LV.early = [];
+    return window.fsApi.codeRunLive({ lang: P.lang, code: code, stdin: P.stdin }).then(function (r) { LV.starting = false; if (!r || !r.ok) throw new Error((r && r.error) || 'Could not run'); LV.id = r.id; if (P.lang !== 'html') { P.tab = 'out'; pane(); } LV.replay(); }, function (e) { LV.starting = false; throw e; });
+  }
+  function liveType(t) { if (!LV.id) return; LV.html += '<span class="muted">' + esc(t) + '</span>\n'; var o = $('#cout'); if (o) { o.innerHTML = LV.html; o.scrollTop = o.scrollHeight; } window.fsApi.codeInput({ id: LV.id, text: t + '\n' }); }
+  function liveStop() { if (LV.id) window.fsApi.codeStop(LV.id); }
+  function liveDone(d) {
+    var ok = d.ok !== false;
+    var tail = d.stopped ? 'stopped' : !ok ? '' : d.code === 0 ? 'finished' : (d.phase === 'compile' ? 'did not compile' : 'exit code ' + d.code);
+    if (!ok) LV.html += '<span class="cerr">' + esc(d.error || 'Could not run') + '</span>';
+    if (d.web) LV.html += '<span class="muted">Your page is open in the Browser tab.</span>\n';
+    if (!LV.html) LV.html = '<span class="muted">(no output)</span>';
+    P.out = LV.html + '\n<span class="muted">— ' + tail + ' · ran on this PC' + (d.ms ? ' · ' + (d.ms / 1000).toFixed(2) + ' s' : '') + '</span>';
+    recRun(LV.lang, 'run', P.cur, ok && (d.code === 0 || d.stopped));
+    LV.id = ''; LV.html = ''; LV.step = ''; P.busy = false; setRunBtn(false);
+    if (P.tab === 'out') pane();
+  }
+  function setRunBtn(running) { var b = $('#cdrb'); if (!b) return; b.disabled = false; b.textContent = running ? '■ Stop' : '▶ Run'; b.dataset.act = running ? 'cdlivestop' : 'cdrun'; }
   function $$(s) { return [].slice.call(document.querySelectorAll(s)); }
   function outHTML(r, extra) {
     var s = '';
@@ -357,6 +426,10 @@
   }
   function doRun() {
     if (P.busy) return; var code = P.ed.get(); if (!code.trim()) return H().toast('Nothing to run', 'Write some code first.', true);
+    if (INFO && INFO.desktop && window.fsApi && window.fsApi.codeRunLive && (INFO.local.indexOf(P.lang) >= 0 || (INFO.installable || []).indexOf(P.lang) >= 0 || P.lang === 'html')) {
+      if (LV.id) return liveStop();
+      P.busy = true; return liveStart(code).catch(function (e) { P.busy = false; setRunBtn(false); P.out = '<span class="cerr">' + esc(e.message) + '</span>'; P.tab = 'out'; pane(); });
+    }
     progHook(); P.busy = true; var b = $('#cdrb'); if (b) { b.disabled = true; b.textContent = 'Running…'; }
     P.tab = 'out'; pane(); var o = $('#cout'); if (o) o.innerHTML = '<span class="muted">Running…' + (P.lang === 'python' ? ' (the first Python run takes a few seconds to start)' : '') + '</span>';
     runCode(P.lang, code, P.stdin).then(function (r) { recRun(P.lang, 'run', P.cur, r.code === 0); P.out = outHTML(r); }).catch(function (e) { P.out = '<span class="cerr">' + esc(e.message) + '</span>'; })
@@ -388,8 +461,11 @@
     if (T.hooked || !(window.fsApi && window.fsApi.onCodeOut)) return; T.hooked = true;
     window.fsApi.onCodeOut(function (d) { if (d && d.id === T.id) termAdd(d.chunk, d.kind === 'err'); });
   }
+  var TURL = /\bhttps?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\])(?::\d{2,5})(?:\/[^\s'"<>)\]\u001b]*)?/i;
   function termAdd(txt, err) {
-    T.lines += (err ? '\u0001' : '') + String(txt) + (err ? '\u0002' : '');
+    // a dev server started in the terminal (npm run dev, php artisan serve, rails s, ng serve ...) opens in the Browser tab
+    if (T.running && INFO && INFO.desktop && !T.urlShown) { var mm = TURL.exec(String(txt).replace(/\u001b\[[0-9;]*m/g, '')); if (mm && !/:(3306|5432|27017|6379)\b/.test(mm[0])) { T.urlShown = true; var u = mm[0].replace('0.0.0.0', '127.0.0.1').replace(/\[::1?\]/, '127.0.0.1'); setTimeout(function () { WEB.url = u; H().toast('Your server is running', 'Open the Browser tab to see it: ' + u); var t = document.querySelector('.ctabs'); if (t) t.outerHTML = tabsHTML(); }, 0); } }
+    T.lines += (err ? '\u0001' : '') + String(txt).replace(/\u001b\[[0-9;?]*[A-Za-z]/g, '') + (err ? '\u0002' : '');
     if (T.lines.length > 60000) T.lines = T.lines.slice(-40000);
     var o = $('#tout'); if (o) { o.innerHTML = termHTML(); o.scrollTop = o.scrollHeight; }
   }
@@ -398,10 +474,11 @@
     termHook();
     var desk = INFO && INFO.desktop;
     if (!T.lines) T.lines = desk ? 'FutureSelf terminal — a real shell on this PC (' + (INFO.platform === 'win32' ? 'PowerShell' : 'bash') + '). Folder: ' + (INFO.cwd || '') + '\nInstall packages with  pip install <name>  or  npm install <name>  and they work in your programs here.\nType  help  for tips.\n\n' : 'FutureSelf web terminal.\nCommands: help, clear, langs, run, js <code>, py <code>.\nFor a full system terminal (pip, npm, gcc, git) use the FutureSelf Windows app.\n\n';
-    p.innerHTML = '<pre class="cout cterm" id="tout"></pre><div class="tin"><span id="tprompt">' + esc(prompt()) + '</span><input id="tcmd" class="tcmd" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command"><button class="btn sm ghost" data-act="cdstop" id="tstop" hidden>Stop</button></div>';
+    p.innerHTML = '<pre class="cout cterm" id="tout"></pre><div class="tin"><span id="tprompt">' + esc(prompt()) + '</span><input id="tcmd" class="tcmd" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command"><button class="btn sm ghost" data-act="cdstop" id="tstop"' + (T.running ? '' : ' hidden') + '>Stop</button></div>';
     $('#tout').innerHTML = termHTML(); $('#tout').scrollTop = 1e9;
+    if (T.running) { var tc = $('#tcmd'); if (tc) tc.placeholder = 'The command is running: type here to answer it, or press Stop'; var tp = $('#tprompt'); if (tp) tp.textContent = '›'; }
     $('#tcmd').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { var c = e.target.value; e.target.value = ''; termRun(c); }
+      if (e.key === 'Enter') { var c = e.target.value; e.target.value = ''; if (T.running) { termAdd(c + '\n'); window.fsApi.codeInput({ id: T.id, text: c + '\n' }); } else termRun(c); }
       else if (e.key === 'ArrowUp') { if (T.hi > 0) e.target.value = T.hist[--T.hi] || ''; e.preventDefault(); }
       else if (e.key === 'ArrowDown') { if (T.hi < T.hist.length) e.target.value = T.hist[++T.hi] || ''; e.preventDefault(); }
       else if (e.key === 'c' && e.ctrlKey) { stopTerm(); }
@@ -409,13 +486,13 @@
   }
   function prompt() { return ((INFO && INFO.desktop) ? (T.cwd || INFO.cwd || '~') : 'futureself') + ' $ '; }
   function stopTerm() { if (window.fsApi && window.fsApi.codeKill) window.fsApi.codeKill(T.id); }
-  function setRunning(on) { T.running = on; var s = $('#tstop'), c = $('#tcmd'); if (s) s.hidden = !on; if (c) c.disabled = on, on || c.focus(); var pr = $('#tprompt'); if (pr) pr.textContent = prompt(); }
+  function setRunning(on) { T.running = on; if (on) T.urlShown = false; var st = $('#tstop'), c = $('#tcmd'); if (st) st.hidden = !on; if (c) { c.placeholder = on ? 'The command is running: type here to answer it, or press Stop' : ''; c.focus(); } var pr = $('#tprompt'); if (pr) pr.textContent = on ? '›' : prompt(); }
   function termRun(cmd) {
     cmd = String(cmd || '').trim(); if (!cmd) return;
     T.hist.push(cmd); T.hi = T.hist.length; termAdd(prompt() + cmd + '\n');
     if (cmd === 'clear' || cmd === 'cls') { T.lines = ''; var o = $('#tout'); if (o) o.innerHTML = ''; return; }
     if (INFO && INFO.desktop) {
-      if (cmd === 'help') return termAdd('Anything you type runs in a real shell here: python file.py, node, gcc, java, pip install requests, npm i lodash, git ...\nclear  clears the screen. Stop button or Ctrl+C stops a running command.\nYour editor program is saved as  main.<ext>  in the folder above whenever you press Run.\n\n');
+      if (cmd === 'help') return termAdd('Anything you type runs in a real shell here: python file.py, node, gcc, java, pip install requests, npm i lodash, git ...\nFull projects work too, and their page opens in the Browser tab:\n  npm create vite@latest my-app -- --template react   then  cd my-app ; npm install ; npm run dev\n  composer create-project laravel/laravel blog        then  cd blog ; php artisan serve\n  pip install django ; django-admin startproject site  then  cd site ; python manage.py runserver\nWhile a command runs, type answers to its questions in the box below. Stop (or Ctrl+C) ends it.\nclear  clears the screen.\n\n');
       setRunning(true);
       window.fsApi.codeShell({ id: T.id, cmd: cmd }).then(function (r) {
         if (r && r.cwd) T.cwd = r.cwd; if (r && r.ok === false) termAdd((r.error || 'Could not run that') + '\n', true); else if (r && r.timedOut) termAdd('Stopped: that took too long.\n', true);
@@ -682,13 +759,13 @@
   }
   function tdraw() {
     var g = $('#cgrid'); if (!g || !TS.items) return;
-    var fixed = TS.subject && TS.subject.lang, lopts = LANGS.filter(function (l) { return isBtech() || l[0] === 'python'; }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
+    var fixed = TS.subject && TS.subject.lang, lopts = LANGS.filter(function (l) { return (isBtech() || l[0] === 'python') && (l[0] !== 'html' || (INFO && INFO.desktop)); }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
     g.innerHTML = '<aside class="card cpside" id="ctside">' + tSideHTML() + '</aside>' +
       '<section class="cmain"><div class="card" id="cprob">' + tProblemHTML(P.cur) + '</div>' +
       '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language"' + ((fixed || !isBtech()) ? ' disabled' : '') + '>' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button></div>' +
       '<div class="row wrap" style="gap:10px"><button class="btn sm" data-act="cdrun" id="cdrb">▶ Run</button><button class="btn sm pri" data-act="ctsubmit" id="ctsb">Submit answer</button></div></div>' +
       '<div id="ced" class="cedwrap"></div>' +
-      '<div class="ctabs" role="tablist"><button class="ctab' + (P.tab === 'out' ? ' on' : '') + '" data-act="cdtab" data-t="out">Output</button><button class="ctab' + (P.tab === 'in' ? ' on' : '') + '" data-act="cdtab" data-t="in">Input</button><button class="ctab' + (P.tab === 'term' ? ' on' : '') + '" data-act="cdtab" data-t="term">Terminal</button></div>' +
+      tabsHTML() +
       '<div id="cpane" class="cpane"></div><p class="muted" style="font-size:13px;margin-top:8px">' + runnersLine() + '</p></div></section>';
     P.ed = mountEditor($('#ced'), { lang: P.lang, value: loadDraft(), onChange: function (v) { ls(draftKey(P.cur && P.cur.id, P.lang), v); } });
     pane();
@@ -744,7 +821,8 @@
       draw();
     },
     cdtab: function (el) { P.tab = el.dataset.t; pane(); },
-    cdrun: doRun, cdsamples: doSamples,
+    cdrun: doRun, cdsamples: doSamples, cdlivestop: liveStop,
+    cdwebreload: function () { var f = $('#cwebframe'); if (f) f.src = f.src; else webGo(($('#cweburl') || {}).value); }, cdwebgo: function () { webGo(($('#cweburl') || {}).value); }, cdwebfull: function () { WEB.full = !WEB.full; pane(); },
     cdrt: function (el) { doInstallRuntime(el.dataset.k); }, cdmysql: doStartMysql, cdlib: doAddLib,
     cdreset: function () { if (P.ed) { ls(draftKey(P.cur && P.cur.id, P.lang), ''); P.ed.set(TPL[P.lang] || ''); } },
     cdstop: stopTerm,

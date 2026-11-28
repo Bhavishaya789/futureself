@@ -1,16 +1,26 @@
 'use strict';
 /* Runtimes for the coding platform.
-   If Java (JDK), Python, Node.js or a C/C++ compiler is not installed on this PC, FutureSelf downloads the
-   official portable build ONCE into its own folder (no admin rights, nothing changed in Windows) and uses it.
-   A runtime that is already installed on the PC is always preferred.
-     java   -> Eclipse Temurin JDK (api.adoptium.net)
-     python -> CPython from python.org's NuGet package (api.nuget.org), pip included
-     node   -> Node.js LTS with npm (nodejs.org)
-     cc     -> w64devkit: gcc, g++, make, gdb (github.com/skeeto/w64devkit)              */
+   If a language is not installed on this PC, FutureSelf downloads the OFFICIAL build once into its own folder
+   (no admin rights) and uses it. A runtime already installed on the PC is always preferred.
+     java   -> Eclipse Temurin JDK 21 (api.adoptium.net)                     sha256
+     python -> python.org installer, per-user, with tkinter/turtle           Authenticode signature (Python Software Foundation)
+               (fallback: python.org NuGet package)                           sha512 via NuGet
+     node   -> Node.js LTS with npm (nodejs.org)                              SHASUMS256
+     cc     -> gcc/g++ from MSYS2 UCRT64 (see msys.js), libraries too          sha256 per package
+               (fallback: w64devkit)                                          GitHub digest
+     go     -> go.dev/dl                                                      sha256
+     rust   -> rustup (static.rust-lang.org), stable, windows-gnu             sha256
+     dotnet -> .NET 10 SDK (builds.dotnet.microsoft.com)                      sha512
+     kotlin -> kotlinc (github.com/JetBrains/kotlin)                          sha256
+     scala  -> scala-cli (github.com/VirtusLab/scala-cli)                     GitHub digest
+     php    -> PHP NTS x64 (windows.php.net) + Composer (getcomposer.org)     sha256
+     ruby   -> RubyInstaller (github.com/oneclick/rubyinstaller2), per-user    GitHub digest
+     r      -> R for Windows (cloud.r-project.org), per-user                  Authenticode signature
+     dart   -> Dart SDK (storage.googleapis.com/dart-archive)                 sha256                              */
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const cp = require('child_process');
+const crypto = require('crypto');
 
 const WIN = process.platform === 'win32';
 
@@ -40,49 +50,90 @@ function spawnAny(file, args, o) {
   return cp.spawn(file, args, o);
 }
 const mb = (n) => (n / 1048576).toFixed(n > 104857600 ? 0 : 1) + ' MB';
+const ghAsset = (j, re) => { const a = ((j && j.assets) || []).find((x) => re.test(x.name)); if (!a) return null; const dg = /^sha256:([0-9a-f]{64})$/i.exec(a.digest || ''); return { url: a.browser_download_url, file: a.name, sha256: dg ? dg[1] : undefined, version: (j.tag_name || '').replace(/^v/, '') }; };
+const vkey = (v) => String(v).split('.').map((n) => ('00000' + parseInt(n, 10)).slice(-5)).join('.');
 
 /* where each runtime comes from; every source is tried in order */
 function defaultSpecs(platform, arch) {
   const os_ = platform === 'win32' ? 'windows' : platform === 'darwin' ? 'mac' : 'linux';
   const a = arch === 'arm64' ? 'aarch64' : 'x64';
+  const win = platform === 'win32';
   return {
     java: {
-      name: 'Java (JDK 21)', exe: 'javac', size: '190 MB',
+      name: 'Java (JDK 21)', exe: 'javac', size: '190 MB', check: ['javac', 'java'],
       sources: [
-        { json: `https://api.adoptium.net/v3/assets/latest/21/hotspot?os=${os_}&architecture=${a}&image_type=jdk`, pick: (j) => { const b = j && j[0] && j[0].binary && j[0].binary.package; return b && { url: b.link, file: b.name, sha256: b.checksum }; } },
-        { url: `https://api.adoptium.net/v3/binary/latest/21/ga/${os_}/${a}/jdk/hotspot/normal/eclipse?project=jdk`, file: platform === 'win32' ? 'jdk.zip' : 'jdk.tar.gz' }
+        { json: `https://api.adoptium.net/v3/assets/latest/21/hotspot?os=${os_}&architecture=${a}&image_type=jdk`, pick: (j) => { const b = j && j[0] && j[0].binary && j[0].binary.package; return b && { url: b.link, file: b.name, sha256: b.checksum, version: j[0].version && j[0].version.semver }; } },
+        { url: `https://api.adoptium.net/v3/binary/latest/21/ga/${os_}/${a}/jdk/hotspot/normal/eclipse?project=jdk`, file: win ? 'jdk.zip' : 'jdk.tar.gz' }
       ]
     },
-    python: platform === 'win32' ? {
-      name: 'Python', exe: 'python', size: '20 MB', after: 'pip',
+    python: win ? {
+      name: 'Python', exe: 'python', size: '30 MB', check: ['python'], after: 'pip',
       sources: [
-        { json: 'https://api.nuget.org/v3-flatcontainer/python/index.json', pick: (j) => { const v = pickPython(j && j.versions); return v && { url: `https://api.nuget.org/v3-flatcontainer/python/${v}/python.${v}.nupkg`, file: 'python.zip', version: v }; } },
-        { url: 'https://api.nuget.org/v3-flatcontainer/python/3.13.9/python.3.13.9.nupkg', file: 'python.zip' }
+        // full Python (tkinter, turtle, IDLE libraries) from python.org, installed for this Windows user only
+        { json: 'https://api.nuget.org/v3-flatcontainer/python/index.json', pick: (j) => { const v = pickPython(j && j.versions); return v && { url: `https://www.python.org/ftp/python/${v}/python-${v}-amd64.exe`, file: `python-${v}-amd64.exe`, version: v, installer: (exe, dir) => [exe, ['/quiet', 'InstallAllUsers=0', 'TargetDir=' + dir, 'Include_tcltk=1', 'Include_pip=1', 'Include_launcher=0', 'InstallLauncherAllUsers=0', 'PrependPath=0', 'Shortcuts=0', 'Include_doc=0', 'Include_test=0', 'AssociateFiles=0', 'Include_dev=1']], signer: /Python Software Foundation/i }; } },
+        // fallback: the NuGet build (no tkinter)
+        { json: 'https://api.nuget.org/v3-flatcontainer/python/index.json', pick: (j) => { const v = pickPython(j && j.versions); return v && { url: `https://api.nuget.org/v3-flatcontainer/python/${v}/python.${v}.nupkg`, file: 'python.zip', version: v }; } }
       ]
     } : null,
     node: {
-      name: 'Node.js and npm', exe: 'node', size: '35 MB',
+      name: 'Node.js and npm', exe: 'node', size: '35 MB', check: ['node', 'npm'],
       sources: [
-        { json: 'https://nodejs.org/dist/index.json', pick: (j) => { const r = (j || []).find((x) => x.lts); if (!r) return null; const v = r.version; const p = platform === 'win32' ? `node-${v}-win-${arch === 'arm64' ? 'arm64' : 'x64'}.zip` : `node-${v}-${platform === 'darwin' ? 'darwin' : 'linux'}-${arch === 'arm64' ? 'arm64' : 'x64'}.tar.gz`; return { url: `https://nodejs.org/dist/${v}/${p}`, file: p, version: v }; } }
+        { json: 'https://nodejs.org/dist/index.json', pick: (j) => { const r = (j || []).find((x) => x.lts); if (!r) return null; const v = r.version; const p = win ? `node-${v}-win-${arch === 'arm64' ? 'arm64' : 'x64'}.zip` : `node-${v}-${platform === 'darwin' ? 'darwin' : 'linux'}-${arch === 'arm64' ? 'arm64' : 'x64'}.tar.gz`; return { url: `https://nodejs.org/dist/${v}/${p}`, file: p, version: v, shaList: `https://nodejs.org/dist/${v}/SHASUMS256.txt` }; } }
       ]
     },
-    cc: platform === 'win32' ? {
-      name: 'C/C++ compiler (gcc)', exe: 'gcc', size: '70 MB',
+    cc: win ? {
+      name: 'C / C++ (gcc, MSYS2)', exe: 'gcc', size: '120 MB', check: ['gcc', 'g++'],
       sources: [
-        { json: 'https://api.github.com/repos/skeeto/w64devkit/releases/latest', pick: (j) => { const as = (j && j.assets) || []; const x = as.find((s) => /^w64devkit-x64-[\d.]+(\.7z)?\.exe$/i.test(s.name)); return x && { url: x.browser_download_url, file: x.name, sfx: true }; } },
-        { url: 'https://github.com/skeeto/w64devkit/releases/download/v2.10.1/w64devkit-x64-2.10.1.7z.exe', file: 'w64devkit.7z.exe', sfx: true }
+        { msys: ['gcc', 'pkgconf', 'make', 'gdb'] },
+        { json: 'https://api.github.com/repos/skeeto/w64devkit/releases/latest', pick: (j) => { const x = ghAsset(j, /^w64devkit-x64-[\d.]+(\.7z)?\.exe$/i); return x && Object.assign(x, { sfx: true }); } }
       ]
-    } : null
+    } : null,
+    go: {
+      name: 'Go', exe: 'go', size: '80 MB', check: ['go'],
+      sources: [{ json: 'https://go.dev/dl/?mode=json', pick: (j) => { const r = (j || []).find((x) => x.stable); if (!r) return null; const f = r.files.find((x) => x.os === (win ? 'windows' : platform) && x.arch === (arch === 'arm64' ? 'arm64' : 'amd64') && x.kind === 'archive'); return f && { url: 'https://go.dev/dl/' + f.filename, file: f.filename, sha256: f.sha256, version: r.version }; } }]
+    },
+    rust: win ? {
+      name: 'Rust (cargo)', exe: 'cargo', size: '300 MB', check: ['cargo', 'rustc'], needs: ['cc'],
+      sources: [{ url: 'https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-gnu/rustup-init.exe', file: 'rustup-init.exe', shaFile: 'https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-gnu/rustup-init.exe.sha256', rustup: true }]
+    } : null,
+    dotnet: {
+      name: '.NET 10 SDK (C#)', exe: 'dotnet', size: '220 MB', check: ['dotnet'],
+      sources: [{ json: 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json', pick: (j) => { const rel = (j && j.releases) || []; for (const r of rel) { const sdk = r.sdk || {}; const rid = win ? 'win-x64' : (platform === 'darwin' ? 'osx-x64' : 'linux-x64'); const f = (sdk.files || []).find((x) => x.rid === rid && /\.(zip|tar\.gz)$/.test(x.url || x.name)); if (f) return { url: f.url, file: path.basename(f.url), sha512: f.hash, version: sdk.version }; } return null; } }]
+    },
+    kotlin: {
+      name: 'Kotlin', exe: 'kotlinc', size: '80 MB', check: ['kotlinc'], needs: ['java'],
+      sources: [{ json: 'https://api.github.com/repos/JetBrains/kotlin/releases/latest', pick: (j) => { const x = ghAsset(j, /^kotlin-compiler-[\d.]+\.zip$/); if (x && !x.sha256) x.shaFile = x.url + '.sha256'; return x; } }]
+    },
+    scala: {
+      name: 'Scala (scala-cli)', exe: 'scala-cli', size: '90 MB', check: ['scala-cli'], needs: ['java'],
+      sources: [{ json: 'https://api.github.com/repos/VirtusLab/scala-cli/releases/latest', pick: (j) => { const x = ghAsset(j, win ? /^scala-cli-x86_64-pc-win32\.zip$/ : /^scala-cli-x86_64-pc-linux\.gz$/); return x && Object.assign(x, { exeName: 'scala-cli' }); } }]
+    },
+    php: win ? {
+      name: 'PHP + Composer', exe: 'php', size: '35 MB', check: ['php'], after: 'php',
+      sources: [{ json: 'https://windows.php.net/downloads/releases/releases.json', pick: (j) => { const keys = Object.keys(j || {}).filter((k) => /^\d+\.\d+$/.test(k)).sort((x, y) => (vkey(x) < vkey(y) ? 1 : -1)); for (const k of keys) { const r = j[k]; const b = r['nts-vs17-x64'] || r['nts-vs16-x64']; if (b && b.zip) return { url: 'https://windows.php.net/downloads/releases/' + b.zip.path, file: b.zip.path, sha256: b.zip.sha256, version: r.version }; } return null; } }]
+    } : null,
+    ruby: win ? {
+      name: 'Ruby', exe: 'ruby', size: '130 MB', check: ['ruby', 'gem'],
+      sources: [{ json: 'https://api.github.com/repos/oneclick/rubyinstaller2/releases/latest', pick: (j) => { const x = ghAsset(j, /^rubyinstaller-[\d.]+-\d+-x64\.exe$/); return x && Object.assign(x, { installer: (exe, dir) => [exe, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', '/NOICONS', '/TASKS=', '/DIR=' + dir]] }); } }]
+    } : null,
+    r: win ? {
+      name: 'R', exe: 'Rscript', size: '90 MB', check: ['Rscript'],
+      sources: [{ page: 'https://cloud.r-project.org/bin/windows/base/release.htm', pick: (html) => { const m = /R-(\d+\.\d+\.\d+)-win\.exe/.exec(html || ''); return m && { url: 'https://cloud.r-project.org/bin/windows/base/' + m[0], file: m[0], version: m[1], installer: (exe, dir) => [exe, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', '/NOICONS', '/TASKS=', '/DIR=' + dir]] }; } }]
+    } : null,
+    dart: {
+      name: 'Dart', exe: 'dart', size: '210 MB', check: ['dart'],
+      sources: [{ url: `https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-${win ? 'windows' : platform === 'darwin' ? 'macos' : 'linux'}-${arch === 'arm64' ? 'arm64' : 'x64'}-release.zip`, file: 'dartsdk.zip', shaFile: `https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-${win ? 'windows' : platform === 'darwin' ? 'macos' : 'linux'}-${arch === 'arm64' ? 'arm64' : 'x64'}-release.zip.sha256sum` }]
+    }
   };
 }
 /* newest stable 3.13.x (best library support), else the newest stable 3.x */
 function pickPython(vs) {
   const st = (vs || []).filter((v) => /^3\.\d+\.\d+$/.test(v));
-  const key = (v) => v.split('.').map((n) => ('000' + n).slice(-3)).join('.');
-  const sorted = st.sort((a, b) => (key(a) < key(b) ? -1 : 1));
+  const sorted = st.sort((a, b) => (vkey(a) < vkey(b) ? -1 : 1));
   const t13 = sorted.filter((v) => /^3\.13\./.test(v));
   return t13.length ? t13[t13.length - 1] : sorted[sorted.length - 1] || null;
 }
+const KINDS = ['java', 'python', 'node', 'cc', 'go', 'rust', 'dotnet', 'kotlin', 'scala', 'php', 'ruby', 'r', 'dart'];
 
 function create(opts) {
   const root = path.join(opts.dir, 'tools');
@@ -95,6 +146,7 @@ function create(opts) {
   try { man = JSON.parse(fs.readFileSync(manFile, 'utf8')); } catch (e) { /* first run */ }
   const saveMan = () => { try { fs.writeFileSync(manFile, JSON.stringify(man, null, 1)); } catch (e) { log('[tools] ' + e.message); } };
   const busy = {};
+  const msys = opts.msys || (WIN ? require('./msys').create({ root: path.join(root, 'msys'), fetch: fetchFn, log }) : null);
 
   /* bin folders of the runtimes FutureSelf installed (put first on PATH for programs and the terminal) */
   function binDirs() {
@@ -107,26 +159,30 @@ function create(opts) {
     const key = Object.keys(e).find((k) => k.toUpperCase() === 'PATH') || 'PATH';
     e[key] = binDirs().concat([e[key] || '']).join(path.delimiter);
     if (man.java && man.java.home && fs.existsSync(man.java.home) && !systemHas('java')) e.JAVA_HOME = man.java.home;
+    Object.keys(man).forEach((k) => { const m = man[k]; if (m && m.env && m.bin && fs.existsSync(m.bin)) Object.assign(e, m.env); });
+    e.DOTNET_CLI_TELEMETRY_OPTOUT = '1'; e.DOTNET_NOLOGO = '1'; e.DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1';
     return e;
   }
   const sysCache = {};
   function systemHas(kind) {
     if (kind in sysCache) return sysCache[kind];
     let ok = false;
-    if (kind === 'java') ok = !!(which('javac') && which('java'));
-    else if (kind === 'python') { for (const t of ['python3', 'python']) { const p = which(t); if (p && !/WindowsApps/i.test(p)) { ok = true; break; } } if (!ok && WIN) ok = !!which('py'); }
-    else if (kind === 'node') ok = !!(which('node') && which('npm'));
-    else if (kind === 'cc') ok = !!(which('gcc') || which('clang') || which('cc'));
+    const spec = specs[kind];
+    if (kind === 'python') { for (const t of ['python3', 'python']) { const p = which(t); if (p && !/WindowsApps/i.test(p)) { ok = true; break; } } if (!ok && WIN) ok = !!which('py'); }
+    else if (kind === 'cc') ok = !!((which('gcc') && which('g++')) || which('clang++'));
+    else if (kind === 'dotnet') { const d = which('dotnet'); if (d) { const r = cp.spawnSync(d, ['--list-sdks'], { encoding: 'utf8', timeout: 15000, windowsHide: true }); ok = /^(\d+)\./m.test(r.stdout || '') && Math.max(...String(r.stdout).split(/\r?\n/).filter(Boolean).map((l) => parseInt(l, 10) || 0)) >= 10; } }  // file-based C# apps need .NET 10+
+    else if (spec && spec.check) ok = spec.check.every((t) => !!which(t));
+    else ok = !!which(kind);
     return (sysCache[kind] = ok);
   }
   function managed(kind) { const m = man[kind]; return m && m.bin && fs.existsSync(m.bin) ? m : null; }
   function has(kind) { return systemHas(kind) || !!managed(kind); }
   function canInstall(kind) { return !!specs[kind]; }
-  /* full path of a tool: FutureSelf's copy first when the PC has none, else the PC's own */
+  /* full path of a tool: FutureSelf's copies first, then the PC's own */
   function tool(name) { return which(name, binDirs()); }
   function status() {
     const s = {};
-    ['java', 'python', 'node', 'cc'].forEach((k) => { s[k] = { system: systemHas(k), managed: !!managed(k), version: managed(k) ? man[k].version || '' : '', canInstall: canInstall(k), name: specs[k] ? specs[k].name : k, size: specs[k] ? specs[k].size : '' }; });
+    KINDS.forEach((k) => { s[k] = { system: systemHas(k), managed: !!managed(k), version: managed(k) ? man[k].version || '' : '', canInstall: canInstall(k), name: specs[k] ? specs[k].name : k, size: specs[k] ? specs[k].size : '' }; });
     return s;
   }
 
@@ -150,8 +206,8 @@ function create(opts) {
     fs.renameSync(tmp, dest);
     return got;
   }
-  function sha256(file) {
-    const h = require('crypto').createHash('sha256');
+  function hashFile(file, algo) {
+    const h = crypto.createHash(algo || 'sha256');
     const fd = fs.openSync(file, 'r'), buf = Buffer.alloc(1 << 20); let n;
     try { while ((n = fs.readSync(fd, buf, 0, buf.length, null)) > 0) h.update(buf.subarray(0, n)); } finally { fs.closeSync(fd); }
     return h.digest('hex');
@@ -161,9 +217,9 @@ function create(opts) {
       const ch = spawnAny(cmd, args, Object.assign({ windowsHide: true }, o || {}));
       let err = '';
       ch.stderr && ch.stderr.on('data', (d) => { err += d; if (err.length > 20000) err = err.slice(-20000); });
-      ch.stdout && ch.stdout.on('data', () => { });
+      ch.stdout && ch.stdout.on('data', (d) => { if (o && o.onOut) o.onOut(String(d)); });
       ch.on('error', reject);
-      ch.on('close', (c) => (c === 0 ? resolve() : reject(new Error((path.basename(cmd) + ' failed: ' + err.trim().split(/\r?\n/).slice(-3).join(' ')).slice(0, 400)))));
+      ch.on('close', (c) => (c === 0 ? resolve() : reject(new Error((path.basename(cmd) + ' failed (' + c + '): ' + err.trim().split(/\r?\n/).slice(-3).join(' ')).slice(0, 400)))));
     });
   }
   async function extract(file, dest, src) {
@@ -175,35 +231,61 @@ function create(opts) {
       return run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${file.replace(/'/g, "''")}' -DestinationPath '${dest.replace(/'/g, "''")}' -Force`]);
     }
     if (/\.zip$|\.nupkg$/i.test(src.file || file)) return run('unzip', ['-q', '-o', file, '-d', dest]);
+    if (/\.gz$/i.test(src.file || file) && !/\.tar\.gz$/i.test(src.file || file)) { const zlib = require('zlib'); const out = path.join(dest, (src.exeName || path.basename(file).replace(/\.gz$/, ''))); fs.writeFileSync(out, zlib.gunzipSync(fs.readFileSync(file))); fs.chmodSync(out, 0o755); return; }
     return run('tar', ['-xf', file, '-C', dest]);
   }
   /* finds the folder that holds the tool (the archive's top folder name changes with every version) */
   function findBin(dir, exe, depth) {
-    const names = WIN ? [exe + '.exe'] : [exe];
+    const names = WIN ? [exe + '.exe', exe + '.bat', exe + '.cmd'] : [exe];
     const q = [[dir, 0]];
     while (q.length) {
       const [d, n] = q.shift();
       let ents = [];
       try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch (e) { continue; }
       if (ents.some((e) => e.isFile() && names.indexOf(e.name) >= 0)) return d;
-      if (n < (depth || 5)) ents.filter((e) => e.isDirectory() && !/^(lib|include|share|legal|man|jmods|doc)$/i.test(e.name)).forEach((e) => q.push([path.join(d, e.name), n + 1]));
+      if (n < (depth || 5)) ents.filter((e) => e.isDirectory() && !/^(lib|include|share|legal|man|jmods|doc|Lib|DLLs|tcl)$/.test(e.name)).forEach((e) => q.push([path.join(d, e.name), n + 1]));
     }
     return null;
+  }
+  /* Windows: is this installer signed by the expected publisher? */
+  function signatureOk(file, signer) {
+    if (!WIN) return true;
+    const ps = `$s = Get-AuthenticodeSignature -LiteralPath '${file.replace(/'/g, "''")}'; "$($s.Status)|$($s.SignerCertificate.Subject)"`;
+    const r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps], { encoding: 'utf8', timeout: 60000, windowsHide: true });
+    const [status, subject] = String(r.stdout || '').trim().split('|');
+    log('[tools] signature ' + status + ' ' + subject);
+    return status === 'Valid' && signer.test(subject || '');
+  }
+  async function shaFromUrl(u) {
+    const r = await fetchFn(u); if (!r || !r.ok) throw new Error('could not read the checksum file');
+    const t = await r.text(); const m = /\b([0-9a-f]{64})\b/i.exec(t); if (!m) throw new Error('checksum file has no SHA-256');
+    return m[1];
   }
 
   async function install(kind, onProgress) {
     const spec = specs[kind];
     if (!spec) throw new Error('FutureSelf cannot install ' + kind + ' on this system. Please install it yourself.');
+    for (const dep of spec.needs || []) if (!has(dep)) await ensure(dep, onProgress);
     const say = (t, pct) => { if (onProgress) onProgress({ label: spec.name, pct: pct == null ? -1 : pct, text: t }); };
     let lastErr = null;
     for (const s of spec.sources) {
       let src = s;
       try {
-        if (s.json) {
+        if (s.msys) {                                                   // gcc & friends from MSYS2
+          if (!msys) throw new Error('MSYS2 is only used on Windows');
+          say('Getting the C/C++ compiler (gcc) …');
+          await msys.install(s.msys, (p) => say(p.text, p.pct));
+          const bin = msys.binDir();
+          if (!fs.existsSync(path.join(bin, 'gcc.exe'))) throw new Error('gcc was not installed');
+          man[kind] = { bin, version: 'MSYS2 UCRT64', at: Date.now(), extra: [] }; saveMan();
+          say(spec.name + ' is ready.', 100);
+          return man[kind];
+        }
+        if (s.json || s.page) {
           say('Finding the latest ' + spec.name + ' …');
-          const r = await fetchFn(s.json);
+          const r = await fetchFn(s.json || s.page);
           if (!r || !r.ok) throw new Error('could not look up the latest version (' + (r ? r.status : 'no answer') + ')');
-          src = s.pick(await r.json());
+          src = s.pick(s.json ? await r.json() : await r.text());
           if (!src || !src.url) throw new Error('no download found');
         }
         const url = opts.allowHttp ? String(src.url) : String(src.url).replace(/^http:\/\//i, 'https://');   // downloads always over HTTPS (allowHttp: tests only)
@@ -213,23 +295,47 @@ function create(opts) {
         const file = path.join(work, (src.file || path.basename(url.split('?')[0]) || kind).replace(/[^\w.+-]/g, '_'));
         log('[tools] downloading ' + kind + ' from ' + url);
         await download(url, file, onProgress, spec.name);
-        if (src.sha256) { say('Checking the download …'); if (sha256(file).toLowerCase() !== String(src.sha256).toLowerCase()) throw new Error('the download was damaged (checksum mismatch)'); }
-        say('Unpacking ' + spec.name + ' …');
-        const out = path.join(work, 'x');
-        await extract(file, out, src);
-        const bin = findBin(out, spec.exe);
-        if (!bin) throw new Error('the download did not contain ' + spec.exe);
-        /* move into place: tools/<kind> */
+        say('Checking the download …');
+        let want256 = src.sha256;
+        if (!want256 && src.shaFile) want256 = await shaFromUrl(src.shaFile);
+        if (!want256 && src.shaList) { const r = await fetchFn(src.shaList); const t = r && r.ok ? await r.text() : ''; const line = t.split(/\r?\n/).find((l) => l.trim().endsWith(' ' + src.file) || l.trim().endsWith('*' + src.file)); if (line) want256 = line.trim().split(/\s+/)[0]; }
+        if (want256 && hashFile(file, 'sha256').toLowerCase() !== String(want256).toLowerCase()) throw new Error('the download was damaged (checksum mismatch)');
+        if (src.sha512 && hashFile(file, 'sha512').toLowerCase() !== String(src.sha512).toLowerCase()) throw new Error('the download was damaged (checksum mismatch)');
+        if (src.signer && !signatureOk(file, src.signer)) throw new Error('the installer is not signed correctly, so it was not run');
+
         const finalDir = path.join(root, kind);
-        fs.rmSync(finalDir, { recursive: true, force: true });
-        fs.renameSync(out, finalDir);
+        const m = { version: src.version || '', at: Date.now(), extra: [] };
+        if (src.rustup) {                                               // rustup: installs stable Rust into our folder
+          say('Installing Rust (this takes a few minutes) …');
+          fs.rmSync(finalDir, { recursive: true, force: true });
+          const renv = { RUSTUP_HOME: path.join(finalDir, 'rustup'), CARGO_HOME: path.join(finalDir, 'cargo') };
+          await run(file, ['-y', '--no-modify-path', '--profile', 'minimal', '--default-host', 'x86_64-pc-windows-gnu', '--default-toolchain', 'stable'], { env: Object.assign({}, process.env, renv) });
+          m.bin = path.join(renv.CARGO_HOME, 'bin'); m.env = renv;
+        } else if (src.installer) {                                     // a per-user installer (python.org, RubyInstaller, R)
+          say('Installing ' + spec.name + ' …');
+          fs.rmSync(finalDir, { recursive: true, force: true });
+          const [cmd, args] = src.installer(file, finalDir);
+          await run(cmd, args);
+          m.bin = findBin(finalDir, spec.exe);
+          if (!m.bin) throw new Error('the installer did not install ' + spec.exe);
+        } else {
+          say('Unpacking ' + spec.name + ' …');
+          const out = path.join(work, 'x');
+          await extract(file, out, src);
+          const bin = findBin(out, spec.exe);
+          if (!bin) throw new Error('the download did not contain ' + spec.exe);
+          fs.rmSync(finalDir, { recursive: true, force: true });
+          fs.renameSync(out, finalDir);
+          m.bin = path.join(finalDir, path.relative(out, bin));
+        }
         fs.rmSync(work, { recursive: true, force: true });
-        const finalBin = path.join(finalDir, path.relative(out, bin));
-        const m = { bin: finalBin, version: src.version || '', at: Date.now(), extra: [] };
-        if (kind === 'java') m.home = path.dirname(finalBin);
-        if (kind === 'python' && WIN) m.extra.push(path.join(finalBin, 'Scripts'));
+        if (kind === 'java') m.home = path.dirname(m.bin);
+        if (kind === 'python' && WIN) m.extra.push(path.join(m.bin, 'Scripts'));
+        if (kind === 'dotnet') m.env = { DOTNET_ROOT: m.bin };
+        if (kind === 'ruby') m.extra.push(path.join(path.dirname(m.bin), 'msys64', 'ucrt64', 'bin'));
         man[kind] = m; saveMan();
-        if (spec.after === 'pip') { say('Setting up pip …'); await ensurePip(finalBin); }
+        if (spec.after === 'pip') { say('Setting up pip …'); await ensurePip(m.bin); }
+        if (spec.after === 'php') { say('Setting up PHP and Composer …'); await setupPhp(m.bin); }
         say(spec.name + ' is ready.', 100);
         return m;
       } catch (e) { lastErr = e; log('[tools] ' + kind + ': ' + e.message); }
@@ -241,18 +347,44 @@ function create(opts) {
     const ok = cp.spawnSync(py, ['-m', 'pip', '--version'], { windowsHide: true, timeout: 30000 }).status === 0;
     if (!ok) await run(py, ['-m', 'ensurepip', '--default-pip']);
   }
+  /* PHP: a php.ini with the common extensions on (https for Composer, MySQL, zip ...) and composer.phar next to php.exe */
+  async function setupPhp(bin) {
+    const dev = path.join(bin, 'php.ini-development'), ini = path.join(bin, 'php.ini');
+    if (!fs.existsSync(ini)) {
+      let t = fs.existsSync(dev) ? fs.readFileSync(dev, 'utf8') : '';
+      t = t.replace(/^;\s*extension_dir\s*=\s*"ext"/m, 'extension_dir = "ext"');
+      ['curl', 'fileinfo', 'mbstring', 'mysqli', 'openssl', 'pdo_mysql', 'pdo_sqlite', 'sqlite3', 'zip', 'gd', 'intl', 'sockets'].forEach((x) => { t = t.replace(new RegExp('^;\\s*extension\\s*=\\s*' + x + '\\s*$', 'm'), 'extension=' + x); });
+      if (!/^extension_dir/m.test(t)) t += '\nextension_dir = "ext"\n';
+      fs.writeFileSync(ini, t);
+    }
+    // php.exe needs the Microsoft Visual C++ runtime. If it is missing, Windows' own installer adds it (one admin prompt).
+    const probe = cp.spawnSync(path.join(bin, 'php.exe'), ['-v'], { windowsHide: true, timeout: 30000 });
+    if (probe.status !== 0) {
+      const vc = path.join(root, 'vc_redist.x64.exe');
+      await download('https://aka.ms/vs/17/release/vc_redist.x64.exe', vc, null, 'Visual C++ runtime');
+      if (!signatureOk(vc, /Microsoft Corporation/i)) throw new Error('the Visual C++ runtime installer is not signed by Microsoft');
+      await run('powershell.exe', ['-NoProfile', '-Command', `Start-Process -FilePath '${vc.replace(/'/g, "''")}' -ArgumentList '/install','/quiet','/norestart' -Verb RunAs -Wait`]);
+    }
+    const phar = path.join(bin, 'composer.phar');
+    if (!fs.existsSync(phar)) {
+      await download('https://getcomposer.org/download/latest-stable/composer.phar', phar, null, 'Composer');
+      const want = await shaFromUrl('https://getcomposer.org/download/latest-stable/composer.phar.sha256sum');
+      if (hashFile(phar).toLowerCase() !== want.toLowerCase()) { fs.unlinkSync(phar); throw new Error('Composer download was damaged'); }
+      fs.writeFileSync(path.join(bin, 'composer.bat'), '@php "%~dp0composer.phar" %*\r\n');
+    }
+  }
   /* make sure a runtime is available: returns quickly when it is already there */
   function ensure(kind, onProgress) {
     if (has(kind)) return Promise.resolve(true);
     if (busy[kind]) return busy[kind];
-    busy[kind] = install(kind, onProgress).then(() => { delete busy[kind]; return true; }, (e) => { delete busy[kind]; throw e; });
+    busy[kind] = install(kind, onProgress).then(() => { delete busy[kind]; sysCache[kind] = undefined; delete sysCache[kind]; return true; }, (e) => { delete busy[kind]; throw e; });
     return busy[kind];
   }
   function remove(kind) {
     if (!man[kind]) return false;
-    fs.rmSync(path.join(root, kind), { recursive: true, force: true });
+    if (kind !== 'cc') fs.rmSync(path.join(root, kind), { recursive: true, force: true });
     delete man[kind]; saveMan(); return true;
   }
-  return { ensure, has, status, tool, env, binDirs, remove, systemHas, managed, root };
+  return { ensure, has, status, tool, env, binDirs, remove, systemHas, managed, root, msys, KINDS };
 }
-module.exports = { create, defaultSpecs, pickPython, which, spawnAny };
+module.exports = { create, defaultSpecs, pickPython, which, spawnAny, KINDS };
