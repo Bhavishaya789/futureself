@@ -383,7 +383,8 @@ function create(opts) {
         // run: stream output, look for a web address, keep stdin open for typing
         const ports = guessPorts(lang, code);
         let buf = '';
-        const proc = start(pl.run, { timeoutSec: 0, stdin: String(p.stdin || ''), keepStdin: true, onOut: (c, k) => { ev.out(c, k); if (!sentUrl) { buf = (buf + c).slice(-4000); const m = URL_RE.exec(buf); if (m && !/:(3306|5432|27017|6379)\b/.test(m[0])) sendUrl(m[0]); } } });
+        const pre = String(p.stdin || ''), pre1 = pre && !/\n$/.test(pre) ? pre + '\n' : pre;   // the last line of the Input tab counts as typed with Enter, or input() would wait for it
+        const proc = start(pl.run, { timeoutSec: 0, stdin: pre1, keepStdin: true, onOut: (c, k) => { ev.out(c, k); if (!sentUrl) { buf = (buf + c).slice(-4000); const m = URL_RE.exec(buf); if (m && !/:(3306|5432|27017|6379)\b/.test(m[0])) sendUrl(m[0]); } } });
         st.proc = proc;
         if (pl.serveUrl) { (async () => { for (let i = 0; i < 40 && live.has(id) && !sentUrl; i++) { if (await portOpen(+/:(\d+)\//.exec(pl.serveUrl)[1])) { sendUrl(pl.serveUrl); break; } await new Promise((r) => setTimeout(r, 300)); } })(); }
         else if (ports.length) { (async () => { const was = {}; for (const pt of ports) was[pt] = await portOpen(pt); for (let i = 0; i < 600 && live.has(id) && !sentUrl; i++) { for (const pt of ports) { if (!was[pt] && await portOpen(pt)) { sendUrl('http://127.0.0.1:' + pt + '/'); break; } } await new Promise((r) => setTimeout(r, 700)); } })(); }

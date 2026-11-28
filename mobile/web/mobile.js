@@ -120,7 +120,7 @@
   }
   /* the phone's background lock service needs the sign-in too, so it can follow the PC */
   function syncAccount(c) { var s = c.status(); jcall('accountSave', JSON.stringify({ site: s.site, token: s.signedIn ? c.token() : '' })); }
-  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, pyqcheck: 1, doubt: 1, genq: 1, share: 1, plan: 1, sync: 1, report: 1, update: 1, social: 1, challenge: 1, capture: 1, run: 1, profile: 1, avatarFromPhoto: 1 };
+  var ACCT_OPS = { status: 1, setSite: 1, skip: 1, register: 1, verify: 1, resend: 1, login: 1, google: 1, signout: 1, videos: 1, check: 1, pyqcheck: 1, doubt: 1, codereport: 1, genq: 1, share: 1, plan: 1, sync: 1, report: 1, update: 1, social: 1, challenge: 1, capture: 1, run: 1, profile: 1, avatarFromPhoto: 1 };
   function acct(op, payload) {
     if (!ACCT_OPS[op]) return Promise.resolve({ ok: false, error: 'Unknown account action' });
     return getClient().then(function (c) {
@@ -145,6 +145,9 @@
     lockStart: function (cfg) { var r = jcall('lockStart', JSON.stringify(cfg || {})); return r.ok === false ? Promise.reject(new Error(r.error)) : Promise.resolve(r); },
     lockStop: function () { return Promise.resolve(jcall('lockStop')); },
     findVideos: findVideos,
+    /* Code page: Save to Downloads, and the print screen (Save as PDF) for code reports */
+    saveText: function (p) { p = p || {}; return Promise.resolve(jcall('saveText', String(p.name || 'FutureSelf file.txt'), String(p.mime || ''), String(p.text || ''))); },
+    printHtml: function (p) { p = p || {}; return Promise.resolve(jcall('printHtml', String(p.name || 'FutureSelf code report'), String(p.html || ''))); },
     allowVideo: function (id) { return Promise.resolve(jcall('allowVideo', String(id || ''))); },
     openVideo: function () { return Promise.resolve({ ok: false, error: 'Use Another video or Next channel' }); },
     closeVideo: function () { return Promise.resolve({ ok: true }); },

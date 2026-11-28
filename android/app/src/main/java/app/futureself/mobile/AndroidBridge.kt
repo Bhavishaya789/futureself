@@ -273,6 +273,63 @@ class AndroidBridge(private val act: Activity, private val web: WebView) {
         return okJson().toString()
     }
 
+    /** Code page: saves a program or a code report (HTML) the student made into Downloads/FutureSelf */
+    @JavascriptInterface
+    fun saveText(name: String, mime: String, text: String): String {
+        if (text.length > 12_000_000) return errJson("That file is too large").toString()
+        val safe = name.replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001f]"), " ").replace(Regex("\\s+"), " ").trim().trimStart('.').take(90).ifEmpty { "FutureSelf file.txt" }
+        val type = if (mime == "text/html") "text/html" else "application/octet-stream"
+        return try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                val v = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, safe)
+                    put(android.provider.MediaStore.MediaColumns.MIME_TYPE, type)
+                    put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS + "/FutureSelf")
+                }
+                val uri = act.contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v)
+                    ?: return errJson("Could not create the file in Downloads").toString()
+                val os = act.contentResolver.openOutputStream(uri) ?: return errJson("Could not write the file").toString()
+                os.use { it.write(text.toByteArray(Charsets.UTF_8)) }
+                okJson().put("where", "Downloads/FutureSelf/" + safe).toString()
+            } else {
+                val dir = java.io.File(act.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS), "FutureSelf")
+                dir.mkdirs()
+                val f = java.io.File(dir, safe)
+                f.writeText(text, Charsets.UTF_8)
+                okJson().put("where", f.absolutePath).toString()
+            }
+        } catch (e: Exception) { errJson("Could not save: " + (e.message ?: "unknown error")).toString() }
+    }
+
+    /** Code page: opens Android's print screen for a code report, where "Save as PDF" makes the PDF. JavaScript is off in that page. */
+    private var printWeb: WebView? = null
+    @JavascriptInterface
+    fun printHtml(name: String, html: String): String {
+        if (html.length > 12_000_000) return errJson("The report is too large").toString()
+        val job = name.trim().take(80).ifEmpty { "FutureSelf code report" }
+        act.runOnUiThread {
+            try {
+                val w = WebView(act)
+                w.settings.javaScriptEnabled = false
+                w.settings.allowFileAccess = false
+                w.settings.allowContentAccess = false
+                var started = false
+                w.webViewClient = object : android.webkit.WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean = true
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        if (started || view == null) return
+                        started = true
+                        val pm = act.getSystemService(Context.PRINT_SERVICE) as android.print.PrintManager
+                        pm.print(job, view.createPrintDocumentAdapter(job), android.print.PrintAttributes.Builder().setMediaSize(android.print.PrintAttributes.MediaSize.ISO_A4).build())
+                    }
+                }
+                printWeb = w   // kept until the next report, so printing is not cut off
+                w.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+            } catch (e: Exception) { /* no print service on this phone */ }
+        }
+        return okJson().toString()
+    }
+
     /** opens the Google sign-in page of the student's own FutureSelf site in the normal browser */
     @JavascriptInterface
     fun openBrowser(url: String): String {

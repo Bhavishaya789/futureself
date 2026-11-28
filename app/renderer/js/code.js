@@ -301,13 +301,13 @@
     var lopts = LANGS.filter(function (l) { return (isBtech() || l[0] === 'python') && (l[0] !== 'html' || (INFO && INFO.desktop)); }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
     g.innerHTML = '<aside class="card cpside"><div class="eyebrow">Questions</div>' + probListHTML() + '</aside>' +
       '<section class="cmain"><div class="card" id="cprob">' + problemHTML(P.cur) + '</div>' +
-      '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language">' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button></div>' +
-      '<div class="row wrap" style="gap:10px">' + (P.cur ? '<button class="btn sm" data-act="cdsamples" id="cdsb">Check samples</button>' : '') + '<button class="btn sm pri" data-act="cdrun" id="cdrb">▶ Run</button></div></div>' +
+      '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language">' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button>' + saveBtns() + '</div>' +
+      '<div class="row wrap" style="gap:10px">' + reportBtn() + (P.cur ? '<button class="btn sm" data-act="cdsamples" id="cdsb">Check samples</button>' : '') + '<button class="btn sm pri" data-act="cdrun" id="cdrb">▶ Run</button></div></div>' +
       '<div id="ced" class="cedwrap"></div>' +
       tabsHTML() +
       '<div id="cpane" class="cpane"></div><p class="muted" style="font-size:13px;margin-top:8px">' + runnersLine() + '</p></div></section>';
-    P.ed = mountEditor($('#ced'), { lang: P.lang, value: loadDraft(), onChange: function (v) { ls(draftKey(P.cur && P.cur.id, P.lang), v); } });
-    pane();
+    P.ed = mountEditor($('#ced'), { lang: P.lang, value: loadDraft(), onChange: function (v) { ls(draftKey(P.cur && P.cur.id, P.lang), v); fileLine(); } });
+    fileLine(); pane();
   }
   function bar(pct, cls) { return '<div class="cbar"><i class="' + (cls || '') + '" style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>'; }
   function dash() {
@@ -345,7 +345,7 @@
   }
   function setLang(l) {
     ls(draftKey(P.cur && P.cur.id, P.lang), P.ed.get()); P.lang = l; ls('fs_code_lang', l);
-    P.ed.setLang(l); P.ed.set(loadDraft());
+    P.ed.setLang(l); P.ed.set(loadDraft()); SV.file = null; fileLine();
   }
   function pane() {
     var p = $('#cpane'); if (!p) return;
@@ -428,11 +428,11 @@
     if (P.busy) return; var code = P.ed.get(); if (!code.trim()) return H().toast('Nothing to run', 'Write some code first.', true);
     if (INFO && INFO.desktop && window.fsApi && window.fsApi.codeRunLive && (INFO.local.indexOf(P.lang) >= 0 || (INFO.installable || []).indexOf(P.lang) >= 0 || P.lang === 'html')) {
       if (LV.id) return liveStop();
-      P.busy = true; return liveStart(code).catch(function (e) { P.busy = false; setRunBtn(false); P.out = '<span class="cerr">' + esc(e.message) + '</span>'; P.tab = 'out'; pane(); });
+      P.busy = true; outFor(code); return liveStart(code).catch(function (e) { P.busy = false; setRunBtn(false); P.out = '<span class="cerr">' + esc(e.message) + '</span>'; P.tab = 'out'; pane(); });
     }
     progHook(); P.busy = true; var b = $('#cdrb'); if (b) { b.disabled = true; b.textContent = 'Running…'; }
     P.tab = 'out'; pane(); var o = $('#cout'); if (o) o.innerHTML = '<span class="muted">Running…' + (P.lang === 'python' ? ' (the first Python run takes a few seconds to start)' : '') + '</span>';
-    runCode(P.lang, code, P.stdin).then(function (r) { recRun(P.lang, 'run', P.cur, r.code === 0); P.out = outHTML(r); }).catch(function (e) { P.out = '<span class="cerr">' + esc(e.message) + '</span>'; })
+    outFor(code); runCode(P.lang, code, P.stdin).then(function (r) { recRun(P.lang, 'run', P.cur, r.code === 0); P.out = outHTML(r); }).catch(function (e) { P.out = '<span class="cerr">' + esc(e.message) + '</span>'; })
       .then(function () { P.busy = false; var b2 = $('#cdrb'); if (b2) { b2.disabled = false; b2.textContent = '▶ Run'; } if (P.tab === 'out') pane(); });
   }
   function checkSamples(code, lang, problem, setProgress) {
@@ -450,7 +450,7 @@
   }
   function doSamples() {
     if (P.busy || !P.cur) return; var code = P.ed.get(); if (!code.trim()) return H().toast('Nothing to check', 'Write some code first.', true);
-    P.busy = true; var b = $('#cdsb'); if (b) { b.disabled = true; b.textContent = 'Checking…'; } P.tab = 'out'; pane();
+    P.busy = true; P.outCode = null; var b = $('#cdsb'); if (b) { b.disabled = true; b.textContent = 'Checking…'; } P.tab = 'out'; pane();
     checkSamples(code, P.lang, P.cur, function (i, n) { var o = $('#cout'); if (o) o.innerHTML = '<span class="muted">Running sample ' + i + ' of ' + n + '…</span>'; }).then(function (res) { recRun(P.lang, 'check', P.cur, res.every(function (x) { return x.ok; })); P.out = samplesHTML(res); })
       .catch(function (e) { P.out = '<span class="cerr">' + esc(e.message) + '</span>'; }).then(function () { P.busy = false; var b2 = $('#cdsb'); if (b2) { b2.disabled = false; b2.textContent = 'Check samples'; } if (P.tab === 'out') pane(); });
   }
@@ -762,13 +762,13 @@
     var fixed = TS.subject && TS.subject.lang, lopts = LANGS.filter(function (l) { return (isBtech() || l[0] === 'python') && (l[0] !== 'html' || (INFO && INFO.desktop)); }).map(function (l) { return '<option value="' + l[0] + '"' + (P.lang === l[0] ? ' selected' : '') + '>' + l[1] + '</option>'; }).join('');
     g.innerHTML = '<aside class="card cpside" id="ctside">' + tSideHTML() + '</aside>' +
       '<section class="cmain"><div class="card" id="cprob">' + tProblemHTML(P.cur) + '</div>' +
-      '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language"' + ((fixed || !isBtech()) ? ' disabled' : '') + '>' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button></div>' +
-      '<div class="row wrap" style="gap:10px"><button class="btn sm" data-act="cdrun" id="cdrb">▶ Run</button><button class="btn sm pri" data-act="ctsubmit" id="ctsb">Submit answer</button></div></div>' +
+      '<div class="card cwork"><div class="row spread wrap" style="gap:10px"><div class="row wrap" style="gap:10px"><select class="in csel" id="clang" aria-label="Language"' + ((fixed || !isBtech()) ? ' disabled' : '') + '>' + lopts + '</select><button class="btn sm ghost" data-act="cdreset">Reset code</button>' + saveBtns() + '</div>' +
+      '<div class="row wrap" style="gap:10px">' + reportBtn() + '<button class="btn sm" data-act="cdrun" id="cdrb">▶ Run</button><button class="btn sm pri" data-act="ctsubmit" id="ctsb">Submit answer</button></div></div>' +
       '<div id="ced" class="cedwrap"></div>' +
       tabsHTML() +
       '<div id="cpane" class="cpane"></div><p class="muted" style="font-size:13px;margin-top:8px">' + runnersLine() + '</p></div></section>';
-    P.ed = mountEditor($('#ced'), { lang: P.lang, value: loadDraft(), onChange: function (v) { ls(draftKey(P.cur && P.cur.id, P.lang), v); } });
-    pane();
+    P.ed = mountEditor($('#ced'), { lang: P.lang, value: loadDraft(), onChange: function (v) { ls(draftKey(P.cur && P.cur.id, P.lang), v); fileLine(); } });
+    fileLine(); pane();
   }
   function ctPick(id) {
     var it = TS.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
@@ -806,6 +806,251 @@
     } else H().toast('Solved', n + ' of ' + TS.items.length + ' done in this topic.');
   }
 
+  /* ================= save code · My programs · AI code report ================= */
+  /* PC: real files in Documents\FutureSelf\Code and \Reports.  Phone and web: kept inside the app, and Android can also put a copy in Downloads. */
+  var SV = { file: null, key: '', saved: '', rep: null, lastPath: '', busyTok: 0, del: '' };
+  function DESK() { return !!(window.fsApi && window.fsApi.codeSave); }
+  function DROID() { return !!(window.fsApi && window.fsApi.platform === 'android' && window.fsApi.saveText); }
+  function extOf(lang) { var l = LANGS.filter(function (x) { return x[0] === lang; })[0]; return l ? l[2] : 'txt'; }
+  function curKey() { return draftKey(P.cur && P.cur.id, P.lang); }
+  function saveBtns() { return '<button class="btn sm ghost" data-act="cdsave" title="Save your program (Ctrl+S)">💾 Save</button><button class="btn sm ghost" data-act="cdprogs" title="Open a program you saved">📂 My programs</button><span id="cfname" class="muted" style="font-size:13px;align-self:center"></span>'; }
+  function reportBtn() { return '<button class="btn sm" data-act="cdreport" title="An AI report of this code: the code, its real output, the concepts and the reason for every step. You can save it as PDF or HTML.">🧠 AI report</button>'; }
+  function fileLine() {
+    var el = $('#cfname'); if (SV.file && SV.key !== curKey()) SV.file = null;
+    if (!el) return; if (!SV.file) { el.textContent = ''; el.title = ''; return; }
+    var dirty = P.ed && P.ed.get() !== SV.saved;
+    el.textContent = (dirty ? '● ' : '✓ ') + SV.file.name + (dirty ? ' (not saved)' : ' (saved)'); el.title = SV.file.path || 'Saved inside the app';
+    el.style.color = dirty ? 'var(--warn,#f59e0b)' : '';
+  }
+  function outFor(code) { P.outCode = code; P.outLang = P.lang; P.outStdin = P.stdin; }
+  function plain(html) { var d = document.createElement('div'); d.innerHTML = String(html || ''); return (d.textContent || '').replace(/ /g, ' ').replace(/\s+$/, ''); }
+  function langOk(l) { return LANGS.some(function (x) { return x[0] === l; }) && (isBtech() || l === 'python') && (l !== 'html' || (INFO && INFO.desktop)); }
+  /* programs kept inside the app (phone, web): [{name, lang, code, at}] */
+  function appProgs() { try { var a = JSON.parse(ls('fs_code_saved') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function appProgsSave(a) { try { localStorage.setItem('fs_code_saved', JSON.stringify(a.slice(0, 300))); return true; } catch (e) { return false; } }
+  function saveDone(f, code) { SV.file = f; SV.key = curKey(); SV.saved = code; fileLine(); }
+
+  function saveModal(err) {
+    if (!P.ed) return; var code = P.ed.get(); if (!code.trim()) return H().toast('Nothing to save', 'Write some code first.', true);
+    var ext = extOf(P.lang), nm = SV.file ? SV.file.name.replace(/\.[^.]+$/, '') : ((P.cur && P.cur.title) || 'my program').replace(/[^\w\- ]+/g, '').trim().slice(0, 60) || 'my program';
+    var where = DESK() ? 'It is saved as a normal file in <b>Documents\\FutureSelf\\Code</b>, so you can also open it in any editor.' : DROID() ? 'It is kept inside the app on this phone. <b>Save to Downloads</b> also puts a copy in Downloads/FutureSelf.' : 'It is kept inside the app in this browser. <b>Download</b> also gives you the file.';
+    H().modal('<div class="eyebrow">Save your program</div><h2 style="margin:6px 0 12px">' + esc(langName(P.lang)) + ' program</h2>' +
+      '<label class="muted" for="csvname" style="font-size:13px">Name</label><div class="row" style="gap:8px;align-items:center"><input class="in" id="csvname" maxlength="70" style="flex:1" value="' + esc(nm) + '" autocomplete="off"><b class="muted">.' + esc(ext) + '</b></div>' +
+      '<p class="muted" style="font-size:13px;margin-top:10px">' + where + '</p><p id="csvmsg" class="muted" style="font-size:13px;min-height:18px;margin-top:6px' + (err ? ';color:var(--bad)' : '') + '">' + (err ? esc(err) : '') + '</p>' +
+      '<div class="acts"><button class="btn ghost" data-act="cdmclose">Cancel</button>' + (DESK() ? '<button class="btn ghost" data-act="cdsaveas">Save as… (choose folder)</button>' : DROID() ? '<button class="btn ghost" data-act="cdsavedl">Save to Downloads</button>' : '<button class="btn ghost" data-act="cdsavedl">Download</button>') + '<button class="btn pri" data-act="cdsavego">Save</button></div>');
+    var i = $('#csvname'); if (i) { i.select(); i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSave(false, false); } }); }
+  }
+  function svMsg(t, bad) { var m = $('#csvmsg'); if (m) { m.textContent = t; m.style.color = bad ? 'var(--bad)' : ''; } }
+  function doSave(ask, overwrite) {
+    var code = P.ed.get(), inp = $('#csvname'), name = (inp ? inp.value : (SV.file && SV.file.name) || '').trim().replace(new RegExp('\\.' + extOf(P.lang) + '$', 'i'), '');
+    if (!name) return svMsg('Give your program a name.', true);
+    if (DESK()) {
+      svMsg('Saving…');
+      return window.fsApi.codeSave({ name: name, lang: P.lang, code: code, ask: !!ask, overwrite: !!overwrite || SV.over === name }).then(function (r) {
+        if (r && r.canceled) return svMsg('');
+        if (r && r.exists) { SV.over = name; return svMsg('A program called ' + r.name + ' is already saved. Press Save again to replace it.', true); }
+        if (!r || !r.ok) return svMsg((r && r.error) || 'Could not save.', true);
+        SV.over = ''; saveDone({ name: r.name, path: r.path }, code); H().closeModal(); H().toast('Saved', r.path);
+      });
+    }
+    var a = appProgs(), full = name + '.' + extOf(P.lang), at = a.findIndex(function (x) { return x.name === full; });
+    if (at >= 0 && SV.over !== full && !(SV.file && SV.file.name === full)) { SV.over = full; return svMsg('A program called ' + full + ' is already saved. Press Save again to replace it.', true); }
+    if (at >= 0) a.splice(at, 1); a.unshift({ name: full, lang: P.lang, code: code, at: Date.now() });
+    if (!appProgsSave(a)) return svMsg('The app storage is full. Delete some old programs in My programs first.', true);
+    SV.over = ''; saveDone({ name: full }, code); H().closeModal(); H().toast('Saved', full + ' is in My programs.');
+  }
+  function saveCopy() {   // Android: Downloads/FutureSelf · web: a normal download
+    var code = P.ed.get(), inp = $('#csvname'), name = ((inp && inp.value) || 'my program').trim() + '.' + extOf(P.lang);
+    if (DROID()) return window.fsApi.saveText({ name: name, mime: 'application/octet-stream', text: code }).then(function (r) { if (!r || r.ok === false) return svMsg((r && r.error) || 'Could not save to Downloads.', true); H().closeModal(); H().toast('Saved to Downloads', r.where || name); });
+    download(name, code, 'text/plain'); H().closeModal();
+  }
+  function download(name, text, type) {
+    try { var u = URL.createObjectURL(new Blob([text], { type: (type || 'text/plain') + ';charset=utf-8' })), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 2000); }
+    catch (e) { H().toast('Could not download', e.message, true); }
+  }
+  function quickSave() {
+    if (!P.ed || !$('#ced')) return false;
+    if (!SV.file || SV.key !== curKey()) { saveModal(); return true; }
+    var code = P.ed.get();
+    if (DESK()) window.fsApi.codeSave({ path: SV.file.path, name: SV.file.name, lang: P.lang, code: code, overwrite: true }).then(function (r) { if (r && r.ok) { saveDone({ name: r.name, path: r.path }, code); H().toast('Saved', r.path); } else H().toast('Could not save', (r && r.error) || '', true); });
+    else { var a = appProgs().filter(function (x) { return x.name !== SV.file.name; }); a.unshift({ name: SV.file.name, lang: P.lang, code: code, at: Date.now() }); if (appProgsSave(a)) { saveDone(SV.file, code); H().toast('Saved', SV.file.name); } else H().toast('Could not save', 'The app storage is full.', true); }
+    return true;
+  }
+  function size(n) { return n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+  function when(t) { try { return new Date(t).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+  function progsModal() {
+    SV.del = '';
+    H().modal('<div class="eyebrow">My programs</div><h2 style="margin:6px 0 12px">Open a saved program</h2><div id="cpglist"><p class="muted">Loading…</p></div>' +
+      '<div class="acts"><button class="btn ghost" data-act="cdmclose">Close</button>' + (DESK() ? '<button class="btn ghost" data-act="cdprogfolder">Open the Code folder</button><button class="btn ghost" data-act="cdprogpick">Open a file from this PC…</button>' : '') + '</div>');
+    progsPaint();
+  }
+  function progsPaint() {
+    var box = $('#cpglist'); if (!box) return;
+    var draw1 = function (rows) {
+      box.innerHTML = rows.length ? '<div style="display:flex;flex-direction:column;gap:6px">' + rows.map(function (f) {
+        return '<div class="row spread" style="gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line-2);border-radius:12px"><div style="min-width:0"><b style="word-break:break-all">' + esc(f.name) + '</b><br><small class="muted">' + esc(f.lang ? langName(f.lang) : 'Text') + ' · ' + esc(when(f.at)) + (f.size != null ? ' · ' + size(f.size) : '') + '</small></div>' +
+          '<div class="row" style="gap:6px;flex:none"><button class="btn sm pri" data-act="cdprogopen" data-n="' + esc(f.name) + '">Open</button><button class="btn sm ghost" data-act="cdprogdel" data-n="' + esc(f.name) + '">' + (SV.del === f.name ? 'Press again to delete' : 'Delete') + '</button></div></div>';
+      }).join('') + '</div>' : '<p class="muted">No saved programs yet. Press <b>💾 Save</b> (or Ctrl+S) while you code.</p>';
+    };
+    if (DESK()) window.fsApi.codeFiles().then(function (r) { if (!r || !r.ok) { box.innerHTML = '<p class="cerr">' + esc((r && r.error) || 'Could not read the Code folder.') + '</p>'; return; } draw1(r.files); box.insertAdjacentHTML('afterbegin', '<p class="muted" style="font-size:13px;margin-bottom:8px">Folder: ' + esc(r.dir) + '</p>'); });
+    else draw1(appProgs().map(function (x) { return { name: x.name, lang: x.lang, at: x.at, size: x.code.length }; }));
+  }
+  function loadProgram(f) {
+    var lang = f.lang && langOk(f.lang) ? f.lang : P.lang, sel = $('#clang');
+    if (f.lang && f.lang !== P.lang && sel && sel.disabled) return H().toast('This session uses ' + langName(P.lang), 'Open ' + f.name + ' from the Practice page, where you can change the language.', true);
+    if (f.lang && !langOk(f.lang)) H().toast('Opened as ' + langName(P.lang), langName(f.lang) + ' is not available here, so the code is shown in the current language.', true);
+    if (P.ed) ls(curKey(), P.ed.get());
+    if (lang !== P.lang) { P.lang = lang; ls('fs_code_lang', lang); P.ed.setLang(lang); if (sel) sel.value = lang; }
+    P.ed.set(f.code); ls(curKey(), f.code); P.out = null; P.outCode = null; if (P.tab === 'out') pane();
+    saveDone({ name: f.name, path: f.path }, f.code); H().closeModal(); H().toast('Opened', f.name);
+  }
+  function progOpen(name, ask) {
+    if (DESK()) return window.fsApi.codeOpenFile(ask ? { ask: true } : { name: name }).then(function (r) { if (r && r.canceled) return; if (!r || !r.ok) return H().toast('Could not open', (r && r.error) || '', true); loadProgram(r); });
+    var f = appProgs().filter(function (x) { return x.name === name; })[0]; if (f) loadProgram(f);
+  }
+  function progDel(name) {
+    if (SV.del !== name) { SV.del = name; return progsPaint(); }
+    SV.del = ''; if (SV.file && SV.file.name === name) SV.file = null;
+    if (DESK()) return window.fsApi.codeDeleteFile({ name: name }).then(function (r) { if (!r || !r.ok) H().toast('Could not delete', (r && r.error) || '', true); else H().toast('Moved to the Recycle Bin', name); progsPaint(); fileLine(); });
+    appProgsSave(appProgs().filter(function (x) { return x.name !== name; })); progsPaint(); fileLine();
+  }
+
+  /* ---------- the AI report ---------- */
+  function repList() { try { var a = JSON.parse(ls('fs_code_reports') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function repKeep(R) {
+    var a = repList().filter(function (x) { return x.id !== R.id; }); a.unshift(R); a = a.slice(0, 40);
+    while (a.length) { try { localStorage.setItem('fs_code_reports', JSON.stringify(a)); return true; } catch (e) { a.pop(); } }
+    return false;
+  }
+  function repStatus() { var t = plain(P.out), m = /—\s*([^\n]*)\s*$/.exec(t); return m ? m[1].trim() : ''; }
+  function repBusy(t, tok) {
+    H().modal('<div style="text-align:center;padding:8px 4px"><div class="eyebrow">AI code report</div><h2 style="margin:8px 0 10px">Making your report</h2><div class="cspin" style="width:34px;height:34px;margin:6px auto 12px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--acc,#7c8cff);border-radius:50%;animation:cspin 1s linear infinite"></div><p class="muted" id="crpstep">' + esc(t) + '</p><style>@keyframes cspin{to{transform:rotate(360deg)}}</style><div class="acts" style="justify-content:center"><button class="btn ghost" data-act="cdrepcancel">Cancel</button></div></div>', true);
+  }
+  function repStep(t) { var e = $('#crpstep'); if (e) e.textContent = t; }
+  function doReport() {
+    if (!P.ed) return; var code = P.ed.get();
+    if (!code.trim()) return H().toast('Nothing to explain', 'Write some code first.', true);
+    if (LV.id || P.busy) return H().toast('Your program is still running', 'Let it finish or press Stop, then make the report.', true);
+    var tok = ++SV.busyTok, lang = P.lang, stdin = P.stdin, have = P.out && P.outCode === code && P.outLang === lang;
+    repBusy(have ? 'Reading your code and its output…' : lang === 'html' ? 'Reading your page…' : 'Running your code to get its real output' + (stdin.trim() ? ' (with the input in the Input tab)…' : '…'), tok);
+    var outP = have ? Promise.resolve({ ran: true, text: plain(P.out), status: repStatus(), stdin: P.outStdin || '' })
+      : lang === 'html' ? Promise.resolve({ ran: false, text: '', status: 'web page: it is shown in the Browser tab', stdin: '' })
+        : runCode(lang, code, stdin).then(function (r) { if (tok === SV.busyTok) { P.out = outHTML(r); outFor(code); if (P.tab === 'out') pane(); } return { ran: true, text: plain(outHTML(r)), status: plain(outHTML(r)).split('\n').pop().replace(/^—\s*/, ''), stdin: stdin }; },
+          function (e) { return { ran: false, text: '', status: 'could not run here: ' + e.message, stdin: stdin }; });
+    outP.then(function (o) {
+      if (tok !== SV.busyTok) return;
+      repStep('Writing the explanation of the concepts, the reason and every step… this takes about 20 to 40 seconds.');
+      var task = P.cur ? { title: P.cur.title || '', statement: [P.cur.statement, P.cur.input ? 'Input: ' + P.cur.input : '', P.cur.output ? 'Output: ' + P.cur.output : ''].filter(Boolean).join('\n') } : { title: '', statement: '' };
+      var body = o.text.replace(/\n?—[^\n]*$/, '').replace(/\s+$/, '');
+      return acct('codereport', { code: code, language: langName(lang), output: body, stdin: o.stdin, ran: o.ran, status: o.status, title: task.title, statement: task.statement, lang: uiLang() }).then(function (d) {
+        if (tok !== SV.busyTok) return;
+        if (!d || !d.report) throw new Error('The AI did not send a report. Try again.');
+        var u = (H().S && H().S.user) || {};
+        var R = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: Date.now(), name: d.report.title || (SV.file && SV.file.name) || task.title || langName(lang) + ' program', lang: lang, code: code, out: body, ran: o.ran, status: o.status, stdin: o.stdin, task: task, student: u.name || '', file: SV.file ? SV.file.name : '', ai: d.report };
+        R.kept = repKeep(R); H().closeModal(); repShow(R);
+      });
+    }).catch(function (e) {
+      if (tok !== SV.busyTok) return;
+      H().modal('<div class="eyebrow">AI code report</div><h2 style="margin:6px 0 10px">The report could not be made</h2><p class="cerr">' + esc(e.message) + '</p><div class="acts"><button class="btn ghost" data-act="cdmclose">Close</button><button class="btn pri" data-act="cdreport">Try again</button></div>');
+    });
+  }
+  function uiLang() { try { return (!isBtech() && window.FSLang && FSLang.find(FSLang.get()).n) || 'English'; } catch (e) { return 'English'; } }   // B.Tech stays in English, like its lessons
+  /* code with line numbers; a comment or string that spans lines stays coloured on every line */
+  function hlLines(src, lang) {
+    var h = hl(String(src).replace(/\r/g, ''), lang), lines = [], cur = '', open = '', re = /(<span class="t[a-z]">)|(<\/span>)|([^<]+)/g, m;
+    while ((m = re.exec(h))) {
+      if (m[1]) { open = m[1]; cur += m[1]; } else if (m[2]) { open = ''; cur += m[2]; }
+      else { var parts = m[3].split('\n'); for (var i = 0; i < parts.length; i++) { if (i) { if (open) cur += '</span>'; lines.push(cur); cur = open; } cur += parts[i]; } }
+    }
+    lines.push(cur); while (lines.length > 1 && /^(<span class="t[a-z]">)?(<\/span>)?$/.test(lines[lines.length - 1])) lines.pop();
+    return lines;
+  }
+  function md(t) { return esc(t).replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); }
+  var REP_CSS = '*{box-sizing:border-box}body,.rp{margin:0;font:15px/1.6 "Segoe UI",Arial,sans-serif;color:#1d2433;background:#fff}.rp{max-width:900px;margin:0 auto;padding:34px 38px 40px}' +
+    '.rh{border-bottom:3px solid #4f46e5;padding-bottom:14px;margin-bottom:8px}.rh .k{color:#4f46e5;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px}.rh h1{margin:4px 0 6px;font-size:27px;line-height:1.25;color:#111827}.rh .m{color:#5b6475;font-size:13px}.rh .m b{color:#1d2433}' +
+    'h2{font-size:18px;color:#312e81;margin:26px 0 10px;padding-bottom:4px;border-bottom:1px solid #e5e7f0;break-after:avoid;page-break-after:avoid}h2 .n{display:inline-block;min-width:26px;height:26px;line-height:26px;text-align:center;border-radius:50%;background:#eef0ff;color:#4f46e5;font-size:13px;margin-right:8px}' +
+    'p{margin:6px 0}code{font-family:Consolas,"Courier New",monospace;background:#f2f3f8;border-radius:4px;padding:0 4px;font-size:.92em}.sum{background:#f6f7ff;border-left:4px solid #4f46e5;padding:12px 16px;border-radius:6px}' +
+    '.code{border:1px solid #d9dceb;border-radius:8px;overflow:hidden;font:12.5px/1.55 Consolas,"Courier New",monospace;background:#fbfbfe}.code table{border-collapse:collapse;width:100%}.code td{vertical-align:top;padding:0 10px}.code td.no{width:1%;text-align:right;color:#9aa1b5;background:#f1f2f8;border-right:1px solid #e1e3ee;user-select:none;white-space:nowrap}.code td.tx{white-space:pre-wrap;word-break:break-all}.code tr{break-inside:avoid;page-break-inside:avoid}' +
+    '.tc{color:#6b7280;font-style:italic}.ts{color:#047857}.tn{color:#b45309}.tk{color:#7c3aed;font-weight:600}.ty{color:#0369a1}' +
+    'pre.out{margin:0;border-radius:8px;background:#0f172a;color:#e2e8f0;padding:12px 14px;font:12.5px/1.55 Consolas,"Courier New",monospace;white-space:pre-wrap;word-break:break-word}.st{font-size:13px;color:#5b6475;margin-top:6px}.note{font-size:13px;color:#92400e;background:#fff7e6;border:1px solid #fde3b0;border-radius:6px;padding:8px 12px}' +
+    '.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{border:1px solid #e1e3ee;border-radius:10px;padding:12px 14px;break-inside:avoid;page-break-inside:avoid}.card h3{margin:0 0 4px;font-size:15.5px;color:#111827}.card .w{font-size:12.5px;color:#4f46e5;margin-bottom:4px}' +
+    'table.wk{border-collapse:collapse;width:100%}table.wk td{border-top:1px solid #e9eaf2;padding:8px 10px;vertical-align:top}table.wk tr{break-inside:avoid;page-break-inside:avoid}table.wk td.l{width:86px;white-space:nowrap;font:600 12.5px Consolas,monospace;color:#4f46e5}' +
+    '.cx{display:flex;gap:12px;flex-wrap:wrap}.cx div{border:1px solid #e1e3ee;border-radius:10px;padding:10px 14px;min-width:150px}.cx b{display:block;font-size:20px;color:#111827}.cx span{font-size:12px;color:#5b6475;text-transform:uppercase;letter-spacing:.06em}' +
+    'ul{margin:6px 0;padding-left:22px}li{margin:4px 0}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.ft{margin-top:30px;padding-top:10px;border-top:1px solid #e5e7f0;font-size:12px;color:#7a8195}' +
+    '@media (max-width:640px){.rp{padding:18px 14px}.cards,.two{grid-template-columns:1fr}.rh h1{font-size:22px}}@page{size:A4;margin:14mm 12mm}@media print{.rp{padding:0;max-width:none}}';
+  function repBody(R) {
+    var A = R.ai || {}, n = 0, sec = function (t) { n++; return '<h2><span class="n">' + n + '</span>' + esc(t) + '</h2>'; };
+    var lines = hlLines(R.code, R.lang);
+    var meta = [['Language', langName(R.lang)], R.file ? ['File', R.file] : null, R.task && R.task.title ? ['Question', R.task.title] : null, R.student ? ['Student', R.student] : null, ['Made', when(R.at)]].filter(Boolean);
+    var h = '<div class="rp"><div class="rh"><div class="k">FutureSelf · AI code report</div><h1>' + esc(R.name) + '</h1><div class="m">' + meta.map(function (x) { return x[0] + ': <b>' + esc(x[1]) + '</b>'; }).join(' &nbsp;·&nbsp; ') + '</div></div>';
+    h += sec('Summary') + '<div class="sum">' + md(A.summary) + '</div>';
+    if (R.task && R.task.statement) h += sec('The question') + '<p>' + md(R.task.statement) + '</p>';
+    h += sec('The code') + '<div class="code"><table>' + lines.map(function (l, i) { return '<tr><td class="no">' + (i + 1) + '</td><td class="tx">' + (l || ' ') + '</td></tr>'; }).join('') + '</table></div>';
+    if (R.stdin && R.stdin.trim()) h += sec('Input given to the program') + '<pre class="out">' + esc(R.stdin) + '</pre>';
+    h += sec(R.ran ? 'Output (real, from running the code)' : 'Output') + (R.ran ? '<pre class="out">' + (R.out ? esc(R.out) : '(the program printed nothing)') + '</pre>' + (R.status ? '<div class="st">Result: ' + esc(R.status) + '</div>' : '') : '<div class="note">' + esc(R.status ? 'The code was not run (' + R.status + '). The explanation below describes the expected output.' : 'The code was not run. The explanation below describes the expected output.') + '</div>');
+    if (A.output) h += '<p style="margin-top:10px"><b>What the output means:</b> ' + md(A.output) + '</p>';
+    if ((A.concepts || []).length) h += sec('Concepts used') + '<div class="cards">' + A.concepts.map(function (c) { return '<div class="card"><h3>' + esc(c.name) + '</h3>' + (c.where ? '<div class="w">' + esc(c.where) + '</div>' : '') + '<div>' + md(c.explain) + '</div></div>'; }).join('') + '</div>';
+    if (A.reason) h += sec('Why the code is written this way') + '<p>' + md(A.reason) + '</p>';
+    if ((A.walkthrough || []).length) h += sec('Step by step') + '<table class="wk">' + A.walkthrough.map(function (w) { return '<tr><td class="l">' + esc(w.lines ? 'Line ' + w.lines : '') + '</td><td>' + md(w.explain) + '</td></tr>'; }).join('') + '</table>';
+    var cx = A.complexity || {};
+    if (cx.time || cx.space) h += sec('Time and space') + '<div class="cx">' + (cx.time ? '<div><span>Time</span><b>' + esc(cx.time) + '</b></div>' : '') + (cx.space ? '<div><span>Extra space</span><b>' + esc(cx.space) + '</b></div>' : '') + '</div>' + (cx.why ? '<p>' + md(cx.why) + '</p>' : '');
+    var li = function (a) { return '<ul>' + a.map(function (x) { return '<li>' + md(x) + '</li>'; }).join('') + '</ul>'; };
+    if ((A.issues || []).length || (A.improvements || []).length) h += sec('Check and improve') + '<div class="two"><div><b>Things to check</b>' + ((A.issues || []).length ? li(A.issues) : '<p>No problems found.</p>') + '</div><div><b>How to improve it</b>' + ((A.improvements || []).length ? li(A.improvements) : '<p>Nothing important.</p>') + '</div></div>';
+    if ((A.keyPoints || []).length) h += sec('Remember') + li(A.keyPoints);
+    return h + '<div class="ft">The code and the output are exactly what you wrote and ran. The explanations were written by AI and can contain mistakes: check anything important with your teacher or textbook.</div></div>';
+  }
+  function repDoc(R) {
+    return '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:"><title>' + esc(R.name) + ' · Code report</title><style>' + REP_CSS + '</style></head><body>' + repBody(R) + '</body></html>';
+  }
+  function repFile(R) { return String(R.name || 'Code report').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 70) || 'Code report'; }
+  function repShow(R) {
+    SV.rep = R; SV.lastPath = ''; var old = $('#crep'); if (old) old.remove();
+    var el = document.createElement('div'); el.id = 'crep';
+    el.setAttribute('style', 'position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;background:var(--bg,#070a1f)');
+    el.innerHTML = '<div class="row wrap" style="gap:8px 18px;padding:10px 14px;border-bottom:1px solid var(--line-2);align-items:center' + (window.innerWidth > 760 ? ';padding-right:380px' : '') + '"><div class="row" style="gap:8px;align-items:center;min-width:0"><button class="btn sm ghost" data-act="cdrepclose">← Back to code</button><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:30vw">' + esc(R.name) + '</b></div>' +
+      '<div class="row wrap" style="gap:6px"><button class="btn sm pri" data-act="cdreppdf">Save as PDF</button><button class="btn sm ghost" data-act="cdrephtml">Save as HTML</button>' + (DESK() ? '<button class="btn sm ghost" data-act="cdreppdfas">Save PDF as…</button>' : '') + '<button class="btn sm ghost" data-act="cdreports">My reports</button></div></div>' +
+      '<div id="crepmsg" class="muted" style="font-size:13px;padding:6px 16px;min-height:0">' + (R.kept === false ? 'This report is too large to keep inside the app. Save it as PDF or HTML.' : 'Kept in <b>My reports</b>, so you can open it again any time.') + '</div>' +
+      '<div style="flex:1;overflow:auto;padding:10px 14px 30px"><div id="crephost" style="max-width:920px;margin:0 auto;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)"></div></div>';
+    document.body.appendChild(el);
+    var host = $('#crephost'), root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
+    root.innerHTML = '<style>' + REP_CSS + '</style>' + repBody(R);
+  }
+  function repMsg(html) { var m = $('#crepmsg'); if (m) m.innerHTML = html; }
+  function repSave(kind, ask) {
+    var R = SV.rep; if (!R) return; var html = repDoc(R), name = repFile(R);
+    if (DESK()) {
+      repMsg(kind === 'pdf' ? 'Making the PDF…' : 'Saving…');
+      return window.fsApi.codeSaveReport({ name: name, html: html, kind: kind, ask: !!ask }).then(function (r) {
+        if (r && r.canceled) return repMsg('');
+        if (!r || !r.ok) return repMsg('<span class="cerr">' + esc((r && r.error) || 'Could not save the report.') + '</span>');
+        SV.lastPath = r.path; repMsg('Saved: <b>' + esc(r.path) + '</b> &nbsp;<button class="btn sm ghost" data-act="cdrepopen">Open it</button> <button class="btn sm ghost" data-act="cdrepfolder">Show in folder</button>');
+      });
+    }
+    if (DROID()) {
+      if (kind === 'html') return window.fsApi.saveText({ name: name + '.html', mime: 'text/html', text: html }).then(function (r) { repMsg(r && r.ok !== false ? 'Saved to <b>' + esc(r.where || 'Downloads/FutureSelf') + '</b>' : '<span class="cerr">' + esc((r && r.error) || 'Could not save.') + '</span>'); });
+      return window.fsApi.printHtml({ name: name, html: html }).then(function (r) { repMsg(r && r.ok !== false ? 'Choose <b>Save as PDF</b> in the print screen, then press the PDF button.' : '<span class="cerr">' + esc((r && r.error) || 'Could not open the print screen.') + '</span>'); });
+    }
+    if (kind === 'html') { download(name + '.html', html, 'text/html'); return repMsg('Downloaded ' + esc(name) + '.html'); }
+    var f = document.createElement('iframe'); f.setAttribute('style', 'position:fixed;width:0;height:0;border:0;right:0;bottom:0'); f.srcdoc = html; document.body.appendChild(f);
+    f.onload = function () { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { download(name + '.html', html, 'text/html'); } setTimeout(function () { f.remove(); }, 60000); };
+    repMsg('Choose <b>Save as PDF</b> in the print window.');
+  }
+  function reportsModal() {
+    SV.del = '';
+    H().modal('<div class="eyebrow">My reports</div><h2 style="margin:6px 0 12px">Your AI code reports</h2><div id="crplist"></div><div class="acts"><button class="btn ghost" data-act="cdmclose">Close</button>' + (DESK() ? '<button class="btn ghost" data-act="cdrepdir">Open the Reports folder</button>' : '') + '</div>');
+    reportsPaint();
+  }
+  function reportsPaint() {
+    var box = $('#crplist'); if (!box) return; var a = repList();
+    box.innerHTML = a.length ? '<div style="display:flex;flex-direction:column;gap:6px">' + a.map(function (R) {
+      return '<div class="row spread" style="gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line-2);border-radius:12px"><div style="min-width:0"><b>' + esc(R.name) + '</b><br><small class="muted">' + esc(langName(R.lang)) + ' · ' + esc(when(R.at)) + '</small></div><div class="row" style="gap:6px;flex:none"><button class="btn sm pri" data-act="cdrepview" data-id="' + esc(R.id) + '">Open</button><button class="btn sm ghost" data-act="cdrepdel" data-id="' + esc(R.id) + '">' + (SV.del === R.id ? 'Press again to delete' : 'Delete') + '</button></div></div>';
+    }).join('') + '</div>' + (DESK() ? '<p class="muted" style="font-size:13px;margin-top:10px">Reports you saved as PDF or HTML are in Documents\\FutureSelf\\Reports.</p>' : '') : '<p class="muted">No reports yet. Press <b>🧠 AI report</b> on the Code page.</p>';
+  }
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 's' || e.key === 'S') && $('#ced') && !$('#modal-root .overlay') && !$('#crep')) { if (quickSave()) e.preventDefault(); }
+    else if (e.key === 'Escape' && $('#crep') && !$('#modal-root .overlay')) { var c = $('#crep'); if (c) c.remove(); }
+  });
+
   /* ================= hooks ================= */
   FSX.routes = Object.assign(FSX.routes || {}, { code: viewCode });
   var prevGate = FSX.after;
@@ -826,6 +1071,15 @@
     cdrt: function (el) { doInstallRuntime(el.dataset.k); }, cdmysql: doStartMysql, cdlib: doAddLib,
     cdreset: function () { if (P.ed) { ls(draftKey(P.cur && P.cur.id, P.lang), ''); P.ed.set(TPL[P.lang] || ''); } },
     cdstop: stopTerm,
+    cdsave: function () { saveModal(); }, cdsavego: function () { doSave(false, false); }, cdsaveas: function () { doSave(true, false); }, cdsavedl: saveCopy,
+    cdprogs: progsModal, cdprogopen: function (el) { progOpen(el.dataset.n); }, cdprogdel: function (el) { progDel(el.dataset.n); }, cdprogpick: function () { progOpen('', true); },
+    cdprogfolder: function () { window.fsApi.codeShow({ folder: 'code' }); }, cdmclose: function () { H().closeModal(); },
+    cdreport: doReport, cdrepcancel: function () { SV.busyTok++; H().closeModal(); },
+    cdrepclose: function () { var c = $('#crep'); if (c) c.remove(); }, cdreppdf: function () { repSave('pdf', false); }, cdreppdfas: function () { repSave('pdf', true); }, cdrephtml: function () { repSave('html', false); },
+    cdrepopen: function () { if (SV.lastPath) window.fsApi.codeShow({ path: SV.lastPath, open: true }); }, cdrepfolder: function () { if (SV.lastPath) window.fsApi.codeShow({ path: SV.lastPath }); },
+    cdreports: reportsModal, cdrepdir: function () { window.fsApi.codeShow({ folder: 'reports' }); },
+    cdrepview: function (el) { var R = repList().filter(function (x) { return x.id === el.dataset.id; })[0]; if (R) { H().closeModal(); repShow(R); } },
+    cdrepdel: function (el) { var id = el.dataset.id; if (SV.del !== id) { SV.del = id; return reportsPaint(); } SV.del = ''; try { localStorage.setItem('fs_code_reports', JSON.stringify(repList().filter(function (x) { return x.id !== id; }))); } catch (e) { } reportsPaint(); },
     ctsub: function (el) { TS.subj = el.dataset.id; topicsView(); },
     ctback: function () { TS.subj = null; topicsView(); },
     ctstart: function (el) { ctStart(el.dataset.id); },

@@ -69,6 +69,11 @@
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to ask the AI tutor.'));
         return req('/api/check', 'POST', { mode: 'doubt', question: p.question, context: p.context, title: p.title, lang: p.lang }, true);
       },
+      /* the SERVER writes a study report of the student's own program (concepts, reason, walkthrough, output explained) */
+      codereport: function (p) {
+        load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to make an AI report.'));
+        p = p || {}; return req('/api/check', 'POST', { mode: 'codereport', code: p.code, language: p.language, output: p.output, stdin: p.stdin, ran: !!p.ran, status: p.status, title: p.title, statement: p.statement, lang: p.lang }, true);
+      },
       /* parent/teacher link: op = status | create | revoke | sync (with snap) */
       share: function (p) {
         load(); if (!st.token) return Promise.reject(new Error('Sign in to FutureSelf to share your progress.'));

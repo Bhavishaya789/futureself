@@ -232,6 +232,16 @@ app.whenReady().then(async () => {
     ipcMain.handle('code:listLibraries', (_e, lang) => coder.listLibraries(String(lang || '')));
     ipcMain.handle('code:mysqlStart', () => coder.mysqlStart().catch((e) => ({ ok: false, error: e.message })));
     ipcMain.handle('code:mysqlInfo', () => coder.mysqlInfo());
+    // saved programs (Documents\FutureSelf\Code) and saved code reports (Documents\FutureSelf\Reports, PDF or HTML)
+    const cfiles = require('./core/codefiles').create({ documents: process.env.FS_DOCUMENTS || app.getPath('documents'), dialog, shell, win: () => win, pdf: require('./core/codefiles').electronPdf(BrowserWindow) });
+    const safe = (f) => (_e, p) => Promise.resolve().then(() => f(p || {})).catch((e) => ({ ok: false, error: e.message }));
+    ipcMain.handle('code:save', safe(cfiles.save));
+    ipcMain.handle('code:files', safe(cfiles.list));
+    ipcMain.handle('code:openFile', safe(cfiles.open));
+    ipcMain.handle('code:deleteFile', safe(cfiles.remove));
+    ipcMain.handle('code:saveReport', safe(cfiles.saveReport));
+    ipcMain.handle('code:reports', safe(cfiles.reports));
+    ipcMain.handle('code:show', safe(cfiles.show));
     app.on('before-quit', () => { try { mysql.stop(); } catch (e) { } });
     ipcMain.handle('lock:stop', () => { blocker.stop(); applyLock(false); return { ok: true }; });
 
